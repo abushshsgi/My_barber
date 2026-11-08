@@ -6,7 +6,6 @@ import { AiStyleDesktopLayout } from "@/components/ai-style/AiStyleDesktopLayout
 import { AiStyleSplitLayout } from "@/components/ai-style/AiStyleSplitLayout";
 import { AiStylePhotoInput } from "@/components/ai-style/AiStyleUi";
 import { MorphAiHome } from "@/components/ai-style/MorphAiHome";
-import { MorphAiIntroOverlay } from "@/components/ai-style/MorphAiIntroOverlay";
 import { MorphLimitUpsell } from "@/components/ai-style/MorphLimitUpsell";
 import type { AiAnalysisResult, AiSuggestion } from "@/components/ai-style/ai-style-shared";
 import { useAiStyleFlow } from "@/components/ai-style/useAiStyleFlow";
@@ -16,14 +15,8 @@ import { useExplorePersona } from "@/hooks/use-explore-persona";
 import { useHairstyle } from "@/hooks/use-hairstyles";
 import { getHairstyleImageUrl } from "@/lib/hairstyles/catalog";
 import { prefetchFaceLandmarker } from "@/components/ai-style/useFaceLandmarker";
-import { prefetchMorphAiIntroVideo } from "@/lib/morf-ai-intro";
 import { isMorphPlanLimitMessage } from "@/lib/morph-plan-limit";
-import {
-  hasMorphAiIntroSeen,
-  hasMorphAiOnboarded,
-  markMorphAiIntroSeen,
-  markMorphAiOnboarded,
-} from "@/lib/morf-ai-session";
+import { hasMorphAiOnboarded, markMorphAiOnboarded } from "@/lib/morf-ai-session";
 import { loadSavedAiStyleIds, removeSavedAiStyle, saveAiStyle } from "@/lib/saved-ai-styles";
 import type { ExplorePersonaId } from "@/lib/explore-personas";
 import type { Audience } from "@/lib/mock-data";
@@ -107,16 +100,6 @@ export function AiStyleFlow({ audience, menPersonaId: menPersonaIdProp, focusSty
   const [saved, setSaved] = useState<string[]>(() => loadSavedAiStyleIds());
   const [onboarded, setOnboarded] = useState(() => hasMorphAiOnboarded());
   const [showCapture, setShowCapture] = useState(() => !hasMorphAiOnboarded());
-  const [showIntro, setShowIntro] = useState(() => !hasMorphAiIntroSeen());
-
-  const handleIntroComplete = useCallback(() => {
-    markMorphAiIntroSeen();
-    setShowIntro(false);
-  }, []);
-
-  useEffect(() => {
-    if (showIntro) prefetchMorphAiIntroVideo();
-  }, [showIntro]);
 
   useEffect(() => {
     prefetchFaceLandmarker();
@@ -295,7 +278,6 @@ export function AiStyleFlow({ audience, menPersonaId: menPersonaIdProp, focusSty
 
       <AiStylePhotoInput fileRef={fileRef} onFile={onFile} />
       <AiStyleCamera open={cameraOpen} onClose={closeCamera} onCapture={onCameraCapture} />
-      <MorphAiIntroOverlay open={showIntro} onComplete={handleIntroComplete} />
       <MorphLimitUpsell
         open={limitGate.open}
         onOpenChange={limitGate.setOpen}
