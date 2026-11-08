@@ -1,12 +1,8 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { Sparkles } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { FaceAnalysisRings } from "@/components/ai-style/FaceAnalysisRings";
 import type { AiAnalysisResult } from "@/components/ai-style/ai-style-shared";
-
-const RING_COUNT = 3;
-const RING_STAGGER_MS = 720;
-const GENERATE_AFTER_MS = 280 + RING_COUNT * RING_STAGGER_MS + 160;
 
 const THUMB = 46;
 const ACCENT = "#C026A0";
@@ -35,7 +31,7 @@ function GenerateSlider({ onComplete }: { onComplete: () => void }) {
   return (
     <div
       ref={trackRef}
-      className="relative h-[58px] w-full overflow-hidden rounded-full border border-black/[0.06] bg-[#F3F3F3]"
+      className="relative h-[52px] w-full overflow-hidden rounded-full border border-black/[0.06] bg-[#F3F3F3]"
       onClick={() => {
         if (done.current) return;
         done.current = true;
@@ -43,7 +39,7 @@ function GenerateSlider({ onComplete }: { onComplete: () => void }) {
         onComplete();
       }}
     >
-      <p className="pointer-events-none absolute inset-0 grid place-items-center text-base font-bold tracking-wide text-[#0A0A0A]">
+      <p className="pointer-events-none absolute inset-0 grid place-items-center text-[15px] font-bold tracking-wide text-[#0A0A0A]">
         Generate
       </p>
       <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
@@ -62,7 +58,7 @@ function GenerateSlider({ onComplete }: { onComplete: () => void }) {
       <button
         type="button"
         aria-label="Generate"
-        className="absolute top-1.5 left-1.5 grid size-[46px] place-items-center rounded-full border border-black/[0.06] bg-white shadow-[0_2px_6px_rgba(0,0,0,0.1)] touch-none"
+        className="absolute top-1 left-1 grid size-[44px] place-items-center rounded-full border border-black/[0.06] bg-white shadow-[0_2px_6px_rgba(0,0,0,0.1)] touch-none"
         style={{ transform: `translateX(${x}px)` }}
         onPointerDown={(event) => {
           event.currentTarget.setPointerCapture(event.pointerId);
@@ -100,32 +96,26 @@ export function FaceAnalysisSummarySheet({
   result: AiAnalysisResult;
   onStartGenerate: () => void;
 }) {
-  const [revealedCount, setRevealedCount] = useState(0);
   const [showGenerate, setShowGenerate] = useState(false);
-
-  useEffect(() => {
-    const timers = [
-      ...Array.from({ length: RING_COUNT }, (_, index) =>
-        window.setTimeout(() => setRevealedCount(index + 1), 280 + index * RING_STAGGER_MS),
-      ),
-      window.setTimeout(() => setShowGenerate(true), GENERATE_AFTER_MS),
-    ];
-    return () => timers.forEach((id) => window.clearTimeout(id));
-  }, []);
 
   return (
     <div
-      className="w-full rounded-t-[28px] bg-white px-4 pt-[18px]"
-      style={{ paddingBottom: "max(14px, env(safe-area-inset-bottom))" }}
+      className="w-full rounded-t-[28px] bg-white px-4 pt-3.5"
+      style={{ paddingBottom: "max(10px, env(safe-area-inset-bottom))" }}
     >
-      <FaceAnalysisRings result={result} compact revealedCount={revealedCount} />
-      <div className="mt-4 min-h-[58px]">
+      <FaceAnalysisRings
+        result={result}
+        compact
+        sequential
+        onRevealComplete={() => setShowGenerate(true)}
+      />
+      <div className="mt-3 min-h-[52px]">
         <AnimatePresence>
           {showGenerate ? (
             <motion.div
-              initial={{ opacity: 0, y: 14 }}
+              initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+              transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
             >
               <GenerateSlider onComplete={onStartGenerate} />
             </motion.div>

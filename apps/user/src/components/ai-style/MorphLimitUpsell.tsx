@@ -55,10 +55,10 @@ export function MorphLimitUpsell({ open, onOpenChange, kind, me, preferPlan }: P
 
   if (isMobile) {
     return (
-      <Drawer open={open} onOpenChange={onOpenChange}>
+      <Drawer open={open} onOpenChange={onOpenChange} handleOnly shouldScaleBackground={false}>
         <DrawerContent
           className={cn(
-            "morph-ai-type max-h-[min(88dvh,620px)] rounded-t-[28px] border-black/10 bg-white px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-1 text-[#111111]",
+            "morph-ai-type flex max-h-[min(92dvh,720px)] flex-col overflow-hidden rounded-t-[28px] border-black/10 bg-white px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-1 text-[#111111]",
             "[&_[data-vaul-handle]]:bg-black/20",
           )}
         >
@@ -223,8 +223,8 @@ function MorphPaywallBody({
   };
 
   return (
-    <div className="flex max-h-[min(82dvh,580px)] flex-col">
-      <div className="min-h-0 flex-1 space-y-2.5 overflow-y-auto pb-2">
+    <div className="flex min-h-0 flex-1 flex-col">
+      <div className="min-h-0 flex-1 space-y-2.5 overflow-y-auto overscroll-contain pb-2 [-webkit-overflow-scrolling:touch]">
         <div>
           <p className="text-[11px] font-extrabold uppercase tracking-[0.14em] text-[#737373]">
             {hero.kicker}

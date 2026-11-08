@@ -15,7 +15,7 @@ import { useExplorePersona } from "@/hooks/use-explore-persona";
 import { useHairstyle } from "@/hooks/use-hairstyles";
 import { getHairstyleImageUrl } from "@/lib/hairstyles/catalog";
 import { isMorphPlanLimitMessage } from "@/lib/morph-plan-limit";
-import { hasMorphAiOnboarded, markMorphAiOnboarded } from "@/lib/morf-ai-session";
+import { markMorphAiOnboarded } from "@/lib/morf-ai-session";
 import { loadSavedAiStyleIds, removeSavedAiStyle, saveAiStyle } from "@/lib/saved-ai-styles";
 import type { ExplorePersonaId } from "@/lib/explore-personas";
 import type { Audience } from "@/lib/mock-data";
@@ -98,8 +98,8 @@ export function AiStyleFlow({ audience, menPersonaId: menPersonaIdProp, focusSty
   } = flow;
   const { data: focusHairstyle } = useHairstyle(focusStyleId ?? "", menPersonaId);
   const [saved, setSaved] = useState<string[]>(() => loadSavedAiStyleIds());
-  const [onboarded, setOnboarded] = useState(() => hasMorphAiOnboarded());
-  const [showCapture, setShowCapture] = useState(() => !hasMorphAiOnboarded());
+  const [onboarded, setOnboarded] = useState(true);
+  const [showCapture, setShowCapture] = useState(false);
 
 
   const displayResult = useMemo(() => {
@@ -124,19 +124,16 @@ export function AiStyleFlow({ audience, menPersonaId: menPersonaIdProp, focusSty
   }, [reset]);
 
   const gatedStartNew = useCallback(async () => {
-    if (!(await limitGate.ensureTryOn())) return;
     startNewLook();
-  }, [limitGate, startNewLook]);
+  }, [startNewLook]);
 
   const gatedOpenCamera = useCallback(async () => {
-    if (!(await limitGate.ensureTryOn())) return;
     openCamera();
-  }, [limitGate, openCamera]);
+  }, [openCamera]);
 
   const gatedOpenGallery = useCallback(async () => {
-    if (!(await limitGate.ensureTryOn())) return;
     openFile();
-  }, [limitGate, openFile]);
+  }, [openFile]);
 
   const step: 1 | 2 | 3 = !photo ? 1 : done ? 3 : 2;
   const showHome = onboarded && !showCapture && !photo && !done;
@@ -249,19 +246,14 @@ export function AiStyleFlow({ audience, menPersonaId: menPersonaIdProp, focusSty
     <>
       <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
         {showHome ? (
-          <DesktopPageSplit
-            mobile={<AiStyleSplitLayout {...layoutProps} />}
-            desktop={
-              <MorphAiHome
-                audience={audience}
-                onStartNew={() => void gatedStartNew()}
-                onOpenCamera={() => void gatedOpenCamera()}
-                onOpenGallery={() => void gatedOpenGallery()}
-                ensureMorphAccess={limitGate.ensureTryOn}
-                ensureMorphStudio={limitGate.ensureStudio}
-                ensureMorphCare={limitGate.ensureCare}
-              />
-            }
+          <MorphAiHome
+            audience={audience}
+            onStartNew={() => void gatedStartNew()}
+            onOpenCamera={() => void gatedOpenCamera()}
+            onOpenGallery={() => void gatedOpenGallery()}
+            ensureMorphAccess={limitGate.ensureTryOn}
+            ensureMorphStudio={limitGate.ensureStudio}
+            ensureMorphCare={limitGate.ensureCare}
           />
         ) : (
           <DesktopPageSplit

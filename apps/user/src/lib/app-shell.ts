@@ -48,6 +48,13 @@ export function readAppShell(): AppShell {
   }
 }
 
+/** Mobil bosh sahifa: mysaloon shell tanlanmagan bo‘lsa Morf AI ga o‘tadi. */
+export function shouldRedirectHomeToMorph(): boolean {
+  if (typeof window === "undefined") return false;
+  if (!window.matchMedia("(max-width: 1023px)").matches) return false;
+  return readAppShell() !== "mysaloon";
+}
+
 export function writeAppShell(shell: AppShell): void {
   if (!canUseStorage()) return;
   try {

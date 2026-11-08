@@ -43,9 +43,8 @@ export function useAppShell() {
 
     const current = readAppShell();
     const mobile = window.matchMedia("(max-width: 1023px)").matches;
-    // Telefonda ilova ochilishi: saqlangan shell Morf bo‘lsa bosh sahifa try-on ga o‘tadi.
-    // Desktop bosh sahifa o‘z joyida qoladi. Bron URL lari pauza ekranida qoladi.
-    if (mobile && pathname === "/" && current === "morph") {
+    // Telefonda yangi tashrif / Morf shell — bosh sahifa try-on (Morf switch) ga o‘tadi.
+    if (mobile && pathname === "/" && current !== "mysaloon") {
       const to = readLastMorphContentRoute();
       if (to !== pathname) {
         void navigate({ to: to as never, replace: true });

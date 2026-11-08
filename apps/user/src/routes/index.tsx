@@ -1,17 +1,19 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 import { DesktopPageSplit } from "@/components/desktop/DesktopPageSplit";
 import { HomeDesktopRoot } from "@/components/desktop/home/HomeDesktopRoot";
 import { MysaloonPausedScreen } from "@/components/mobile/MysaloonPausedScreen";
 import { useHomeData } from "@/components/home/useHomeData";
+import { shouldRedirectHomeToMorph } from "@/lib/app-shell";
 import { parseReferralFromLocationSearch, stashReferralCode } from "@/lib/referral-storage";
 
 export const Route = createFileRoute("/")({
   beforeLoad: () => {
     if (typeof window === "undefined") return;
     const code = parseReferralFromLocationSearch(window.location.search);
-    if (!code) return;
-    // Referral kodini saqlaymiz; login majburiy emas — keyinroq auth'da qo'llaniladi.
-    stashReferralCode(code);
+    if (code) stashReferralCode(code);
+    if (shouldRedirectHomeToMorph()) {
+      throw redirect({ to: "/ai-style", replace: true });
+    }
   },
   head: () => ({
     meta: [

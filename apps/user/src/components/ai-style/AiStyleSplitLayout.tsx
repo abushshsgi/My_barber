@@ -24,7 +24,7 @@ import type { Audience } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
 
 const TRY_ON_HERO = "/ai-style/try-on-selfie-hero.png";
-const UPLOAD_PANEL_HEIGHT = 224;
+const UPLOAD_PANEL_HEIGHT = 292;
 const UPLOAD_HISTORY_REVEAL_RATIO = 0.48;
 
 function getHistoryRevealHeight() {
@@ -480,7 +480,7 @@ export function AiStyleSplitLayout(props: AiStyleSplitLayoutProps) {
               onPanEnd={!historyOpen ? onPanelPanEnd : undefined}
               style={{ height: panelHeight }}
               className={cn(
-                "flex flex-col overflow-hidden rounded-t-[28px] bg-white px-4 pb-4 pt-3 text-left text-foreground",
+                "flex flex-col overflow-hidden rounded-t-[28px] bg-white px-4 pb-5 pt-3 text-left text-foreground",
                 !historyOpen && "cursor-grab touch-none active:cursor-grabbing",
               )}
             >
@@ -552,7 +552,7 @@ export function AiStyleSplitLayout(props: AiStyleSplitLayoutProps) {
                       initial={{ opacity: 0, y: 16 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.28, duration: 0.5, ease: "easeOut" }}
-                      className="mt-6"
+                      className="mt-4"
                     >
                       <UploadActions
                         onOpenCamera={props.openCamera}

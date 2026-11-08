@@ -248,7 +248,7 @@ export function AiStyleResultsPage({
             {t("aiStylePage.analysisTitle")}
           </h3>
           <div className="mt-3">
-            <FaceAnalysisRings result={result} />
+            <FaceAnalysisRings result={result} compact />
           </div>
           <button
             type="button"
