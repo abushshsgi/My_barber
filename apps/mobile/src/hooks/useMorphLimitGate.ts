@@ -7,7 +7,7 @@ import { useSubscriptions } from "./useSubscriptions";
 export type MorphGateReason = "login" | "subscription" | "limit" | "studio";
 export type MorphGateResult = { ok: true } | { ok: false; reason: MorphGateReason };
 
-type GateKind = "access" | "tryon" | "studio" | "chat" | "voice";
+type GateKind = "access" | "tryon" | "studio" | "chat" | "voice" | "care";
 
 /**
  * Morf AI limit gate.
@@ -64,16 +64,23 @@ export function useMorphLimitGate() {
       }
 
       if (kind === "studio") {
-        if (!latest?.has_active || latest.access?.morph_ai_allowed === false) {
+        if (!latest?.has_active) {
           return { ok: false, reason: "subscription" };
         }
-        if ((latest.usage?.morph_studio_limit ?? 0) <= 0) {
+        if (latest.access?.morph_studio_allowed === false || (latest.usage?.morph_studio_limit ?? 0) <= 0) {
           return { ok: false, reason: "studio" };
         }
         if ((latest.usage?.morph_studio_remaining ?? 0) <= 0) {
           return { ok: false, reason: "limit" };
         }
         return { ok: true };
+      }
+
+      if (kind === "care") {
+        if (latest?.access?.morph_care_allowed === true || latest?.morph_care === true) {
+          return { ok: true };
+        }
+        return { ok: false, reason: "subscription" };
       }
 
       // tryon
@@ -125,6 +132,8 @@ export function useMorphLimitGate() {
   const ensureTryOnDetailed = useCallback(() => ensureDetailed("tryon"), [ensureDetailed]);
   const ensureStudio = useCallback(() => ensure("studio"), [ensure]);
   const ensureStudioDetailed = useCallback(() => ensureDetailed("studio"), [ensureDetailed]);
+  const ensureCare = useCallback(() => ensure("care"), [ensure]);
+  const ensureCareDetailed = useCallback(() => ensureDetailed("care"), [ensureDetailed]);
 
   return useMemo(
     () => ({
@@ -141,6 +150,8 @@ export function useMorphLimitGate() {
       ensureTryOnDetailed,
       ensureStudio,
       ensureStudioDetailed,
+      ensureCare,
+      ensureCareDetailed,
       handleError,
       remaining: me?.has_active
         ? (me?.usage?.morph_ai_remaining ?? 0)
@@ -165,6 +176,8 @@ export function useMorphLimitGate() {
       ensureChatDetailed,
       ensureStudio,
       ensureStudioDetailed,
+      ensureCare,
+      ensureCareDetailed,
       ensureTryOn,
       ensureTryOnDetailed,
       ensureVoice,

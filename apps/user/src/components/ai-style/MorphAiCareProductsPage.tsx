@@ -1,11 +1,13 @@
 import { Link, useRouter } from "@tanstack/react-router";
 import { HairConditionAsk } from "@/components/ai-style/HairConditionAsk";
-import { ChevronLeft, Loader2, Lock, Search } from "lucide-react";
+import { MorphLimitUpsell } from "@/components/ai-style/MorphLimitUpsell";
+import { ChevronLeft, Loader2, Search } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { useCareProducts } from "@/hooks/use-care-products";
 import { useHairCareProfile } from "@/hooks/use-hair-care-profile";
+import { useSubscriptionMe } from "@/hooks/use-subscription";
 import type { CareProductCategory } from "@/lib/api/care-products";
 import { fetchCareAccess } from "@/lib/api/subscriptions";
 import { navigateBack } from "@/lib/mobile-back";
@@ -22,8 +24,10 @@ export function MorphAiCareProductsPage() {
     queryFn: fetchCareAccess,
     staleTime: 8_000,
   });
+  const meQ = useSubscriptionMe();
   const [q, setQ] = useState("");
   const [category, setCategory] = useState<string>("all");
+  const [paywallOpen, setPaywallOpen] = useState(false);
   const list = useCareProducts({
     q: q.trim() || undefined,
     category: category === "all" ? undefined : category,
@@ -31,47 +35,10 @@ export function MorphAiCareProductsPage() {
   });
   const rows = useMemo(() => list.data || [], [list.data]);
 
-  if (hairQ.isLoading || accessQ.isLoading) {
+  if (hairQ.isLoading) {
     return (
       <div className="grid min-h-[100dvh] place-items-center bg-[#FAFAFA]">
         <Loader2 className="size-6 animate-spin text-[#111111]/40" />
-      </div>
-    );
-  }
-
-  if (accessQ.data && !accessQ.data.allowed) {
-    return (
-      <div
-        className="min-h-[100dvh] bg-[#FAFAFA] px-5 text-[#111111]"
-        style={{ paddingTop: "max(1rem, env(safe-area-inset-top))" }}
-      >
-        <button
-          type="button"
-          onClick={() => navigateBack(router, "/ai-style/care")}
-          className="mt-2 inline-flex items-center gap-1 text-sm text-[#111111]/50"
-        >
-          <ChevronLeft className="size-4" />
-          {t("common.back")}
-        </button>
-        <div className="mx-auto mt-24 max-w-xs text-center">
-          <Lock className="mx-auto size-6 text-[#111111]/50" />
-          <h1 className="mt-4 text-lg font-semibold tracking-tight">
-            {t("aiStylePage.home.tools.care", { defaultValue: "Parvarish" })}
-          </h1>
-          <p className="mt-2 text-sm text-[#111111]/50">
-            {accessQ.data.detail ||
-              t("aiStylePage.care.plusOnly", {
-                defaultValue: "Parvarish Plus obunasida ochiladi.",
-              })}
-          </p>
-          <Link
-            to="/wallet"
-            search={{ section: "subscriptions", plan: "plus" }}
-            className="mt-8 inline-flex h-12 items-center rounded-full bg-[#111111] px-6 text-sm font-semibold text-white"
-          >
-            {t("aiStylePage.care.seePlans", { defaultValue: "Obunalar" })}
-          </Link>
-        </div>
       </div>
     );
   }
@@ -167,6 +134,11 @@ export function MorphAiCareProductsPage() {
                 key={row.id}
                 to="/ai-style/care/products/$productId"
                 params={{ productId: String(row.id) }}
+                onClick={(event) => {
+                  if (accessQ.data?.allowed) return;
+                  event.preventDefault();
+                  setPaywallOpen(true);
+                }}
                 className="flex items-stretch gap-3 rounded-2xl bg-white p-2.5 ring-1 ring-black/5"
               >
                 {row.image_url ? (
@@ -198,6 +170,13 @@ export function MorphAiCareProductsPage() {
           </div>
         )}
       </div>
+      <MorphLimitUpsell
+        open={paywallOpen}
+        onOpenChange={setPaywallOpen}
+        kind="care"
+        me={meQ.data ?? null}
+        preferPlan="plus"
+      />
     </div>
   );
 }

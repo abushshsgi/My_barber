@@ -1,15 +1,17 @@
 import { Link, useRouter } from "@tanstack/react-router";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { AlertTriangle, CheckCircle2, ChevronLeft, Images, Loader2, Lock, X } from "lucide-react";
+import { AlertTriangle, CheckCircle2, ChevronLeft, Images, Loader2, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { HairConditionAsk } from "@/components/ai-style/HairConditionAsk";
+import { MorphLimitUpsell } from "@/components/ai-style/MorphLimitUpsell";
 import { navigateBack } from "@/lib/mobile-back";
 import { useIngredientScan } from "@/hooks/use-ingredient-scan";
 import { useHairCareProfile, useUpdateHairCareProfile } from "@/hooks/use-hair-care-profile";
 import { fetchCareAccess } from "@/lib/api/subscriptions";
+import { useSubscriptionMe } from "@/hooks/use-subscription";
 import type { IngredientScanResponse } from "@/lib/api/ai";
 import type { HairColorStatus, HairCondition, HairTexture } from "@/lib/api/hair-care-profile";
 import { prepareSelfieFromFile } from "@/lib/selfie-image";
@@ -41,6 +43,7 @@ export function MorphAiIngredientScanPage() {
     staleTime: 30_000,
   });
   const hairQ = useHairCareProfile();
+  const meQ = useSubscriptionMe();
   const updateHair = useUpdateHairCareProfile();
   const scan = useIngredientScan();
 
@@ -60,7 +63,7 @@ export function MorphAiIngredientScanPage() {
       ? "quiz"
       : "capture";
 
-  if (accessQ.isLoading || hairQ.isLoading) {
+  if (hairQ.isLoading) {
     return (
       <div className="grid min-h-[100dvh] place-items-center bg-[#FAFAFA] text-[#111111]">
         <Loader2 className="size-6 animate-spin text-[#111111]/40" />
@@ -75,23 +78,15 @@ export function MorphAiIngredientScanPage() {
         style={{ paddingTop: "max(1rem, env(safe-area-inset-top))" }}
       >
         <BackLink label={t("common.back")} />
-        <div className="mx-auto mt-24 max-w-xs text-center">
-          <Lock className="mx-auto size-6 text-[#111111]/50" />
-          <h1 className="mt-4 text-lg font-semibold tracking-tight">
-            {t("aiStylePage.care.ingredientScan.badge", { defaultValue: "Tarkib skani" })}
-          </h1>
-          <p className="mt-2 text-sm text-[#111111]/50">
-            {accessQ.data.detail ||
-              t("aiStylePage.care.proOnly", { defaultValue: "Pro obunasida." })}
-          </p>
-          <Link
-            to="/wallet"
-            search={{ section: "subscriptions" }}
-            className="mt-8 inline-flex h-12 items-center rounded-full bg-[#111111] px-6 text-sm font-semibold text-white"
-          >
-            {t("aiStylePage.care.seePlans", { defaultValue: "Obunalar" })}
-          </Link>
-        </div>
+        <MorphLimitUpsell
+          open
+          onOpenChange={(open) => {
+            if (!open) navigateBack(router, "/ai-style/care");
+          }}
+          kind="care"
+          me={meQ.data ?? null}
+          preferPlan="plus"
+        />
       </div>
     );
   }
@@ -554,6 +549,7 @@ function IngredientScanCapture({
   onEditProfile: () => void;
 }) {
   const { t } = useTranslation();
+  const router = useRouter();
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);

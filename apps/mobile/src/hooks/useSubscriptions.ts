@@ -230,7 +230,12 @@ type SubSnapshot = { plans: SubscriptionPlan[]; me: SubscriptionMe | null };
 let shared: SubSnapshot | null = null;
 let sharedAt = 0;
 let inflight: Promise<SubSnapshot> | null = null;
-const CACHE_MS = 12_000;
+const CACHE_MS = 4_000;
+
+export function clearSubscriptionSnapshot() {
+  shared = null;
+  sharedAt = 0;
+}
 
 function fingerprintMe(me: SubscriptionMe | null): string {
   if (!me) return "";
@@ -292,7 +297,14 @@ export function useSubscriptions() {
 
   const refresh = useCallback(() => setTick((n) => n + 1), []);
 
-  useEffect(() => onPaymeActivated(() => refresh()), [refresh]);
+  useEffect(
+    () =>
+      onPaymeActivated(() => {
+        clearSubscriptionSnapshot();
+        refresh();
+      }),
+    [refresh],
+  );
 
   useEffect(() => {
     let cancelled = false;

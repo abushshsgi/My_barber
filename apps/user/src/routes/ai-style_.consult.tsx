@@ -1,5 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { MorphAiConsultPage } from "@/components/barber-consult/MorphAiConsultPage";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 
 type ConsultSearch = {
   preview?: "barber";
@@ -19,14 +18,8 @@ export const Route = createFileRoute("/ai-style_/consult")({
         ? search.styleName.trim()
         : undefined,
   }),
-  head: () => ({
-    meta: [
-      { title: "AI Barber Consult — mysaloon.uz" },
-      {
-        name: "description",
-        content: "Morf AI Barber Master Card, multi-angle preview va bron.",
-      },
-    ],
-  }),
-  component: MorphAiConsultPage,
+  beforeLoad: () => {
+    throw redirect({ to: "/ai-style" });
+  },
+  component: () => null,
 });

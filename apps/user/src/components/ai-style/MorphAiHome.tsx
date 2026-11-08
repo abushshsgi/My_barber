@@ -223,11 +223,7 @@ export function MorphAiHome({
   };
 
   const openCare = () => {
-    void (async () => {
-      const gate = ensureMorphCare ?? ensureMorphAccess;
-      if (gate && !(await gate())) return;
-      void navigate({ to: "/ai-style/care" });
-    })();
+    void navigate({ to: "/ai-style/care" });
   };
 
   const openIngredientScan = () => {
@@ -432,7 +428,12 @@ export function MorphAiHome({
             transition={{ delay: 0.15, duration: 0.3 }}
             className="mt-6"
           >
-            <MorphSoftPaywall className="[&_a]:border-black/10 [&_a]:text-[#111111]/55 [&_a:hover]:bg-[#F0F0F0]" />
+            <MorphSoftPaywall
+              className="[&_a]:border-black/10 [&_a]:text-[#111111]/55 [&_a:hover]:bg-[#F0F0F0]"
+              onSubscribe={() => {
+                void (ensureMorphAccess?.() ?? Promise.resolve(true));
+              }}
+            />
           </motion.div>
         ) : null}
 

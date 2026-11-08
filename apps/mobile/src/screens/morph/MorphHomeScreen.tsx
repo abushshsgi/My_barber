@@ -119,21 +119,39 @@ export function MorphHomeScreen({ navigation }: Props) {
   const { goMorph } = useShellNavigation();
 
   const openCareOrIngredient = useCallback(
-    (kind: "care" | "ingredient") => {
+    async (kind: "care" | "ingredient") => {
+      if (!isAuthenticated) {
+        navigation.getParent()?.navigate("Profile" as never);
+        return;
+      }
+      const result = await gate.ensureCareDetailed();
+      if (!result.ok) {
+        presentMorphPaywall(navigation, "subscription", "MorphHome");
+        return;
+      }
       goMorph(navigation, kind === "care" ? "MorphCare" : "MorphIngredient", {
         screen: kind === "care" ? "CareHome" : "IngredientScan",
         params: { returnTo: "MorphTryOn" },
       });
     },
-    [navigation, goMorph],
+    [gate, isAuthenticated, navigation, goMorph],
   );
 
-  const openCareCatalog = useCallback(() => {
+  const openCareCatalog = useCallback(async () => {
+    if (!isAuthenticated) {
+      navigation.getParent()?.navigate("Profile" as never);
+      return;
+    }
+    const result = await gate.ensureCareDetailed();
+    if (!result.ok) {
+      presentMorphPaywall(navigation, "subscription", "MorphHome");
+      return;
+    }
     goMorph(navigation, "MorphCare", {
       screen: "CareHome",
       params: { openSearch: true },
     });
-  }, [navigation, goMorph]);
+  }, [gate, isAuthenticated, navigation, goMorph]);
 
   const onSamplePress = useCallback(
     (item: MorphSampleCard) => {

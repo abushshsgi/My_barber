@@ -1085,6 +1085,19 @@ export function MorphCareScreen({ navigation, route }: Props) {
     return <View style={[styles.root, { backgroundColor: pal.bg }]} />;
   }
 
+  if (access && !access.allowed) {
+    return (
+      <MorphPaywallView
+        reason="subscription"
+        onClose={() => goMorph(navigation, "MorphTryOn")}
+        onSuccess={() => {
+          void bootstrap();
+        }}
+        onNeedLogin={() => goMorph(navigation, "Profile")}
+      />
+    );
+  }
+
   if (plusPaywall) {
     return (
       <MorphPaywallView

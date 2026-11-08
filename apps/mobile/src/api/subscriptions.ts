@@ -96,11 +96,15 @@ export type SubscriptionMe = {
     morph_ai_allowed: boolean;
     morph_chat_allowed?: boolean;
     morph_voice_allowed?: boolean;
+    morph_studio_allowed?: boolean;
+    morph_care_allowed?: boolean;
+    morph_care_pro_allowed?: boolean;
     reason: string | null;
     message: string | null;
     referral_credits?: number;
     referral_generation_enabled?: boolean;
     free_tryon_available?: boolean;
+    free_tryon_remaining?: number;
   };
   welcome_offer?: {
     eligible: boolean;

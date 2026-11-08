@@ -8,7 +8,6 @@ import {
   Loader2,
   Palette,
   RotateCcw,
-  Sparkles,
 } from "lucide-react";
 import { Fragment, useEffect } from "react";
 import { useTranslation } from "react-i18next";
@@ -22,7 +21,6 @@ import {
 import type { useStyleTryOnFlow } from "@/components/style-try-on/useStyleTryOnFlow";
 import type { HairstyleEntry } from "@/lib/hairstyles/catalog";
 import { getHairstyleImageUrl } from "@/lib/hairstyles/catalog";
-import { stashBarberConsultDraft } from "@/lib/barber-consult-session";
 import { stashMorphStudioDraft } from "@/lib/morf-ai-studio-session";
 import { cn } from "@/lib/utils";
 
@@ -198,12 +196,10 @@ function GeneratingOverlay({
 function ResultView({
   entry,
   preview,
-  personaId,
   onReset,
 }: {
   entry: HairstyleEntry;
   preview: string;
-  personaId?: string | null;
   onReset: () => void;
 }) {
   const { t } = useTranslation();
@@ -218,27 +214,6 @@ function ResultView({
       source: "tryon",
     });
     void navigate({ to: "/ai-style/studio" });
-  };
-
-  const openBarberConsult = () => {
-    const gallery = entry.gallery?.length
-      ? (Object.fromEntries(
-          entry.gallery
-            .filter((g) => ["front", "left", "right", "back"].includes(g.view))
-            .map((g) => [g.view, g.url]),
-        ) as Partial<Record<"front" | "left" | "right" | "back", string>>)
-      : undefined;
-    stashBarberConsultDraft({
-      image: preview,
-      styleId: entry.slug || entry.id,
-      styleName: entry.titleUz,
-      personaId: personaId || undefined,
-      gallery,
-    });
-    void navigate({
-      to: "/ai-style/consult",
-      search: { styleId: entry.slug || entry.id, styleName: entry.titleUz },
-    });
   };
 
   return (
@@ -267,14 +242,6 @@ function ResultView({
         >
           <Palette className="h-4 w-4" />
           {t("aiStylePage.studio.openCta", { defaultValue: "AI Studio" })}
-        </button>
-        <button
-          type="button"
-          onClick={openBarberConsult}
-          className="flex w-full items-center justify-center gap-2 rounded-2xl border border-white/30 bg-[#F0F0F0] py-3.5 text-sm font-bold text-[#111111] backdrop-blur-md touch-manipulation active:scale-[0.98]"
-        >
-          <Sparkles className="h-4 w-4" />
-          {t("barberConsult.openCta", { defaultValue: "AI Barber Consult" })}
         </button>
         <div className="grid grid-cols-2 gap-2">
           <button
@@ -360,7 +327,6 @@ export function StyleTryOnFlow({ flow, entry }: Props) {
         <ResultView
           entry={entry}
           preview={flow.tryOnPreview}
-          personaId={flow.personaId}
           onReset={flow.reset}
         />
         <AiStylePhotoInput fileRef={flow.fileRef} onFile={flow.onFile} />

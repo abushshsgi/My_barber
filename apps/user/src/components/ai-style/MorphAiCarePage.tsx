@@ -1,10 +1,9 @@
-import { Link, useNavigate, useRouter } from "@tanstack/react-router";
+import { useNavigate, useRouter } from "@tanstack/react-router";
 import {
   ChevronLeft,
   ChevronRight,
   Heart,
   Loader2,
-  Lock,
   Plus,
   Search,
   SlidersHorizontal,
@@ -19,6 +18,7 @@ import { CareAiRoutine } from "@/components/ai-style/CareAiRoutine";
 import { CareHubCardArt, CareQuickArt } from "@/components/ai-style/CareHubArt";
 import { CareWeatherPanel } from "@/components/ai-style/CareWeatherPanel";
 import { HairConditionAsk } from "@/components/ai-style/HairConditionAsk";
+import { MorphLimitUpsell } from "@/components/ai-style/MorphLimitUpsell";
 import {
   buildCarePlan,
   saveCareQuiz,
@@ -30,6 +30,7 @@ import {
 import { loadFaceProfile } from "@/lib/face-profile";
 import { hasValidUserSession } from "@/lib/api/client";
 import { fetchCareAccess } from "@/lib/api/subscriptions";
+import { useSubscriptionMe } from "@/hooks/use-subscription";
 import { cn } from "@/lib/utils";
 import { useHairCareProfile } from "@/hooks/use-hair-care-profile";
 import { useCareProducts } from "@/hooks/use-care-products";
@@ -74,6 +75,9 @@ export function MorphAiCarePage() {
   const [coords, setCoords] = useState<{ lat: number; lon: number } | null>(null);
   const [regionId, setRegionId] = useState<UzRegionId | null>(null);
   const [sosOpen, setSosOpen] = useState(false);
+  const [paywallOpen, setPaywallOpen] = useState(false);
+  const [paywallPrefer, setPaywallPrefer] = useState<"plus" | "pro">("plus");
+  const meQ = useSubscriptionMe();
   const searchQ = useCareProducts({
     q: search.trim() || undefined,
     enabled: search.trim().length > 0,
@@ -162,57 +166,27 @@ export function MorphAiCarePage() {
     saveCareQuiz(next);
   }, [hairQ.data, forceQuiz]);
 
-  const goSubscribe = () => {
-    void navigate({ to: "/wallet", search: { section: "subscriptions" } });
+  const openPaywall = (prefer: "plus" | "pro" = "plus") => {
+    setPaywallPrefer(prefer);
+    setPaywallOpen(true);
   };
   const needPlus = () => {
     if (accessQ.isLoading) return true;
     if (accessQ.data?.allowed) return false;
-    goSubscribe();
+    openPaywall("plus");
+    return true;
+  };
+  const needPro = () => {
+    if (accessQ.isLoading) return true;
+    if (accessQ.data?.pro_allowed) return false;
+    openPaywall("pro");
     return true;
   };
 
-  if (accessQ.isLoading || hairQ.isLoading) {
+  if (hairQ.isLoading) {
     return (
       <div className="grid min-h-[100dvh] place-items-center bg-[#FAFAFA] text-[#111111]">
         <Loader2 className="size-6 animate-spin text-[#111111]/40" />
-      </div>
-    );
-  }
-
-  if (accessQ.data && !accessQ.data.allowed) {
-    return (
-      <div
-        className="min-h-[100dvh] bg-[#FAFAFA] px-5 text-[#111111]"
-        style={{ paddingTop: "max(1rem, env(safe-area-inset-top))" }}
-      >
-        <button
-          type="button"
-          onClick={() => navigateBack(router, "/ai-style")}
-          className="mt-2 inline-flex items-center gap-1 text-sm text-[#111111]/50"
-        >
-          <ChevronLeft className="size-4" />
-          {t("common.back")}
-        </button>
-        <div className="mx-auto mt-24 max-w-xs text-center">
-          <Lock className="mx-auto size-6 text-[#111111]/50" />
-          <h1 className="mt-4 text-lg font-semibold tracking-tight">
-            {t("aiStylePage.home.tools.care", { defaultValue: "Parvarish" })}
-          </h1>
-          <p className="mt-2 text-sm text-[#111111]/50">
-            {accessQ.data.detail ||
-              t("aiStylePage.care.plusOnly", {
-                defaultValue: "Parvarish Plus obunasida ochiladi.",
-              })}
-          </p>
-          <Link
-            to="/wallet"
-            search={{ section: "subscriptions", plan: "plus" }}
-            className="mt-8 inline-flex h-12 items-center rounded-full bg-[#111111] px-6 text-sm font-semibold text-white"
-          >
-            {t("aiStylePage.care.seePlans", { defaultValue: "Obunalar" })}
-          </Link>
-        </div>
       </div>
     );
   }
@@ -465,10 +439,7 @@ export function MorphAiCarePage() {
                   disabled={card.key === "growth"}
                   onClick={() => {
                     if (card.key === "growth") return;
-                    if (!accessQ.data?.pro_allowed) {
-                      goSubscribe();
-                      return;
-                    }
+                    if (needPro()) return;
                     if (card.key === "sos") setSosOpen(true);
                     else setPanel("shelf");
                   }}
@@ -797,6 +768,13 @@ export function MorphAiCarePage() {
         </div>
       ) : null}
       <BadHairDaySosSheet open={sosOpen} onClose={() => setSosOpen(false)} />
+      <MorphLimitUpsell
+        open={paywallOpen}
+        onOpenChange={setPaywallOpen}
+        kind="care"
+        me={meQ.data ?? null}
+        preferPlan={paywallPrefer}
+      />
     </div>
   );
 }

@@ -1,14 +1,8 @@
-import { Link } from "@tanstack/react-router";
-import { motion } from "framer-motion";
-import { Crown, Gift, Lock, Sparkles, UserPlus } from "lucide-react";
+import { useNavigate } from "@tanstack/react-router";
+import { ArrowRight, CheckCircle2, Loader2, ShieldCheck, Star, X } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { toast } from "sonner";
 import {
   Drawer,
   DrawerContent,
@@ -16,310 +10,68 @@ import {
   DrawerHeader,
   DrawerTitle,
 } from "@/components/ui/drawer";
-import { SubscriptionPlanAds } from "@/components/subscriptions/SubscriptionPlanAds";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { markPaymeAwaitReturn, storePaymeOrder } from "@/components/subscriptions/PaymeCheckoutStatus";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { useSubscriptionPlans } from "@/hooks/use-subscription";
+import { useSubscriptionCheckout, useSubscriptionPlans } from "@/hooks/use-subscription";
+import { hasValidUserSession } from "@/lib/api/client";
 import type { MorphLimitKind } from "@/lib/morph-plan-limit";
-import { planLabelFromMe } from "@/lib/morph-plan-limit";
-import type { SubscriptionMe } from "@/lib/api/subscriptions";
-import { nextUpgradePlan } from "@/lib/subscription-upgrade";
+import type { SubscriptionMe, SubscriptionPlan } from "@/lib/api/subscriptions";
+import { pickFeatureLabel, pickPlanName } from "@/lib/plan-labels";
+import { getPublicSiteOrigin } from "@/lib/public-origin";
+import { FALLBACK_SUBSCRIPTION_PLANS } from "@/lib/subscription-fallback-plans";
+import { isPlanUpgrade } from "@/lib/subscription-upgrade";
 import { cn } from "@/lib/utils";
+
+const HIDDEN_FEATURE_KEYS = new Set(["voice", "family", "badge", "priority", "sos"]);
 
 type Props = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   kind: MorphLimitKind;
   me: SubscriptionMe | null;
+  /** SOS / Javon — Pro tanlangan holda ochiladi. */
+  preferPlan?: "plus" | "pro";
 };
 
-function MorphLimitUpsellBody({
-  kind,
-  me,
-  onClose,
-}: {
-  kind: MorphLimitKind;
-  me: SubscriptionMe | null;
-  onClose: () => void;
-}) {
-  const { t, i18n } = useTranslation();
-  const plansQ = useSubscriptionPlans();
-  const usage = me?.usage;
-  const planName = planLabelFromMe(me, i18n.language);
-  const credits = me?.referral_credits ?? me?.access?.referral_credits ?? 0;
-  const refGenOn =
-    me?.referral_generation_enabled ?? me?.access?.referral_generation_enabled ?? true;
-  const isTryOn = kind === "tryon";
-  const isChat = kind === "chat";
-  const isVoice = kind === "voice";
-  const isCare = kind === "care";
-  const chatMustSubscribe = isChat && !me?.has_active;
-  const locked =
-    kind === "access" ||
-    kind === "voice" ||
-    isCare ||
-    chatMustSubscribe ||
-    (kind !== "chat" && !me?.has_active && credits <= 0);
-  const plans = plansQ.data ?? [];
-  const activeCode = me?.subscription?.plan_code ?? null;
-  const next = nextUpgradePlan(activeCode);
-
-  const used = isChat
-    ? (usage?.morph_chat_tokens_used ?? 0)
-    : isTryOn
-      ? (usage?.morph_ai_used ?? 0)
-      : (usage?.morph_studio_used ?? 0);
-  const limit = isChat
-    ? (usage?.morph_chat_tokens_limit ?? 0)
-    : isTryOn
-      ? (usage?.morph_ai_limit ?? 0)
-      : (usage?.morph_studio_limit ?? 0);
-  const usagePct = limit > 0 ? Math.min(100, Math.round((used / limit) * 100)) : 100;
-
-  return (
-    <div className="relative space-y-5 text-white">
-      <div className="relative overflow-hidden rounded-[28px] border border-white/10 bg-gradient-to-b from-[#161616] to-[#0a0a0a] px-5 pb-6 pt-8">
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_50%_0%,rgba(255,255,255,0.1),transparent_55%)]"
-        />
-
-        <div className="relative flex flex-col items-center text-center">
-          <motion.div
-            initial={{ scale: 0.85, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ type: "spring", stiffness: 260, damping: 18 }}
-            className="relative"
-          >
-            <span
-              aria-hidden
-              className="absolute inset-0 animate-pulse rounded-[26px] bg-[#F0F0F0] blur-xl"
-            />
-            <span className="relative grid size-[72px] place-items-center rounded-[26px] border border-white/20 bg-white/[0.06] shadow-[inset_0_1px_0_rgba(255,255,255,0.12)] backdrop-blur-md">
-              {locked ? (
-                <Lock className="size-8 text-white" strokeWidth={1.6} />
-              ) : (
-                <Sparkles className="size-8 text-white" strokeWidth={1.6} />
-              )}
-            </span>
-          </motion.div>
-
-          <p className="mt-5 text-[11px] font-bold uppercase tracking-[0.28em] text-white/45">
-            Morf AI
-          </p>
-          <h3 className="mt-2 max-w-[20rem] text-[1.65rem] font-bold leading-[1.15] tracking-tight sm:text-[1.85rem]">
-            {isCare
-              ? t("aiStylePage.care.plusOnly", {
-                  defaultValue: "Parvarish Plus obunasida ochiladi.",
-                })
-              : locked && kind !== "chat" && kind !== "voice"
-                ? t("aiStylePage.limitSheet.accessTitle")
-                : t(
-                    isVoice
-                      ? "aiStylePage.limitSheet.voiceTitle"
-                      : isChat
-                        ? "aiStylePage.limitSheet.chatTitle"
-                        : isTryOn
-                          ? "aiStylePage.limitSheet.tryonTitle"
-                          : "aiStylePage.limitSheet.studioTitle",
-                  )}
-          </h3>
-          <p className="mt-2 max-w-[22rem] text-sm leading-relaxed text-white/50">
-            {locked
-              ? isVoice
-                ? t("aiStylePage.limitSheet.voiceSubtitle")
-                : isChat
-                  ? t("aiStylePage.limitSheet.chatSubtitle")
-                  : t("aiStylePage.limitSheet.accessSubtitle")
-              : planName
-                ? t("aiStylePage.limitSheet.descWithPlan", { plan: planName })
-                : t("aiStylePage.limitSheet.descFree")}
-          </p>
-
-          {locked && refGenOn && !isVoice && !isChat ? (
-            <motion.div
-              initial={{ y: 8, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ delay: 0.15 }}
-              className="mt-5 inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/[0.06] px-4 py-1.5 text-sm font-bold text-white"
-            >
-              <Gift className="size-3.5 text-white/80" strokeWidth={2.25} />
-              {t("aiStylePage.limitSheet.friendGift")}
-            </motion.div>
-          ) : null}
-        </div>
-
-        {limit > 0 && (isChat || !locked) ? (
-          <div className="relative mt-7 space-y-3 rounded-2xl border border-white/10 bg-white/[0.04] p-4">
-            <div className="flex items-center justify-between gap-3">
-              <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-white/45">
-                {planName || "Plan"}
-              </p>
-              <p className="text-sm font-semibold tabular-nums text-white/90">
-                {t("aiStylePage.limitSheet.usage", { pct: usagePct })}
-              </p>
-            </div>
-            <div className="h-1.5 overflow-hidden rounded-full bg-[#F0F0F0]">
-              <div className="h-full rounded-full bg-white" style={{ width: `${usagePct}%` }} />
-            </div>
-          </div>
-        ) : null}
-      </div>
-
-      {locked && !isChat ? (
-        <p className="px-0.5 text-center text-[14px] leading-relaxed text-white/45">
-          {isVoice
-            ? t("aiStylePage.limitSheet.descVoice")
-            : refGenOn
-              ? t("aiStylePage.limitSheet.descLocked", {
-                  defaultValue:
-                    "Yangi hisobda Morf AI ishlamaydi. 1 ta do'stni taklif qilsangiz — 1 generatsiya, yoki obuna sotib oling.",
-                })
-              : t("aiStylePage.limitSheet.descLockedSubOnly", {
-                  defaultValue: "Yangi hisobda Morf AI ishlamaydi. Obuna sotib oling.",
-                })}
-        </p>
-      ) : null}
-
-      {plans.length > 0 && (locked || next || !me?.has_active) ? (
-        <div className="space-y-3">
-          <div className="flex items-center justify-between gap-2 px-0.5">
-            <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-white/40">
-              {me?.has_active
-                ? t("aiStylePage.limitSheet.plansUpgrade")
-                : t("aiStylePage.limitSheet.plansTitle")}
-            </p>
-            <Link
-              to="/wallet"
-              search={{
-                section: "subscriptions",
-                plan: next || "starter",
-                returnTo: "/ai-style",
-              }}
-              onClick={onClose}
-              className="inline-flex items-center gap-1 text-[12px] font-bold text-white/70 hover:text-white"
-            >
-              {t("aiStylePage.limitSheet.seeAll")}
-              <Crown className="size-3" strokeWidth={2.5} />
-            </Link>
-          </div>
-          <SubscriptionPlanAds
-            plans={plans}
-            activeCode={me?.has_active ? activeCode : null}
-            upgradeOnly={Boolean(me?.has_active)}
-            onNavigate={onClose}
-            variant="cards"
-          />
-        </div>
-      ) : null}
-
-      {!me?.has_active ? (
-        <>
-          <Link
-            to="/wallet"
-            search={{ section: "subscriptions", plan: "starter", returnTo: "/ai-style" }}
-            onClick={onClose}
-            className={cn(
-              "flex h-14 items-center justify-center gap-2 rounded-[22px] bg-white text-[15px] font-bold text-[#0a0a0a]",
-              "transition-[transform,background-color] duration-200 hover:bg-white/95 active:scale-[0.985]",
-            )}
-          >
-            <Crown className="size-5" strokeWidth={2.25} />
-            {t("aiStylePage.limitSheet.buyPlan", { defaultValue: "Obuna olish" })}
-          </Link>
-          {refGenOn && !isChat ? (
-            <Link
-              to="/referrals"
-              onClick={onClose}
-              className={cn(
-                "flex h-12 items-center justify-center gap-2 rounded-[22px] border border-white/20 bg-transparent text-[14px] font-bold text-white",
-                "transition-[transform,background-color] duration-200 hover:bg-white/[0.06] active:scale-[0.985]",
-              )}
-            >
-              <UserPlus className="size-4.5" />
-              {t("aiStylePage.limitSheet.openReferrals", {
-                defaultValue: "Do'st taklif qilish",
-              })}
-            </Link>
-          ) : null}
-        </>
-      ) : next ? (
-        <Link
-          to="/wallet"
-          search={{ section: "subscriptions", plan: next, returnTo: "/ai-style" }}
-          onClick={onClose}
-          className={cn(
-            "flex h-14 items-center justify-center rounded-[22px] bg-white text-[15px] font-bold text-[#0a0a0a]",
-            "transition-[transform,background-color] duration-200 hover:bg-white/95 active:scale-[0.985]",
-          )}
-        >
-          {t("aiStylePage.limitSheet.upgradeTo", {
-            plan: next === "plus" ? "Plus" : "Pro",
-          })}
-        </Link>
-      ) : null}
-    </div>
-  );
+function moneyLocale(lang: string) {
+  if (lang.startsWith("ru")) return "ru-RU";
+  if (lang.startsWith("en")) return "en-US";
+  return "uz-UZ";
 }
 
-const shellClass =
-  "morph-ai-type border-white/10 bg-[#0a0a0a] text-white shadow-[0_40px_100px_-40px_rgba(0,0,0,0.9)] " +
-  "[&>button]:text-white/70 [&>button]:hover:text-white [&>button]:hover:bg-[#F0F0F0] " +
-  "[&>button]:ring-offset-[#0a0a0a]";
+function shopPlans(plans: SubscriptionPlan[]): SubscriptionPlan[] {
+  return [...plans]
+    .filter((plan) => plan.code !== "free" && plan.purchasable !== false)
+    .sort((a, b) => a.sort_order - b.sort_order);
+}
 
-export function MorphLimitUpsell({ open, onOpenChange, kind, me }: Props) {
+export function MorphLimitUpsell({ open, onOpenChange, kind, me, preferPlan }: Props) {
   const { t } = useTranslation();
   const isMobile = useIsMobile();
-  const locked =
-    kind === "access" ||
-    kind === "voice" ||
-    kind === "care" ||
-    (kind === "chat" && !me?.has_active) ||
-    (kind !== "chat" &&
-      !me?.has_active &&
-      (me?.referral_credits ?? me?.access?.referral_credits ?? 0) <= 0);
-  const title =
-    kind === "care"
-      ? t("aiStylePage.home.tools.care", { defaultValue: "Parvarish" })
-      : locked
-        ? kind === "voice"
-          ? t("aiStylePage.limitSheet.voiceTitle")
-          : kind === "chat"
-            ? t("aiStylePage.limitSheet.chatTitle")
-            : t("aiStylePage.limitSheet.accessTitle")
-        : t(
-            kind === "chat"
-              ? "aiStylePage.limitSheet.chatTitle"
-              : kind === "tryon"
-                ? "aiStylePage.limitSheet.tryonTitle"
-                : "aiStylePage.limitSheet.studioTitle",
-          );
-  const subtitle =
-    kind === "care"
-      ? t("aiStylePage.care.plusOnly", {
-          defaultValue: "Parvarish Plus obunasida ochiladi.",
-        })
-      : locked
-        ? kind === "voice"
-          ? t("aiStylePage.limitSheet.voiceSubtitle")
-          : kind === "chat"
-            ? t("aiStylePage.limitSheet.chatSubtitle")
-            : t("aiStylePage.limitSheet.accessSubtitle")
-        : t("aiStylePage.limitSheet.subtitle");
+  const hero = paywallHero(kind, t);
+  const title = hero.title;
+  const subtitle = hero.subtitle;
 
   if (isMobile) {
     return (
       <Drawer open={open} onOpenChange={onOpenChange}>
         <DrawerContent
           className={cn(
-            "morph-ai-type rounded-t-[32px] border-white/10 bg-[#0a0a0a] px-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-2 text-white",
-            "[&_[data-vaul-handle]]:bg-white/25",
+            "morph-ai-type max-h-[min(88dvh,620px)] rounded-t-[28px] border-black/10 bg-white px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-1 text-[#111111]",
+            "[&_[data-vaul-handle]]:bg-black/20",
           )}
         >
           <DrawerHeader className="sr-only">
             <DrawerTitle>{title}</DrawerTitle>
             <DrawerDescription>{subtitle}</DrawerDescription>
           </DrawerHeader>
-          <MorphLimitUpsellBody kind={kind} me={me} onClose={() => onOpenChange(false)} />
+          <MorphPaywallBody
+            kind={kind}
+            me={me}
+            preferPlan={preferPlan}
+            onClose={() => onOpenChange(false)}
+          />
         </DrawerContent>
       </Drawer>
     );
@@ -327,18 +79,320 @@ export function MorphLimitUpsell({ open, onOpenChange, kind, me }: Props) {
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent
-        className={cn(
-          shellClass,
-          "max-h-[min(92vh,820px)] w-[min(94vw,580px)] max-w-[580px] gap-0 overflow-y-auto rounded-[32px] p-6 sm:p-7",
-        )}
-      >
+      <DialogContent className="max-h-[min(90vh,640px)] w-[min(94vw,420px)] gap-0 overflow-y-auto rounded-[28px] border-black/10 bg-white p-4 text-[#111111]">
         <DialogHeader className="sr-only">
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription>{subtitle}</DialogDescription>
         </DialogHeader>
-        <MorphLimitUpsellBody kind={kind} me={me} onClose={() => onOpenChange(false)} />
+        <MorphPaywallBody
+          kind={kind}
+          me={me}
+          preferPlan={preferPlan}
+          onClose={() => onOpenChange(false)}
+        />
       </DialogContent>
     </Dialog>
+  );
+}
+
+function paywallHero(
+  kind: MorphLimitKind,
+  t: (key: string, opts?: { defaultValue?: string }) => string,
+) {
+  if (kind === "chat") {
+    return {
+      kicker: t("morph.paywall.titleChatKicker", { defaultValue: "Chat limiti tugadi" }),
+      title: t("morph.paywall.titleChat", { defaultValue: "Suhbatni davom ettiring" }),
+      subtitle: t("morph.paywall.subtitleChat", {
+        defaultValue: "Plus bilan 150 000 token — Morf AI yana javob beradi",
+      }),
+    };
+  }
+  if (kind === "studio") {
+    return {
+      kicker: t("morph.paywall.kickerStudio", { defaultValue: "Studio yopiq" }),
+      title: t("morph.paywall.titleStudio", { defaultValue: "Studio uchun yuqori tarif kerak" }),
+      subtitle: t("morph.paywall.subtitleStudio", {
+        defaultValue: "Plus va Pro da AI tahrir ochiladi",
+      }),
+    };
+  }
+  if (kind === "care") {
+    return {
+      kicker: t("morph.paywall.kickerDay", { defaultValue: "Kunlik taklif" }),
+      title: t("morph.paywall.titleMonth", { defaultValue: "Morf AI ni bir oyga oching" }),
+      subtitle: t("morph.paywall.subtitleCare", {
+        defaultValue: "Parvarish, SOS, ob-havo. To‘lov Payme — siz qaror qilasiz",
+      }),
+    };
+  }
+  return {
+    kicker: t("morph.paywall.kickerDay", { defaultValue: "Kunlik taklif" }),
+    title: t("morph.paywall.titleMonth", { defaultValue: "Morf AI ni bir oyga oching" }),
+    subtitle: t("morph.paywall.subtitleMonth", {
+      defaultValue: "Selfie, chat, Studio. To‘lov Payme — siz qaror qilasiz",
+    }),
+  };
+}
+
+function MorphPaywallBody({
+  kind,
+  me,
+  preferPlan,
+  onClose,
+}: {
+  kind: MorphLimitKind;
+  me: SubscriptionMe | null;
+  preferPlan?: "plus" | "pro";
+  onClose: () => void;
+}) {
+  const { t, i18n } = useTranslation();
+  const lang = i18n.language;
+  const locale = moneyLocale(lang);
+  const navigate = useNavigate();
+  const plansQ = useSubscriptionPlans();
+  const checkout = useSubscriptionCheckout();
+  const [picked, setPicked] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [payOpen, setPayOpen] = useState(false);
+  const hero = paywallHero(kind, t);
+  const activeCode = me?.has_active ? me.subscription?.plan_code ?? null : null;
+
+  const cards = useMemo(() => {
+    const catalog = plansQ.data?.length ? plansQ.data : FALLBACK_SUBSCRIPTION_PLANS;
+    return shopPlans(catalog).filter((plan) => isPlanUpgrade(plan.code, activeCode));
+  }, [plansQ.data, activeCode]);
+
+  useEffect(() => {
+    if (picked && cards.some((p) => p.code === picked)) return;
+    const prefer =
+      (preferPlan === "pro" && cards.find((p) => p.code === "pro")?.code) ||
+      (preferPlan === "plus" && cards.find((p) => p.code === "plus")?.code) ||
+      (kind === "care" && cards.find((p) => p.code === "plus")?.code) ||
+      cards.find((p) => p.highlight)?.code ||
+      cards[0]?.code ||
+      null;
+    setPicked(prefer);
+  }, [cards, kind, picked, preferPlan]);
+
+  const selected = cards.find((p) => p.code === picked) ?? cards[0] ?? null;
+  const included = (selected?.features ?? []).filter(
+    (f) => f.included !== false && !HIDDEN_FEATURE_KEYS.has(f.key),
+  );
+
+  const startCheckout = async () => {
+    if (!selected) return;
+    if (!hasValidUserSession()) {
+      void navigate({ to: "/auth", search: { redirect: "/ai-style" } });
+      return;
+    }
+    setBusy(true);
+    try {
+      const origin = typeof window !== "undefined" ? window.location.origin : getPublicSiteOrigin();
+      const res = await checkout.mutateAsync({
+        plan_code: selected.code,
+        method: "payme",
+        return_url: `${origin}/subscriptions/payme`,
+      });
+      if (!res.checkout_url || !res.order_id) {
+        toast.error(res.message || t("subscriptions.checkoutFailed", { defaultValue: "To‘lov ochilmadi" }));
+        return;
+      }
+      storePaymeOrder(res.order_id);
+      markPaymeAwaitReturn();
+      setPayOpen(false);
+      window.location.assign(res.checkout_url);
+    } catch (error) {
+      const raw =
+        error instanceof Error ? error.message : t("subscriptions.genericError", { defaultValue: "Xatolik" });
+      toast.error(/401|credentials|Authentication/i.test(raw)
+        ? t("profile.paymeLogin", { defaultValue: "To‘lov uchun kiring" })
+        : raw);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const onCta = () => {
+    if (!selected) return;
+    if (!hasValidUserSession()) {
+      void navigate({ to: "/auth", search: { redirect: "/ai-style" } });
+      return;
+    }
+    setPayOpen(true);
+  };
+
+  return (
+    <div className="flex max-h-[min(82dvh,580px)] flex-col">
+      <div className="min-h-0 flex-1 space-y-2.5 overflow-y-auto pb-2">
+        <div>
+          <p className="text-[11px] font-extrabold uppercase tracking-[0.14em] text-[#737373]">
+            {hero.kicker}
+          </p>
+          <h3 className="mt-0.5 text-[22px] font-extrabold leading-7 tracking-tight">{hero.title}</h3>
+          <p className="mt-0.5 text-[13px] leading-5 text-[#737373]">{hero.subtitle}</p>
+        </div>
+
+        {cards.length > 1 ? (
+          <div className="flex rounded-full bg-black/5 p-0.5">
+            {cards.map((plan) => {
+              const on = plan.code === selected?.code;
+              return (
+                <button
+                  key={plan.code}
+                  type="button"
+                  onClick={() => setPicked(plan.code)}
+                  className={cn(
+                    "h-9 flex-1 rounded-full text-[14px] font-semibold",
+                    on ? "bg-[#111111] font-extrabold text-white" : "text-[#737373]",
+                  )}
+                >
+                  {pickPlanName(plan, lang)}
+                </button>
+              );
+            })}
+          </div>
+        ) : null}
+
+        {selected ? (
+          <article className="relative rounded-[22px] border border-black/10 bg-white px-4 py-3">
+            {selected.highlight ? (
+              <span className="absolute right-3 top-3 inline-flex items-center gap-1 rounded-full bg-[#111111] px-2 py-0.5 text-[10px] font-extrabold text-white">
+                <Star className="size-3" fill="currentColor" />
+                {t("morph.paywall.bestValue", { defaultValue: "Eng foydali" })}
+              </span>
+            ) : null}
+            <p className="flex items-baseline gap-1.5 pr-24">
+              <span className="text-[34px] font-extrabold leading-none tracking-tight">
+                {selected.price_uzs.toLocaleString(locale)}
+              </span>
+              <span className="text-[13px] font-semibold text-[#737373]">
+                {t("morph.paywall.currencyShort", { defaultValue: "so‘m" })} /{" "}
+                {t("morph.paywall.monthShort", { defaultValue: "oy" })}
+              </span>
+            </p>
+            <ul className="mt-2.5 space-y-1">
+              {included.map((feature) => (
+                <li key={feature.key} className="flex items-center gap-2">
+                  <CheckCircle2 className="size-4 shrink-0" />
+                  <span className="truncate text-[13px] font-medium">
+                    {pickFeatureLabel(feature, lang)}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </article>
+        ) : (
+          <p className="py-6 text-center text-sm text-[#737373]">
+            {t("profile.highestPlan", { defaultValue: "Siz Pro tarifidasiz — bu eng yuqori reja." })}
+          </p>
+        )}
+      </div>
+
+      {selected ? (
+        <div className="shrink-0 space-y-2 pt-1">
+          <div className="flex gap-1.5">
+            <span className="inline-flex min-w-0 flex-1 items-center justify-center gap-1 rounded-full bg-black/5 px-2 py-1.5 text-[11px] font-semibold text-[#737373]">
+              <ShieldCheck className="size-3.5 shrink-0" />
+              <span className="truncate">
+                {t("morph.paywall.autoRenewShort", { defaultValue: "Avtoyangilanish" })}
+              </span>
+            </span>
+            <span className="inline-flex min-w-0 flex-1 items-center justify-center gap-1 rounded-full bg-black/5 px-2 py-1.5 text-[11px] font-semibold text-[#737373]">
+              {t("morph.paywall.cancelAnytimeShort", { defaultValue: "Istalgan vaqtda bekor" })}
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={onCta}
+            disabled={busy}
+            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-[#111111] text-[15px] font-extrabold text-white disabled:opacity-50"
+          >
+            {busy ? (
+              <Loader2 className="size-5 animate-spin" />
+            ) : (
+              <>
+                {t("morph.paywall.ctaCards", { defaultValue: "Uzcard / Humo orqali to‘lash" })}
+                <ArrowRight className="size-4" />
+              </>
+            )}
+          </button>
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={onClose}
+          className="mt-2 h-11 w-full rounded-full bg-black/5 text-sm font-bold"
+        >
+          {t("common.close", { defaultValue: "Yopish" })}
+        </button>
+      )}
+
+      {payOpen ? (
+        <PaySheet
+          busy={busy}
+          onClose={() => setPayOpen(false)}
+          onPay={() => void startCheckout()}
+        />
+      ) : null}
+    </div>
+  );
+}
+
+function PaySheet({ busy, onClose, onPay }: { busy: boolean; onClose: () => void; onPay: () => void }) {
+  const { t } = useTranslation();
+  const steps = [
+    t("morph.paywall.payStep1", { defaultValue: "Karta raqami va amal qilish muddatini kiriting" }),
+    t("morph.paywall.payStep2", {
+      defaultValue: "SMS-kod bilan tasdiqlang — u karta ulangan raqamga keladi",
+    }),
+    t("morph.paywall.payStep3", { defaultValue: "Ilovaga qayting va Premium oling" }),
+  ];
+  return (
+    <div className="fixed inset-0 z-[80] flex items-end bg-black/40" onClick={onClose}>
+      <div
+        className="w-full rounded-t-3xl bg-white px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-3 text-[#111111]"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <div className="mb-2 flex items-center justify-between">
+          <span className="mx-auto h-1 w-10 rounded-full bg-black/15" />
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label={t("common.close", { defaultValue: "Yopish" })}
+            className="grid size-8 place-items-center rounded-full bg-black/5"
+          >
+            <X className="size-4" />
+          </button>
+        </div>
+        <p className="text-lg font-extrabold">
+          {t("morph.paywall.paySheetTitle", { defaultValue: "Uzcard yoki Humo kartasi bilan to‘lov" })}
+        </p>
+        <p className="mt-1 text-sm text-[#737373]">
+          {t("morph.paywall.paySheetLead", {
+            defaultValue:
+              "Hozir xavfsiz Payme sahifasi ochiladi. O‘zbekistondagi istalgan bank kartasi — Uzcard yoki Humo — mos keladi.",
+          })}
+        </p>
+        <ol className="mt-3 space-y-1.5 rounded-2xl bg-black/5 p-3">
+          {steps.map((line, index) => (
+            <li key={line} className="flex items-center gap-2 text-[13px] font-medium">
+              <span className="grid size-5 shrink-0 place-items-center rounded-full bg-[#111111] text-[11px] font-bold text-white">
+                {index + 1}
+              </span>
+              {line}
+            </li>
+          ))}
+        </ol>
+        <button
+          type="button"
+          disabled={busy}
+          onClick={onPay}
+          className="mt-3 flex h-12 w-full items-center justify-center gap-2 rounded-full bg-[#111111] text-[15px] font-extrabold text-white disabled:opacity-60"
+        >
+          {busy ? <Loader2 className="size-5 animate-spin" /> : t("morph.paywall.paySheetCta", { defaultValue: "To‘lash" })}
+        </button>
+      </div>
+    </div>
   );
 }
