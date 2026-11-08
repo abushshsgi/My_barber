@@ -127,7 +127,7 @@ export function SettingsSubscriptionsPanel() {
         : sub.plan_code.toUpperCase()
       : me?.current_plan
         ? pickPlanName(me.current_plan, lang)
-        : "Free";
+        : t("subscriptions.free", { defaultValue: "Free" });
 
   const startCheckout = async (planCode: string) => {
     if (!hasValidUserSession()) {
@@ -204,7 +204,7 @@ export function SettingsSubscriptionsPanel() {
                 ? isCancelled
                   ? t("profile.subCancelledActive", { defaultValue: "Bekor qilingan — Premium hali faol" })
                   : t("profile.subActive", { defaultValue: "Faol" })
-                : "Free"}
+                : t("subscriptions.free", { defaultValue: "Free" })}
             </p>
           )}
         </div>

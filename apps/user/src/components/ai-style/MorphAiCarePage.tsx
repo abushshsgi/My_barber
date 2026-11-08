@@ -1,9 +1,10 @@
-import { useNavigate, useRouter } from "@tanstack/react-router";
+import { Link, useNavigate, useRouter } from "@tanstack/react-router";
 import {
   ChevronLeft,
   ChevronRight,
   Heart,
   Loader2,
+  Lock,
   Plus,
   Search,
   SlidersHorizontal,
@@ -171,10 +172,47 @@ export function MorphAiCarePage() {
     return true;
   };
 
-  if (hairQ.isLoading) {
+  if (accessQ.isLoading || hairQ.isLoading) {
     return (
       <div className="grid min-h-[100dvh] place-items-center bg-[#FAFAFA] text-[#111111]">
         <Loader2 className="size-6 animate-spin text-[#111111]/40" />
+      </div>
+    );
+  }
+
+  if (accessQ.data && !accessQ.data.allowed) {
+    return (
+      <div
+        className="min-h-[100dvh] bg-[#FAFAFA] px-5 text-[#111111]"
+        style={{ paddingTop: "max(1rem, env(safe-area-inset-top))" }}
+      >
+        <button
+          type="button"
+          onClick={() => navigateBack(router, "/ai-style")}
+          className="mt-2 inline-flex items-center gap-1 text-sm text-[#111111]/50"
+        >
+          <ChevronLeft className="size-4" />
+          {t("common.back")}
+        </button>
+        <div className="mx-auto mt-24 max-w-xs text-center">
+          <Lock className="mx-auto size-6 text-[#111111]/50" />
+          <h1 className="mt-4 text-lg font-semibold tracking-tight">
+            {t("aiStylePage.home.tools.care", { defaultValue: "Parvarish" })}
+          </h1>
+          <p className="mt-2 text-sm text-[#111111]/50">
+            {accessQ.data.detail ||
+              t("aiStylePage.care.plusOnly", {
+                defaultValue: "Parvarish Plus obunasida ochiladi.",
+              })}
+          </p>
+          <Link
+            to="/wallet"
+            search={{ section: "subscriptions", plan: "plus" }}
+            className="mt-8 inline-flex h-12 items-center rounded-full bg-[#111111] px-6 text-sm font-semibold text-white"
+          >
+            {t("aiStylePage.care.seePlans", { defaultValue: "Obunalar" })}
+          </Link>
+        </div>
       </div>
     );
   }

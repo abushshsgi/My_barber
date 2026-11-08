@@ -282,6 +282,7 @@ export function AiStyleFlow({ audience, menPersonaId: menPersonaIdProp, focusSty
               onOpenGallery={() => void gatedOpenGallery()}
               ensureMorphAccess={limitGate.ensureTryOn}
               ensureMorphStudio={limitGate.ensureStudio}
+              ensureMorphCare={limitGate.ensureCare}
             />
           }
         />

@@ -190,8 +190,8 @@ export function MorphChatAppView({
           <button
             type="button"
             disabled
-            aria-label={t("aiStylePage.chat.voiceSoon")}
-            title={t("aiStylePage.chat.voiceSoon")}
+            aria-label={t("common.soon", { defaultValue: "Tez orada" })}
+            title={t("common.soon", { defaultValue: "Tez orada" })}
             className="grid size-8 shrink-0 cursor-not-allowed place-items-center rounded-full bg-black/5 text-[#111111]/30"
           >
             <Mic className="size-4" strokeWidth={2.25} />

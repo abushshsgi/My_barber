@@ -165,6 +165,10 @@ export function MorphAiStudioPage() {
     staleTime: 60 * 60 * 1000,
   });
 
+  useEffect(() => {
+    void limitGate.ensureStudio();
+  }, [limitGate.ensureStudio]);
+
   const categories = catalogQ.data?.categories?.length
     ? catalogQ.data.categories
     : FALLBACK_CATEGORIES;

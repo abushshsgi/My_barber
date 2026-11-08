@@ -24,6 +24,8 @@ import { useMorphAppearance } from "@/hooks/use-morph-appearance";
 import { useMe } from "@/hooks/use-me";
 import { useMorphAiPrivacy } from "@/hooks/use-morf-ai-privacy";
 import { setLang, type AppLang } from "@/i18n/config";
+import { LANG_FLAGS } from "@/lib/locale-display";
+import { MorphAppearanceSettings } from "@/components/settings/MorphAppearanceSettings";
 import { deleteMyAccount } from "@/lib/api/user";
 import type { MorphChatLimits } from "@/lib/api/ai";
 import { logout } from "@/lib/auth";
@@ -43,10 +45,10 @@ type ConfirmSpec = {
 const THREADS_KEY = "mysaloon.morphAi.chat.threads.v2";
 const LEGACY_THREADS_KEY = "mysaloon.morphAi.chat.threads.v1";
 
-const LANGS: { code: AppLang; label: string }[] = [
-  { code: "uz", label: "O‘zbek" },
-  { code: "ru", label: "Русский" },
-  { code: "en", label: "English" },
+const LANGS: { code: AppLang; labelKey: "profile.languageUz" | "profile.languageRu" | "profile.languageEn" }[] = [
+  { code: "uz", labelKey: "profile.languageUz" },
+  { code: "ru", labelKey: "profile.languageRu" },
+  { code: "en", labelKey: "profile.languageEn" },
 ];
 
 function usagePercent(limits: MorphChatLimits | null | undefined): number {
@@ -104,7 +106,15 @@ export function MorphMobileSettings() {
   const limits = remote?.limits ?? null;
   const pct = usagePercent(limits);
   const name = me?.full_name?.trim() || t("profile.guest", { defaultValue: "Foydalanuvchi" });
-  const email = me?.display_email || me?.email || "";
+  const email = me?.display_email || "";
+  const phone = me?.phone || "";
+  const contactValue = email || phone;
+  const contactTitle = email
+    ? t("chat.settings.email", { defaultValue: "Elektron pochta" })
+    : phone
+      ? t("settings.fields.phone", { defaultValue: "Telefon" })
+      : t("chat.settings.email", { defaultValue: "Elektron pochta" });
+  const contactEmpty = t("chat.settings.emailEmpty", { defaultValue: "Pochta ulanmagan" });
   const lang = (i18n.resolvedLanguage || i18n.language || "uz").split("-")[0];
 
   const limitTitle =
@@ -244,7 +254,7 @@ export function MorphMobileSettings() {
                 <Item
                   icon={Globe}
                   title={t("profile.language", { defaultValue: "Til" })}
-                  subtitle={LANGS.find((item) => item.code === lang)?.label}
+                  subtitle={t(LANGS.find((item) => item.code === lang)?.labelKey ?? "profile.languageUz")}
                   onClick={() => setPage("language")}
                   last
                 />
@@ -253,8 +263,8 @@ export function MorphMobileSettings() {
               <Section title={t("chat.settings.accountGroup", { defaultValue: "Hisob" })}>
                 <Item
                   icon={Mail}
-                  title={t("chat.settings.email", { defaultValue: "Elektron pochta" })}
-                  subtitle={email || t("chat.settings.emailEmpty", { defaultValue: "Pochta ulanmagan" })}
+                  title={contactTitle}
+                  subtitle={contactValue || contactEmpty}
                 />
                 <button type="button" onClick={() => setPage("limits")} className="flex w-full items-center pl-3.5 text-left">
                   <span className="w-[3.25rem] shrink-0 pr-2">
@@ -314,7 +324,7 @@ export function MorphMobileSettings() {
                 <Item
                   icon={Mic}
                   title={t("chat.settings.voiceInput", { defaultValue: "Ovozli kiritish" })}
-                  subtitle={t("chat.settings.voiceSoon", { defaultValue: "Ovozli kiritish tez orada" })}
+                  subtitle={t("common.soon", { defaultValue: "Tez orada" })}
                   disabled
                 />
                 <Item
@@ -400,11 +410,16 @@ export function MorphMobileSettings() {
               onClick={() => void setLang(item.code)}
               className={cn(
                 "flex w-full items-center justify-between px-4 py-3.5 text-left text-[15px] font-semibold",
-                index < LANGS.length - 1 && "border-b border-black/10",
-                lang === item.code && "bg-black/[0.04]",
+                index < LANGS.length - 1 && "border-b border-border",
+                lang === item.code && "bg-muted",
               )}
             >
-              {item.label}
+              <span className="flex items-center gap-3">
+                <span className="text-lg" aria-hidden>
+                  {LANG_FLAGS[item.code]}
+                </span>
+                {t(item.labelKey)}
+              </span>
               {lang === item.code ? <span className="text-xs">✓</span> : null}
             </button>
           ))}
@@ -412,34 +427,9 @@ export function MorphMobileSettings() {
       ) : null}
 
       {page === "appearance" ? (
-        <Section>
-          <ChoiceRow
-            title={t("chat.settings.themeLight", { defaultValue: "Yorug‘ rejim" })}
-            active={appearance.appearance.theme === "light"}
-            onClick={() => appearance.setTheme("light")}
-          />
-          <ChoiceRow
-            title={t("chat.settings.themeDark", { defaultValue: "Qorong‘i rejim" })}
-            active={appearance.appearance.theme === "dark"}
-            onClick={() => appearance.setTheme("dark")}
-          />
-          <ChoiceRow
-            title={t("chat.settings.fontSmall", { defaultValue: "Kichik" })}
-            active={appearance.appearance.fontSize === "s"}
-            onClick={() => appearance.setFontSize("s")}
-          />
-          <ChoiceRow
-            title={t("chat.settings.fontMedium", { defaultValue: "O‘rtacha" })}
-            active={appearance.appearance.fontSize === "m"}
-            onClick={() => appearance.setFontSize("m")}
-          />
-          <ChoiceRow
-            title={t("chat.settings.fontLarge", { defaultValue: "Katta" })}
-            active={appearance.appearance.fontSize === "l"}
-            onClick={() => appearance.setFontSize("l")}
-            last
-          />
-        </Section>
+        <div className="pt-2">
+          <MorphAppearanceSettings embedded />
+        </div>
       ) : null}
 
       {page === "limits" ? (
@@ -680,32 +670,6 @@ function Toggle({
       <span className={cn("relative h-7 w-12 shrink-0 rounded-full", value ? "bg-[var(--morph-fg,#111)]" : "bg-black/15")}>
         <span className={cn("absolute top-0.5 size-6 rounded-full bg-white transition", value ? "left-5" : "left-0.5")} />
       </span>
-    </button>
-  );
-}
-
-function ChoiceRow({
-  title,
-  active,
-  onClick,
-  last,
-}: {
-  title: string;
-  active: boolean;
-  onClick: () => void;
-  last?: boolean;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={cn(
-        "flex w-full items-center justify-between px-4 py-3.5 text-left text-[15px] font-semibold",
-        !last && "border-b border-black/10",
-      )}
-    >
-      {title}
-      {active ? <span className="text-xs">✓</span> : null}
     </button>
   );
 }

@@ -62,7 +62,7 @@ export function useDisplayUser() {
     me?.full_name ||
     [firstName, lastName].filter(Boolean).join(" ") ||
     cached?.name ||
-    "Foydalanuvchi";
+    "";
   return {
     name: fullName,
     firstName: firstName || fullName.split(" ")[0] || "",

@@ -121,6 +121,7 @@
   body {
     background-color: var(--color-background);
     color: var(--color-foreground);
+    font-size: calc(16px * var(--morph-font-scale, 1));
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;

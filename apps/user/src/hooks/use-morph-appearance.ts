@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import {
   DEFAULT_MORPH_APPEARANCE,
+  applyAppearanceToDocument,
   readMorphAppearance,
   writeMorphAppearance,
   type MorphAppearance,
@@ -12,7 +13,9 @@ export function useMorphAppearance() {
   const [appearance, setAppearance] = useState<MorphAppearance>(DEFAULT_MORPH_APPEARANCE);
 
   useEffect(() => {
-    setAppearance(readMorphAppearance());
+    const current = readMorphAppearance();
+    setAppearance(current);
+    applyAppearanceToDocument(current);
   }, []);
 
   const setTheme = useCallback((theme: MorphThemeName) => {

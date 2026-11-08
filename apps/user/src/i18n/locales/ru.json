@@ -51,7 +51,18 @@
     "retry": "Повторить",
     "empty": "Пока пусто",
     "currencySom": "сум",
-    "perMonth": "мес"
+    "perMonth": "мес",
+    "soon": "Скоро",
+    "home": "Главная",
+    "reload": "Обновить",
+    "guest": "Пользователь"
+  },
+  "errors": {
+    "pageNotFound": "Страница не найдена",
+    "pageNotFoundHint": "Этой страницы нет или она перенесена.",
+    "generic": "Произошла ошибка",
+    "chunkReload": "Сайт обновился — перезагрузите страницу.",
+    "pageLoadFail": "Не удалось загрузить страницу. Попробуйте снова."
   },
   "scrollToTop": {
     "label": "Наверх"
@@ -448,6 +459,10 @@
     "allOffTitle": "Все каналы отключены",
     "allOffHint": "Включите нужные каналы в настройках",
     "enableAll": "Включить",
+    "pushTitle": "Push",
+    "pushHint": "Разрешите уведомления в браузере.",
+    "enablePush": "Включить push",
+    "pushDenied": "Браузер не дал разрешение",
     "read": "Прочитано",
     "filters": {
       "all": "Все",
@@ -478,6 +493,14 @@
     "giftcard": "Подарочная карта",
     "settings": "Настройки",
     "language": "Язык",
+    "languageUz": "O‘zbek",
+    "languageRu": "Русский",
+    "languageEn": "English",
+    "googleAccount": "Аккаунт Google",
+    "googleAccountSub": "На этом аккаунте нет пароля. Вход остаётся через Google.",
+    "signInMethod": "Способ входа",
+    "phoneVerified": "Аккаунт подтверждён номером телефона.",
+    "security": "Безопасность",
     "support": "Поддержка",
     "supportSubtitle": "FAQ, жалобы и чат поддержки",
     "privacy": "Конфиденциальность",
@@ -734,6 +757,7 @@
     "perMonth": "в месяц",
     "active": "Активна",
     "subscribe": "Оформить",
+    "free": "Free",
     "premiumName": "AI Premium",
     "autoRenewOff": "Автопродление: выключено",
     "cancelledActive": "Отменена — Premium ещё действует",
@@ -952,6 +976,7 @@
       "legalName": "Официальное имя",
       "phone": "Телефон",
       "phoneHint": "Для смены номера обратитесь в центр поддержки.",
+      "phoneComingSoon": "Номер телефона временно отключён.",
       "email": "Email",
       "emailNotSet": "Не указан",
       "emailHint": "Добавьте email — отправим код и ссылку для подтверждения.",

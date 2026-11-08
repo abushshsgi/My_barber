@@ -17,7 +17,7 @@ export class MorphPlanLimitError extends Error {
   }
 }
 
-export type MorphLimitKind = "tryon" | "studio" | "access" | "chat" | "voice";
+export type MorphLimitKind = "tryon" | "studio" | "access" | "chat" | "voice" | "care";
 
 export function isMorphPlanLimitError(error: unknown): error is MorphPlanLimitError {
   return error instanceof MorphPlanLimitError;
@@ -40,10 +40,13 @@ export function isMorphRateLimitMessage(message: string): boolean {
   );
 }
 
-export function morphTryOnUsageBlocked(usage: SubscriptionUsage): boolean {
-  const limit = usage.morph_ai_limit ?? 0;
+export function morphTryOnUsageBlocked(usage: SubscriptionUsage | undefined, me?: SubscriptionMe | null): boolean {
+  if (me?.access?.morph_ai_allowed === false) return true;
+  const remaining = usage?.morph_ai_remaining;
+  if (typeof remaining === "number") return remaining <= 0;
+  const limit = usage?.morph_ai_limit ?? 0;
   if (limit <= 0) return true;
-  return usage.morph_ai_remaining <= 0 || usage.morph_ai_used >= limit;
+  return (usage?.morph_ai_used ?? 0) >= limit;
 }
 
 export function morphStudioUsageBlocked(usage: SubscriptionUsage): boolean {
@@ -59,13 +62,36 @@ export function morphChatTokensBlocked(usage: SubscriptionUsage): boolean {
   return (usage.morph_chat_tokens_remaining ?? 0) < 200;
 }
 
-/** Yangi user — faol obuna (yoki trial) bo'lmasa Morf AI yopiq. */
+/** Try-on: obuna kvotasi, bepul 1× yoki referal krediti. */
 export function morphAccessBlocked(me: SubscriptionMe | null | undefined): boolean {
   if (!me) return true;
   if (me.access && typeof me.access.morph_ai_allowed === "boolean") {
     return !me.access.morph_ai_allowed;
   }
+  const remaining = me.usage?.morph_ai_remaining ?? 0;
+  const credits = me.referral_credits ?? me.access?.referral_credits ?? 0;
+  const freeLeft =
+    (me.access?.free_tryon_remaining ?? 0) > 0 ||
+    me.access?.free_tryon_available === true ||
+    me.free_tryon?.available === true;
+  if (remaining > 0 || credits > 0 || freeLeft) return false;
   return !me.has_active;
+}
+
+export function morphStudioFeatureBlocked(me: SubscriptionMe | null | undefined): boolean {
+  if (!me) return true;
+  if (typeof me.access?.morph_studio_allowed === "boolean") {
+    return !me.access.morph_studio_allowed;
+  }
+  return (me.usage?.morph_studio_limit ?? 0) <= 0;
+}
+
+export function morphCareBlocked(me: SubscriptionMe | null | undefined): boolean {
+  if (!me) return true;
+  if (typeof me.access?.morph_care_allowed === "boolean") {
+    return !me.access.morph_care_allowed;
+  }
+  return me.morph_care !== true;
 }
 
 export function throwFromMorphApiError(res: Response, body: unknown, fallback: string): never {

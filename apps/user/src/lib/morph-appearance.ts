@@ -37,6 +37,16 @@ export function readMorphAppearance(): MorphAppearance {
   }
 }
 
+export function applyAppearanceToDocument(next: MorphAppearance): void {
+  if (typeof document === "undefined") return;
+  const root = document.documentElement;
+  root.classList.toggle("dark", next.theme === "dark");
+  root.setAttribute("data-morph-theme", next.theme);
+  root.style.setProperty("--morph-font-scale", String(MORPH_FONT_SCALE[next.fontSize]));
+  const themeMeta = document.querySelector('meta[name="theme-color"]');
+  if (themeMeta) themeMeta.setAttribute("content", next.theme === "dark" ? "#0a0a0a" : "#ffffff");
+}
+
 export function writeMorphAppearance(next: MorphAppearance): void {
   if (!canUseStorage()) return;
   try {
@@ -44,4 +54,8 @@ export function writeMorphAppearance(next: MorphAppearance): void {
   } catch {
     /* ignore */
   }
+  applyAppearanceToDocument(next);
 }
+
+/** FOUC oldini olish — html class dark ni paint dan oldin qo‘yadi. */
+export const APPEARANCE_BOOT_SCRIPT = `(function(){try{var r=JSON.parse(localStorage.getItem("mysaloon.morphAppearance.v1")||"{}");var d=r.theme==="dark";var el=document.documentElement;el.classList.toggle("dark",d);el.setAttribute("data-morph-theme",d?"dark":"light");var s=r.fontSize==="s"?0.9:r.fontSize==="l"?1.16:1;el.style.setProperty("--morph-font-scale",String(s));var m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute("content",d?"#0a0a0a":"#ffffff");}catch(e){}})();`;

@@ -51,7 +51,18 @@
     "retry": "Try again",
     "empty": "Nothing here yet",
     "currencySom": "UZS",
-    "perMonth": "mo"
+    "perMonth": "mo",
+    "soon": "Coming soon",
+    "home": "Home",
+    "reload": "Refresh",
+    "guest": "User"
+  },
+  "errors": {
+    "pageNotFound": "Page not found",
+    "pageNotFoundHint": "This page does not exist or has been moved.",
+    "generic": "Something went wrong",
+    "chunkReload": "The site was updated — please reload.",
+    "pageLoadFail": "The page failed to load. Please try again."
   },
   "scrollToTop": {
     "label": "Back to top"
@@ -448,6 +459,10 @@
     "allOffTitle": "All channels are off",
     "allOffHint": "Turn on the channels you need in settings",
     "enableAll": "Enable",
+    "pushTitle": "Push",
+    "pushHint": "Allow notifications in the browser.",
+    "enablePush": "Enable push",
+    "pushDenied": "The browser blocked permission",
     "read": "Read",
     "filters": {
       "all": "All",
@@ -478,6 +493,14 @@
     "giftcard": "Gift card",
     "settings": "Settings",
     "language": "Language",
+    "languageUz": "O‘zbek",
+    "languageRu": "Русский",
+    "languageEn": "English",
+    "googleAccount": "Google account",
+    "googleAccountSub": "This account has no password. Sign-in stays through Google.",
+    "signInMethod": "Sign-in method",
+    "phoneVerified": "Your account is verified with a phone number.",
+    "security": "Security",
     "support": "Support",
     "supportSubtitle": "FAQ, complaints, and support chat",
     "privacy": "Privacy",
@@ -734,6 +757,7 @@
     "perMonth": "per month",
     "active": "Active",
     "subscribe": "Subscribe",
+    "free": "Free",
     "premiumName": "AI Premium",
     "autoRenewOff": "Auto-renew: off",
     "cancelledActive": "Cancelled — Premium still active",
@@ -952,6 +976,7 @@
       "legalName": "Legal name",
       "phone": "Phone",
       "phoneHint": "Contact support to change your phone number.",
+      "phoneComingSoon": "Phone number is temporarily paused.",
       "email": "Email",
       "emailNotSet": "Not added",
       "emailHint": "Add an email — we'll send a verification code and link.",

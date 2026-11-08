@@ -139,8 +139,10 @@ export function PaymeCheckoutStatus({ orderId }: { orderId: string }) {
         if (data.status !== "pending") {
           clearPaymeOrder();
           if (data.status === "paid") {
+            if (data.me) {
+              qc.setQueryData(["subscriptions", "me"], data.me);
+            }
             void qc.invalidateQueries({ queryKey: ["subscriptions"] });
-            void qc.invalidateQueries({ queryKey: ["subscriptions", "me"] });
           }
           return;
         }

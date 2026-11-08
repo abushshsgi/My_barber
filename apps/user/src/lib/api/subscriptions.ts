@@ -34,6 +34,7 @@ export type SubscriptionUsage = {
   morph_ai_used: number;
   morph_ai_limit: number;
   morph_ai_remaining: number;
+  plan_code?: string;
   morph_studio_used: number;
   morph_studio_limit: number;
   morph_studio_remaining: number;
@@ -87,14 +88,25 @@ export type SubscriptionMe = {
   family_members_max: number | null;
   family_unlimited: boolean;
   days_remaining?: number | null;
+  free_tryon?: {
+    eligible: boolean;
+    available: boolean;
+    used: boolean;
+    used_at: string | null;
+  };
   access?: {
     morph_ai_allowed: boolean;
     morph_chat_allowed?: boolean;
     morph_voice_allowed?: boolean;
+    morph_studio_allowed?: boolean;
+    morph_care_allowed?: boolean;
+    morph_care_pro_allowed?: boolean;
     reason: string | null;
     message: string | null;
     referral_credits?: number;
     referral_generation_enabled?: boolean;
+    free_tryon_available?: boolean;
+    free_tryon_remaining?: number;
   };
   referral_credits?: number;
   referral_generation_enabled?: boolean;

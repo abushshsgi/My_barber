@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import "@fontsource-variable/space-grotesk";
 import "@fontsource-variable/inter";
 import "@fontsource-variable/jost";
@@ -14,6 +15,7 @@ import { UserLayout } from "../components/UserLayout";
 import { DeployRecovery } from "../components/DeployRecovery";
 import { ClientOnly } from "../components/ClientOnly";
 import { CLIENT_BOOT_SCRIPT } from "../lib/client-boot-script";
+import { APPEARANCE_BOOT_SCRIPT } from "../lib/morph-appearance";
 import { Toaster } from "sonner";
 import { APP_BUILD_ID } from "../lib/app-build-id";
 import { isChunkLoadError, reloadForChunkError } from "../lib/chunk-reload";
@@ -36,22 +38,27 @@ gtag('config', '${GA_MEASUREMENT_ID}');
   : "";
 
 function NotFoundComponent() {
+  const { t } = useTranslation();
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-6">
       <div className="max-w-md text-center">
         <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-muted-foreground">
           404
         </p>
-        <h1 className="mt-3 text-3xl font-bold tracking-tight">Sahifa topilmadi</h1>
+        <h1 className="mt-3 text-3xl font-bold tracking-tight">
+          {t("errors.pageNotFound", { defaultValue: "Sahifa topilmadi" })}
+        </h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          Bu sahifa mavjud emas yoki ko'chirilgan.
+          {t("errors.pageNotFoundHint", {
+            defaultValue: "Bu sahifa mavjud emas yoki ko'chirilgan.",
+          })}
         </p>
         <div className="mt-6">
           <Link
             to="/"
             className="inline-flex items-center justify-center rounded-2xl bg-primary px-5 py-3 text-sm font-bold tracking-wide text-primary-foreground"
           >
-            Bosh sahifaga
+            {t("common.home", { defaultValue: "Bosh sahifa" })}
           </Link>
         </div>
       </div>
@@ -60,6 +67,7 @@ function NotFoundComponent() {
 }
 
 function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
+  const { t } = useTranslation();
   console.error(error);
 
   useEffect(() => {
@@ -78,11 +86,13 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-6">
       <div className="max-w-md text-center">
-        <h1 className="text-2xl font-bold tracking-tight">Xatolik yuz berdi</h1>
+        <h1 className="text-2xl font-bold tracking-tight">
+          {t("errors.generic", { defaultValue: "Xatolik yuz berdi" })}
+        </h1>
         <p className="mt-2 text-sm text-muted-foreground">
           {isChunk
-            ? "Sayt yangilandi — sahifani qayta yuklang."
-            : "Sahifa yuklanmadi. Qaytadan urinib ko'ring."}
+            ? t("errors.chunkReload", { defaultValue: "Sayt yangilandi — sahifani qayta yuklang." })
+            : t("errors.pageLoadFail", { defaultValue: "Sahifa yuklanmadi. Qaytadan urinib ko'ring." })}
         </p>
         {import.meta.env.DEV ? (
           <p className="mt-3 break-all text-left text-xs font-mono text-muted-foreground">
@@ -102,13 +112,15 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
             }}
             className="rounded-2xl bg-primary px-5 py-3 text-sm font-bold text-primary-foreground"
           >
-            {isChunk ? "Yangilash" : "Qaytadan"}
+            {isChunk
+              ? t("common.reload", { defaultValue: "Yangilash" })
+              : t("common.retry", { defaultValue: "Qaytadan" })}
           </button>
           <a
             href="/"
             className="rounded-2xl border border-border bg-background px-5 py-3 text-sm font-bold"
           >
-            Bosh sahifa
+            {t("common.home", { defaultValue: "Bosh sahifa" })}
           </a>
         </div>
       </div>
@@ -162,6 +174,7 @@ function RootShell({ children }: { children: React.ReactNode }) {
     <html lang="uz">
       <head>
         <HeadContent />
+        <script dangerouslySetInnerHTML={{ __html: APPEARANCE_BOOT_SCRIPT }} />
         <script dangerouslySetInnerHTML={{ __html: CLIENT_BOOT_SCRIPT }} />
         {GA_ENABLED ? (
           <>

@@ -16,6 +16,7 @@ export type ApiUser = {
   onboarding_completed: boolean;
   avatar: string | null;
   has_password?: boolean;
+  sign_in_method?: "google" | "phone";
   date_joined: string;
   require_profile_location?: boolean;
 };

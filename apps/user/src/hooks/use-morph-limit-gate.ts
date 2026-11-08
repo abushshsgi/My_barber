@@ -3,7 +3,9 @@ import { useCallback, useState } from "react";
 import { fetchSubscriptionMe, type SubscriptionMe } from "@/lib/api/subscriptions";
 import {
   morphAccessBlocked,
+  morphCareBlocked,
   morphChatTokensBlocked,
+  morphStudioFeatureBlocked,
   morphStudioUsageBlocked,
   morphTryOnUsageBlocked,
   type MorphLimitKind,
@@ -21,11 +23,8 @@ export function useMorphLimitGate() {
   const [me, setMe] = useState<SubscriptionMe | null>(null);
 
   const refreshMe = useCallback(async () => {
-    const data = await qc.fetchQuery({
-      queryKey: ["subscriptions", "me"],
-      queryFn: fetchSubscriptionMe,
-      staleTime: 0,
-    });
+    const data = await fetchSubscriptionMe();
+    qc.setQueryData(["subscriptions", "me"], data);
     setMe(data);
     return data;
   }, [qc]);
@@ -44,7 +43,6 @@ export function useMorphLimitGate() {
         if (!opts?.silent) showLimit("access", data);
         return false;
       } catch {
-        // Offline / auth — server baribir to'sadi.
         return true;
       }
     },
@@ -55,13 +53,13 @@ export function useMorphLimitGate() {
     async (opts?: EnsureOpts): Promise<boolean> => {
       try {
         const data = await refreshMe();
-        if (morphAccessBlocked(data)) {
-          if (!opts?.silent) showLimit("access", data);
+        if (morphAccessBlocked(data) || morphTryOnUsageBlocked(data.usage, data)) {
+          if (!opts?.silent) {
+            showLimit(morphAccessBlocked(data) ? "access" : "tryon", data);
+          }
           return false;
         }
-        if (!morphTryOnUsageBlocked(data.usage)) return true;
-        if (!opts?.silent) showLimit("tryon", data);
-        return false;
+        return true;
       } catch {
         return true;
       }
@@ -73,12 +71,26 @@ export function useMorphLimitGate() {
     async (opts?: EnsureOpts): Promise<boolean> => {
       try {
         const data = await refreshMe();
-        if (morphAccessBlocked(data)) {
-          if (!opts?.silent) showLimit("access", data);
+        if (!data.has_active || morphStudioFeatureBlocked(data)) {
+          if (!opts?.silent) showLimit("studio", data);
           return false;
         }
         if (!morphStudioUsageBlocked(data.usage)) return true;
         if (!opts?.silent) showLimit("studio", data);
+        return false;
+      } catch {
+        return true;
+      }
+    },
+    [refreshMe, showLimit],
+  );
+
+  const ensureCare = useCallback(
+    async (opts?: EnsureOpts): Promise<boolean> => {
+      try {
+        const data = await refreshMe();
+        if (!morphCareBlocked(data)) return true;
+        if (!opts?.silent) showLimit("care", data);
         return false;
       } catch {
         return true;
@@ -107,7 +119,7 @@ export function useMorphLimitGate() {
     async (opts?: EnsureOpts): Promise<boolean> => {
       try {
         const data = await refreshMe();
-        const voiceAllowed = data.access?.morph_voice_allowed === true || data.has_active === true;
+        const voiceAllowed = data.access?.morph_voice_allowed === true;
         if (!voiceAllowed) {
           if (!opts?.silent) showLimit("voice", data);
           return false;
@@ -129,9 +141,12 @@ export function useMorphLimitGate() {
       try {
         const data = await refreshMe();
         const kindToShow =
-          limitKind === "voice" || limitKind === "chat" || limitKind === "access"
+          limitKind === "voice" ||
+          limitKind === "chat" ||
+          limitKind === "access" ||
+          limitKind === "care"
             ? limitKind
-            : morphAccessBlocked(data)
+            : morphAccessBlocked(data) && limitKind === "tryon"
               ? "access"
               : limitKind;
         showLimit(kindToShow, data);
@@ -152,9 +167,13 @@ export function useMorphLimitGate() {
     ensureAccess,
     ensureTryOn,
     ensureStudio,
+    ensureCare,
     ensureChat,
     ensureVoice,
     openFromApiLimit,
-    invalidateUsage: () => void qc.invalidateQueries({ queryKey: ["subscriptions", "me"] }),
+    invalidateUsage: () => {
+      void qc.invalidateQueries({ queryKey: ["subscriptions"] });
+      void refreshMe().catch(() => undefined);
+    },
   };
 }

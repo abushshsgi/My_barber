@@ -385,15 +385,9 @@ export function MorphAiChatPage() {
       }
       const hair = assumeHair ?? (hairQ.data?.complete ? hairQ.data : null);
       if (!hair) {
-        const mobile =
-          typeof window !== "undefined" && window.matchMedia("(max-width: 1023px)").matches;
-        if (mobile) {
-          if (!raw) setInput("");
-          setHairDraft(trimmed);
-          setChatOpen(true);
-          return null;
-        }
-        void navigate({ to: "/ai-style/care" });
+        if (!raw) setInput("");
+        setHairDraft(trimmed);
+        setChatOpen(true);
         return null;
       }
       setChatOpen(true);
@@ -510,14 +504,8 @@ export function MorphAiChatPage() {
           return null;
         }
         if (err instanceof MorphHairProfileRequiredError) {
-          const mobile =
-            typeof window !== "undefined" && window.matchMedia("(max-width: 1023px)").matches;
-          if (mobile) {
-            setHairDraft(trimmed);
-            setChatOpen(true);
-            return null;
-          }
-          void navigate({ to: "/ai-style/care" });
+          setHairDraft(trimmed);
+          setChatOpen(true);
           return null;
         }
         const message = err instanceof Error ? err.message : t("aiStylePage.chat.error");
@@ -645,27 +633,6 @@ export function MorphAiChatPage() {
       {loggedIn && (hairQ.isLoading || hairQ.isPending) ? (
         <div className="grid flex-1 place-items-center">
           <Loader2 className="size-6 animate-spin text-[#111111]/40" />
-        </div>
-      ) : loggedIn && !hairQ.data?.complete ? (
-        <div className="mx-auto flex min-h-0 flex-1 max-w-sm flex-col items-center justify-center px-6 text-center">
-          <Lock className="size-6 text-[#111111]/45" />
-          <h1 className="mt-4 text-xl font-semibold tracking-tight">
-            {t("aiStylePage.chat.hairGate.title", {
-              defaultValue: "Avval soch holatingizni ayting",
-            })}
-          </h1>
-          <p className="mt-2 text-sm leading-relaxed text-[#111111]/55">
-            {t("aiStylePage.chat.hairGate.body", {
-              defaultValue:
-                "To‘liq holatni tanlamaguncha chatbot va parvarish rejasini ocholmaymiz. Shunga qarab mos maslahat, reja va mahsulot beramiz.",
-            })}
-          </p>
-          <Link
-            to="/ai-style/care"
-            className="mt-8 inline-flex h-12 items-center rounded-full bg-[#111111] px-6 text-sm font-semibold text-white"
-          >
-            {t("aiStylePage.chat.hairGate.cta", { defaultValue: "Holatimni belgilash" })}
-          </Link>
         </div>
       ) : (
         <>
@@ -799,8 +766,8 @@ export function MorphAiChatPage() {
                 type="button"
                 disabled
                 className="grid size-10 shrink-0 cursor-not-allowed place-items-center rounded-2xl bg-black/5 text-[#111111]/30"
-                aria-label={t("aiStylePage.chat.voiceSoon")}
-                title={t("aiStylePage.chat.voiceSoon")}
+                aria-label={t("common.soon", { defaultValue: "Tez orada" })}
+                title={t("common.soon", { defaultValue: "Tez orada" })}
               >
                 <Mic className="size-4" strokeWidth={2.25} />
               </button>

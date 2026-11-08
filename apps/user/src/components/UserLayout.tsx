@@ -65,7 +65,6 @@ export function UserLayout({ children }: { children: React.ReactNode }) {
   const { appearance } = useMorphAppearance();
   const { chatUnread, notificationsUnread } = useNavBadges();
   const flags = useLayoutRouteFlags(pathname);
-  const morphChrome = flags.isMorphType || shell === "morph";
   const showMobileDock = shouldShowMobileDock(pathname);
   const isAuth = pathname === "/auth";
   const showScrollTop = shouldShowScrollToTop(pathname);
@@ -73,7 +72,14 @@ export function UserLayout({ children }: { children: React.ReactNode }) {
   useReleaseStuckDocumentScroll(pathname);
 
   if (isAuth) {
-    return <div className="min-h-screen bg-background">{children}</div>;
+    return (
+      <div
+        className="min-h-screen bg-background text-foreground"
+        data-morph-theme={appearance.theme}
+      >
+        {children}
+      </div>
+    );
   }
 
   const scrollTop = showScrollTop ? (
@@ -95,11 +101,11 @@ export function UserLayout({ children }: { children: React.ReactNode }) {
         flags.isMorphType && "morph-ai-type",
         !flags.isMorphType && shell === "morph" && "morph-shell-mobile",
       )}
-      data-morph-theme={morphChrome ? appearance.theme : undefined}
+      data-morph-theme={appearance.theme}
       style={
-        morphChrome
-          ? ({ ["--morph-font-scale"]: String(MORPH_FONT_SCALE[appearance.fontSize]) } as CSSProperties)
-          : undefined
+        {
+          ["--morph-font-scale"]: String(MORPH_FONT_SCALE[appearance.fontSize]),
+        } as CSSProperties
       }
     >
       <ClientOnly>

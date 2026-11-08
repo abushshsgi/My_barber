@@ -123,11 +123,13 @@ export function useSettingsPage() {
 
   const langLabel = SETTINGS_LANGS.find((l) => l.code === activeLang)?.label ?? activeLang;
   const securityMeta =
-    me?.has_password === true
-      ? t("settings.hubs.security.metaSet", { defaultValue: "Parol o'rnatilgan" })
-      : me?.has_password === false
-        ? t("settings.hubs.security.metaSms", { defaultValue: "SMS orqali kirish" })
-        : t("settings.hubs.security.metaDefault", { defaultValue: "Kirish usuli" });
+    me?.sign_in_method === "google"
+      ? t("profile.googleAccount", { defaultValue: "Google hisobi" })
+      : me?.has_password === true
+        ? t("settings.hubs.security.metaSet", { defaultValue: "Parol o'rnatilgan" })
+        : me?.has_password === false
+          ? t("settings.hubs.security.metaSms", { defaultValue: "SMS orqali kirish" })
+          : t("settings.hubs.security.metaDefault", { defaultValue: "Kirish usuli" });
 
   return {
     t,

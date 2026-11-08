@@ -1,15 +1,8 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { ChevronLeft } from "lucide-react";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { LogOut } from "lucide-react";
+import { ChevronLeft, KeyRound, Laptop, LogOut, Mail, Smartphone } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { enableWebPush } from "@/lib/native-push";
 import { toast } from "sonner";
 import { AudienceSwitch } from "@/components/AudienceSwitch";
 import { SettingsEditActions, SettingsFieldRow } from "@/components/settings/SettingsFieldRow";
@@ -61,6 +54,60 @@ function Toggle({ value, onChange }: { value: boolean; onChange: (v: boolean) =>
         )}
       />
     </button>
+  );
+}
+
+function SecurityRow({
+  icon: Icon,
+  title,
+  subtitle,
+  action,
+  onAction,
+  to,
+  search,
+  last,
+}: {
+  icon: typeof Mail;
+  title: string;
+  subtitle?: string;
+  action?: string;
+  onAction?: () => void;
+  to?: string;
+  search?: Record<string, unknown>;
+  last?: boolean;
+}) {
+  return (
+    <div
+      className={cn(
+        "flex items-center gap-3 px-4 py-3.5",
+        !last && "border-b border-border",
+      )}
+    >
+      <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-muted">
+        <Icon className="size-4" strokeWidth={1.8} />
+      </span>
+      <div className="min-w-0 flex-1">
+        <p className="text-[15px] font-semibold text-foreground">{title}</p>
+        {subtitle ? <p className="mt-0.5 text-xs text-muted-foreground">{subtitle}</p> : null}
+      </div>
+      {action && to ? (
+        <Link
+          to={to}
+          search={search}
+          className="shrink-0 text-sm font-semibold text-foreground underline underline-offset-2"
+        >
+          {action}
+        </Link>
+      ) : action && onAction ? (
+        <button
+          type="button"
+          onClick={onAction}
+          className="shrink-0 text-sm font-semibold text-foreground underline underline-offset-2"
+        >
+          {action}
+        </button>
+      ) : null}
+    </div>
   );
 }
 
@@ -204,7 +251,6 @@ export function SettingsPanelContent({
   const [editLang, setEditLang] = useState(initialEdit === "language");
   const [editAudience, setEditAudience] = useState(initialEdit === "audience");
   const [editCurrency, setEditCurrency] = useState(false);
-  const [phoneDialogOpen, setPhoneDialogOpen] = useState(false);
   const [nameDraft, setNameDraft] = useState(user.name);
 
   useEffect(() => {
@@ -484,10 +530,11 @@ export function SettingsPanelContent({
             <SettingsFieldRow
               label={t("settings.fields.phone", { defaultValue: "Telefon" })}
               value={user.phone || undefined}
-              emptyLabel={t("settings.row.notProvided", { defaultValue: "Ko'rsatilmagan" })}
-              hint={t("settings.fields.phoneHint")}
-              actionLabel={t("settings.actions.edit", { defaultValue: "Tahrirlash" })}
-              onAction={() => setPhoneDialogOpen(true)}
+              emptyLabel={t("common.soon", { defaultValue: "Tez orada" })}
+              hint={t("settings.fields.phoneComingSoon", {
+                defaultValue: "Telefon raqami vaqtincha to‘xtatilgan.",
+              })}
+              actionLabel={t("common.soon", { defaultValue: "Tez orada" })}
             />
             <SettingsFieldRow
               label={t("settings.fields.address", { defaultValue: "Manzil" })}
@@ -505,28 +552,30 @@ export function SettingsPanelContent({
         )}
 
         {section === "security" && me?.has_password !== undefined && !showManageDetail && (
-          <>
-            <SettingsFieldRow
-              label={t("settings.fields.password", { defaultValue: "Parol" })}
-              value={securityMeta}
-              actionLabel={
-                me.has_password
-                  ? t("settings.actions.edit", { defaultValue: "Tahrirlash" })
-                  : t("settings.actions.add", { defaultValue: "Qo'shish" })
-              }
-              cancelLabel={cancelLabel}
-              expanded={editPassword}
-              onAction={() => {
-                if (editPassword) {
-                  setEditPassword(false);
-                  setOldPassword("");
-                  setNewPassword("");
-                } else {
-                  setEditPassword(true);
+          <div className="overflow-hidden rounded-2xl border border-border bg-card">
+            {me.sign_in_method === "google" || (!user.phone && me.sign_in_method !== "phone") ? (
+              <SecurityRow
+                icon={Mail}
+                title={t("profile.googleAccount", { defaultValue: "Google hisobi" })}
+                subtitle={t("profile.googleAccountSub", {
+                  defaultValue: "Bu hisobda parol yo'q. Kirish Google orqali qoladi.",
+                })}
+              />
+            ) : (
+              <SecurityRow
+                icon={KeyRound}
+                title={t("settings.fields.password", { defaultValue: "Parol" })}
+                subtitle={securityMeta}
+                action={
+                  me.has_password
+                    ? t("settings.actions.edit", { defaultValue: "Tahrirlash" })
+                    : t("settings.actions.add", { defaultValue: "Qo'shish" })
                 }
-              }}
-            >
-              <div className="space-y-3">
+                onAction={() => setEditPassword((v) => !v)}
+              />
+            )}
+            {editPassword && me.sign_in_method !== "google" ? (
+              <div className="space-y-3 border-t border-border px-4 py-4">
                 {me.has_password ? (
                   <input
                     type="password"
@@ -534,7 +583,7 @@ export function SettingsPanelContent({
                     value={oldPassword}
                     onChange={(e) => setOldPassword(e.target.value)}
                     autoFocus
-                    className="w-full rounded-lg border border-border px-3 py-2.5 text-sm outline-none focus:border-foreground"
+                    className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm outline-none focus:border-foreground"
                   />
                 ) : (
                   <p className="text-xs text-muted-foreground">{t("settings.passwordNotSet")}</p>
@@ -544,7 +593,7 @@ export function SettingsPanelContent({
                   placeholder={t("settings.newPassword")}
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
-                  className="w-full rounded-lg border border-border px-3 py-2.5 text-sm outline-none focus:border-foreground"
+                  className="w-full rounded-lg border border-border bg-background px-3 py-2.5 text-sm outline-none focus:border-foreground"
                 />
                 <SettingsEditActions
                   saveLabel={
@@ -565,28 +614,31 @@ export function SettingsPanelContent({
                   }}
                 />
               </div>
-            </SettingsFieldRow>
-            <SettingsFieldRow
-              label={t("settings.fields.loginMethod", { defaultValue: "Kirish usuli" })}
-              value={user.phone}
-              hint={t("settings.fields.loginMethodHint", {
-                defaultValue: "Hisobingiz telefon raqami orqali tasdiqlangan.",
-              })}
+            ) : null}
+            <SecurityRow
+              icon={me.sign_in_method === "google" ? Mail : Smartphone}
+              title={t("profile.signInMethod", { defaultValue: "Kirish usuli" })}
+              subtitle={
+                me.sign_in_method === "google"
+                  ? "Google"
+                  : t("profile.phoneVerified", {
+                      defaultValue: "Hisobingiz telefon raqami orqali tasdiqlangan.",
+                    })
+              }
             />
-            <SettingsFieldRow
-              label={t("settings.fields.sessions", { defaultValue: "Faol sessiyalar" })}
-              value={t("settings.fields.sessionsMeta", {
+            <SecurityRow
+              icon={Laptop}
+              title={t("settings.fields.sessions", { defaultValue: "Faol sessiyalar" })}
+              subtitle={t("settings.fields.sessionsMeta", {
                 count: sessionsCount,
                 defaultValue: "{{count}} ta qurilma",
               })}
-              hint={t("settings.fields.sessionsHint", {
-                defaultValue: "Hisobingiz ochiq bo'lgan qurilmalarni ko'ring va bekor qiling.",
-              })}
-              actionLabel={t("settings.actions.manage", { defaultValue: "Boshqarish" })}
-              actionTo="/settings"
-              actionSearch={manageSearch}
+              action={t("settings.actions.manage", { defaultValue: "Boshqarish" })}
+              last
+              to="/settings"
+              search={manageSearch}
             />
-          </>
+          </div>
         )}
 
         {section === "security" && showManageDetail ? (
@@ -622,25 +674,46 @@ export function SettingsPanelContent({
           </>
         ) : null}
 
-        {section === "notifications" &&
-          notificationItems
-            .filter((item) => item.key !== "reduceMotion")
-            .map((item) => (
-              <SettingsFieldRow
-                key={item.key}
-                label={item.label}
-                value={onOff(prefs[item.key])}
-                trailing={
-                  <Toggle
-                    value={prefs[item.key]}
-                    onChange={(v) => {
-                      updatePref(item.key, v);
-                      toast.success(t("settings.saved", { defaultValue: "Saqlandi" }));
-                    }}
-                  />
-                }
-              />
-            ))}
+        {section === "notifications" && (
+          <div className="overflow-hidden rounded-2xl border border-border bg-card">
+            <SettingsFieldRow
+              label={t("notifications.pushTitle", { defaultValue: "Push" })}
+              hint={t("notifications.pushHint", {
+                defaultValue: "Brauzerda bildirishnoma ruxsatini bering.",
+              })}
+              actionLabel={t("notifications.enablePush", { defaultValue: "Yoqish" })}
+              onAction={() => {
+                void enableWebPush().then((perm) => {
+                  if (perm === "granted") {
+                    toast.success(t("settings.saved", { defaultValue: "Saqlandi" }));
+                  } else if (perm === "denied") {
+                    toast.error(
+                      t("notifications.pushDenied", { defaultValue: "Brauzer ruxsat bermadi" }),
+                    );
+                  }
+                });
+              }}
+            />
+            {notificationItems
+              .filter((item) => item.key !== "reduceMotion")
+              .map((item) => (
+                <SettingsFieldRow
+                  key={item.key}
+                  label={item.label}
+                  value={onOff(prefs[item.key])}
+                  trailing={
+                    <Toggle
+                      value={prefs[item.key]}
+                      onChange={(v) => {
+                        updatePref(item.key, v);
+                        toast.success(t("settings.saved", { defaultValue: "Saqlandi" }));
+                      }}
+                    />
+                  }
+                />
+              ))}
+          </div>
+        )}
 
         {section === "preferences" && (
           <>
@@ -925,23 +998,6 @@ export function SettingsPanelContent({
         </div>
       ) : null}
 
-      <Dialog open={phoneDialogOpen} onOpenChange={setPhoneDialogOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>{t("settings.fields.phone", { defaultValue: "Telefon" })}</DialogTitle>
-            <DialogDescription>{t("settings.fields.phoneHint")}</DialogDescription>
-          </DialogHeader>
-          {user.phone ? <p className="text-sm font-medium text-foreground">{user.phone}</p> : null}
-          <Link
-            to="/settings"
-            search={{ section: "help", manage: true }}
-            className="inline-flex w-fit cursor-pointer rounded-lg bg-foreground px-4 py-2.5 text-sm font-semibold text-background"
-            onClick={() => setPhoneDialogOpen(false)}
-          >
-            {t("settings.actions.contactSupport", { defaultValue: "Yordam markaziga yozish" })}
-          </Link>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

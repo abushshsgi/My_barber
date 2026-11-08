@@ -51,10 +51,12 @@ function MorphLimitUpsellBody({
   const isTryOn = kind === "tryon";
   const isChat = kind === "chat";
   const isVoice = kind === "voice";
+  const isCare = kind === "care";
   const chatMustSubscribe = isChat && !me?.has_active;
   const locked =
     kind === "access" ||
     kind === "voice" ||
+    isCare ||
     chatMustSubscribe ||
     (kind !== "chat" && !me?.has_active && credits <= 0);
   const plans = plansQ.data ?? [];
@@ -105,17 +107,21 @@ function MorphLimitUpsellBody({
             Morf AI
           </p>
           <h3 className="mt-2 max-w-[20rem] text-[1.65rem] font-bold leading-[1.15] tracking-tight sm:text-[1.85rem]">
-            {locked && kind !== "chat" && kind !== "voice"
-              ? t("aiStylePage.limitSheet.accessTitle")
-              : t(
-                  isVoice
-                    ? "aiStylePage.limitSheet.voiceTitle"
-                    : isChat
-                      ? "aiStylePage.limitSheet.chatTitle"
-                      : isTryOn
-                        ? "aiStylePage.limitSheet.tryonTitle"
-                        : "aiStylePage.limitSheet.studioTitle",
-                )}
+            {isCare
+              ? t("aiStylePage.care.plusOnly", {
+                  defaultValue: "Parvarish Plus obunasida ochiladi.",
+                })
+              : locked && kind !== "chat" && kind !== "voice"
+                ? t("aiStylePage.limitSheet.accessTitle")
+                : t(
+                    isVoice
+                      ? "aiStylePage.limitSheet.voiceTitle"
+                      : isChat
+                        ? "aiStylePage.limitSheet.chatTitle"
+                        : isTryOn
+                          ? "aiStylePage.limitSheet.tryonTitle"
+                          : "aiStylePage.limitSheet.studioTitle",
+                  )}
           </h3>
           <p className="mt-2 max-w-[22rem] text-sm leading-relaxed text-white/50">
             {locked
@@ -266,30 +272,39 @@ export function MorphLimitUpsell({ open, onOpenChange, kind, me }: Props) {
   const locked =
     kind === "access" ||
     kind === "voice" ||
+    kind === "care" ||
     (kind === "chat" && !me?.has_active) ||
     (kind !== "chat" &&
       !me?.has_active &&
       (me?.referral_credits ?? me?.access?.referral_credits ?? 0) <= 0);
-  const title = locked
-    ? kind === "voice"
-      ? t("aiStylePage.limitSheet.voiceTitle")
-      : kind === "chat"
-        ? t("aiStylePage.limitSheet.chatTitle")
-        : t("aiStylePage.limitSheet.accessTitle")
-    : t(
-        kind === "chat"
-          ? "aiStylePage.limitSheet.chatTitle"
-          : kind === "tryon"
-            ? "aiStylePage.limitSheet.tryonTitle"
-            : "aiStylePage.limitSheet.studioTitle",
-      );
-  const subtitle = locked
-    ? kind === "voice"
-      ? t("aiStylePage.limitSheet.voiceSubtitle")
-      : kind === "chat"
-        ? t("aiStylePage.limitSheet.chatSubtitle")
-        : t("aiStylePage.limitSheet.accessSubtitle")
-    : t("aiStylePage.limitSheet.subtitle");
+  const title =
+    kind === "care"
+      ? t("aiStylePage.home.tools.care", { defaultValue: "Parvarish" })
+      : locked
+        ? kind === "voice"
+          ? t("aiStylePage.limitSheet.voiceTitle")
+          : kind === "chat"
+            ? t("aiStylePage.limitSheet.chatTitle")
+            : t("aiStylePage.limitSheet.accessTitle")
+        : t(
+            kind === "chat"
+              ? "aiStylePage.limitSheet.chatTitle"
+              : kind === "tryon"
+                ? "aiStylePage.limitSheet.tryonTitle"
+                : "aiStylePage.limitSheet.studioTitle",
+          );
+  const subtitle =
+    kind === "care"
+      ? t("aiStylePage.care.plusOnly", {
+          defaultValue: "Parvarish Plus obunasida ochiladi.",
+        })
+      : locked
+        ? kind === "voice"
+          ? t("aiStylePage.limitSheet.voiceSubtitle")
+          : kind === "chat"
+            ? t("aiStylePage.limitSheet.chatSubtitle")
+            : t("aiStylePage.limitSheet.accessSubtitle")
+        : t("aiStylePage.limitSheet.subtitle");
 
   if (isMobile) {
     return (

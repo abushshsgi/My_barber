@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils";
 import { getNotificationLinkProps } from "@/lib/notification-links";
 import { getAuthUserId } from "@/lib/auth-user";
 import { readScopedNotifPrefsRaw, writeScopedNotifPrefsRaw } from "@/lib/user-prefs";
+import { enableWebPush, registerPushNotifications } from "@/lib/native-push";
 
 export const Route = createFileRoute("/notifications")({
   head: () => ({ meta: [{ title: "Bildirishnomalar — mysaloon.uz" }] }),
@@ -103,6 +104,10 @@ function Notifications() {
   const [showSettings, setShowSettings] = useState(false);
   const { prefs, update, mounted } = usePrefs();
 
+  useEffect(() => {
+    void registerPushNotifications();
+  }, []);
+
   const markOne = (id: string) => {
     const num = parseInt(id, 10);
     if (Number.isFinite(num)) markOneMutation.mutate(num);
@@ -171,6 +176,13 @@ function Notifications() {
               })}
             </span>
           </div>
+          <button
+            type="button"
+            onClick={() => void enableWebPush()}
+            className="mb-3 w-full rounded-2xl border border-border bg-card px-4 py-3 text-left text-sm font-semibold"
+          >
+            {t("notifications.enablePush", { defaultValue: "Push yoqish" })}
+          </button>
           <ul className="space-y-1">
             {CHANNELS.map((c) => {
               const Icon = c.icon;
@@ -248,23 +260,23 @@ function Notifications() {
           <EmptyState icon={<Bell className="h-7 w-7" />} title={t("notifications.empty")} />
         </div>
       ) : (
-        <ul className="divide-y divide-border">
+        <ul className="space-y-2 px-4 py-3">
           {items.map((n) => {
             const Icon = TYPE_ICON[n.type];
             const content = (
               <div
                 onClick={() => markOne(n.id)}
                 className={cn(
-                  "flex gap-3 px-4 py-4 transition-colors active:bg-surface",
-                  !n.read && "bg-surface/30",
+                  "flex gap-3 rounded-2xl border border-border bg-card px-3.5 py-3.5 transition-colors",
+                  !n.read && "border-foreground/20",
                 )}
               >
                 <div className="relative shrink-0">
-                  <div className="grid size-11 place-items-center rounded-full bg-surface">
+                  <div className="grid size-11 place-items-center rounded-2xl bg-muted">
                     <Icon className="size-[18px]" strokeWidth={2} />
                   </div>
                   {!n.read ? (
-                    <span className="absolute -right-0.5 -top-0.5 size-2.5 rounded-full bg-foreground ring-2 ring-background" />
+                    <span className="absolute -right-0.5 -top-0.5 size-2.5 rounded-full bg-foreground ring-2 ring-card" />
                   ) : null}
                 </div>
                 <div className="min-w-0 flex-1">

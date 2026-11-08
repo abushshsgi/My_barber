@@ -51,7 +51,18 @@
     "retry": "Qayta urinish",
     "empty": "Hozircha bo'sh",
     "currencySom": "so'm",
-    "perMonth": "oy"
+    "perMonth": "oy",
+    "soon": "Tez orada",
+    "home": "Bosh sahifa",
+    "reload": "Yangilash",
+    "guest": "Foydalanuvchi"
+  },
+  "errors": {
+    "pageNotFound": "Sahifa topilmadi",
+    "pageNotFoundHint": "Bu sahifa mavjud emas yoki ko'chirilgan.",
+    "generic": "Xatolik yuz berdi",
+    "chunkReload": "Sayt yangilandi — sahifani qayta yuklang.",
+    "pageLoadFail": "Sahifa yuklanmadi. Qaytadan urinib ko'ring."
   },
   "scrollToTop": {
     "label": "Yuqoriga"
@@ -448,6 +459,10 @@
     "allOffTitle": "Hamma kanallar o'chirilgan",
     "allOffHint": "Sozlamalardan kerakli kanallarni yoqing",
     "enableAll": "Yoqish",
+    "pushTitle": "Push",
+    "pushHint": "Brauzerda bildirishnoma ruxsatini bering.",
+    "enablePush": "Push yoqish",
+    "pushDenied": "Brauzer ruxsat bermadi",
     "read": "O'qildi",
     "filters": {
       "all": "Hammasi",
@@ -478,6 +493,14 @@
     "giftcard": "Sovg'a karta",
     "settings": "Sozlamalar",
     "language": "Til",
+    "languageUz": "O‘zbek",
+    "languageRu": "Русский",
+    "languageEn": "English",
+    "googleAccount": "Google hisobi",
+    "googleAccountSub": "Bu hisobda parol yo'q. Kirish Google orqali qoladi.",
+    "signInMethod": "Kirish usuli",
+    "phoneVerified": "Hisobingiz telefon raqami orqali tasdiqlangan.",
+    "security": "Xavfsizlik",
     "support": "Yordam",
     "supportSubtitle": "FAQ, shikoyat va support chat",
     "privacy": "Maxfiylik",
@@ -734,6 +757,7 @@
     "perMonth": "har oy",
     "active": "Faol",
     "subscribe": "Obuna bo'lish",
+    "free": "Free",
     "premiumName": "AI Premium",
     "autoRenewOff": "Avtomatik yangilanish: o‘chirilgan",
     "cancelledActive": "Bekor qilingan — Premium hali faol",
@@ -952,6 +976,7 @@
       "legalName": "Rasmiy ism",
       "phone": "Telefon",
       "phoneHint": "Telefon raqamini o'zgartirish uchun yordam markaziga murojaat qiling.",
+      "phoneComingSoon": "Telefon raqami vaqtincha to‘xtatilgan.",
       "email": "Email",
       "emailNotSet": "Qo'shilmagan",
       "emailHint": "Email qo'shing — tasdiqlash kodi va havola yuboriladi.",

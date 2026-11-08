@@ -1,8 +1,7 @@
 import { Phone } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { formatUzLocalPhone } from "@/lib/phone";
 
-/** Telefon login — hozircha faqat ko'rinish, ishlamaydi. */
+/** Telefon login — vaqtincha yopiq, faqat «Tez orada». */
 export function PhoneSignInComingSoon() {
   const { t } = useTranslation();
 
@@ -23,8 +22,8 @@ export function PhoneSignInComingSoon() {
           type="tel"
           disabled
           readOnly
-          value={formatUzLocalPhone("901234567")}
-          className="min-w-0 flex-1 cursor-not-allowed border-0 bg-transparent px-4 text-sm font-bold leading-none text-muted-foreground"
+          placeholder="90-123-45-67"
+          className="min-w-0 flex-1 cursor-not-allowed border-0 bg-transparent px-4 text-sm font-bold leading-none text-muted-foreground placeholder:text-muted-foreground/50"
           aria-disabled
         />
         <span className="flex shrink-0 items-center px-3.5 text-muted-foreground/50">
@@ -41,9 +40,6 @@ export function PhoneSignInComingSoon() {
           {t("auth.phoneComingSoon")}
         </span>
       </button>
-      <p className="mt-2.5 text-center text-[11px] leading-relaxed text-muted-foreground">
-        {t("auth.phoneComingSoonHint")}
-      </p>
     </div>
   );
 }

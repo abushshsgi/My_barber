@@ -39,6 +39,7 @@ type Props = {
   onOpenGallery: () => void;
   ensureMorphAccess?: () => Promise<boolean>;
   ensureMorphStudio?: () => Promise<boolean>;
+  ensureMorphCare?: () => Promise<boolean>;
 };
 
 type SampleCard = {
@@ -129,14 +130,18 @@ export function MorphAiHome({
   onOpenGallery,
   ensureMorphAccess,
   ensureMorphStudio,
+  ensureMorphCare,
 }: Props) {
   const { t } = useTranslation();
   const router = useRouter();
   const navigate = useNavigate();
   const reduceMotion = useReducedMotion();
   const meQ = useSubscriptionMe();
-  const morphLocked = Boolean(meQ.data && !meQ.data.has_active);
-  const usage = meQ.data?.has_active ? meQ.data.usage : null;
+  const tryOnOpen = meQ.data?.access?.morph_ai_allowed !== false;
+  const morphLocked = Boolean(
+    meQ.data && !meQ.data.has_active && meQ.data.access?.morph_ai_allowed === false,
+  );
+  const usage = meQ.data?.usage ?? null;
   const remaining = usage?.morph_ai_remaining;
   const limit = usage?.morph_ai_limit;
   const { personaId } = useExplorePersona();
@@ -219,14 +224,16 @@ export function MorphAiHome({
 
   const openCare = () => {
     void (async () => {
-      if (ensureMorphAccess && !(await ensureMorphAccess())) return;
+      const gate = ensureMorphCare ?? ensureMorphAccess;
+      if (gate && !(await gate())) return;
       void navigate({ to: "/ai-style/care" });
     })();
   };
 
   const openIngredientScan = () => {
     void (async () => {
-      if (ensureMorphAccess && !(await ensureMorphAccess())) return;
+      const gate = ensureMorphCare ?? ensureMorphAccess;
+      if (gate && !(await gate())) return;
       void navigate({ to: "/ai-style/care/ingredient" });
     })();
   };
@@ -363,7 +370,7 @@ export function MorphAiHome({
             transition={{ duration: 3.2, repeat: Infinity, ease: "easeInOut" }}
           >
             <Sparkles className="size-6 md:size-7 lg:size-8" strokeWidth={1.75} />
-            {!morphLocked && remaining != null && limit != null && limit > 0 ? (
+            {tryOnOpen && remaining != null && limit != null && limit > 0 ? (
               <LimitBadge remaining={remaining} limit={limit} />
             ) : null}
           </motion.div>
