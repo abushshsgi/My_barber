@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 import logging
+import os
 from datetime import datetime, timedelta
 from decimal import Decimal
+from urllib.parse import urlencode, urlparse
 
 from django.core.cache import cache
 from django.db import transaction
@@ -119,6 +121,56 @@ def _safe_receipt_meta(receipt: dict) -> dict:
     }
 
 
+def _default_user_origin() -> str:
+    raw = os.environ.get("FRONTEND_USER_ORIGIN", "").strip()
+    if raw:
+        first = raw.split(",")[0].strip().strip('"').strip("'").rstrip("/")
+        parsed = urlparse(first)
+        if parsed.scheme in ("http", "https") and parsed.netloc and "@" not in parsed.netloc:
+            return f"{parsed.scheme}://{parsed.netloc}"
+    from django.conf import settings
+
+    if getattr(settings, "DEBUG", False):
+        return "http://localhost:8080"
+    return "https://www.mysaloon.uz"
+
+
+def _origin_allowed(origin: str) -> bool:
+    from django.conf import settings
+
+    parsed = urlparse((origin or "").strip())
+    if not parsed.scheme or not parsed.hostname or "@" in (parsed.netloc or ""):
+        return False
+    if parsed.port and parsed.hostname.lower() not in ("localhost", "127.0.0.1"):
+        return False
+    host = parsed.hostname.lower()
+    if parsed.scheme == "http":
+        return bool(getattr(settings, "DEBUG", False) and host in ("localhost", "127.0.0.1"))
+    if parsed.scheme != "https":
+        return False
+    allowed: set[str] = {"https://mysaloon.uz", "https://www.mysaloon.uz"}
+    raw = os.environ.get("FRONTEND_USER_ORIGIN", "")
+    for part in raw.split(","):
+        cleaned = part.strip().strip('"').strip("'").rstrip("/").lower()
+        if cleaned.startswith("https://"):
+            allowed.add(cleaned)
+    return f"{parsed.scheme}://{parsed.netloc}".lower().rstrip("/") in allowed
+
+
+def safe_payme_return_url(raw: str, order_id: str) -> str:
+    """Open redirect yo'q — faqat o'z saytimizdagi to'lov holati sahifasi."""
+    order = (order_id or "").strip()
+    if not order.startswith("sub-") or any(ch in order for ch in " /?#&"):
+        raise PaymePaymentError("Buyurtma identifikatori noto'g'ri.")
+    parsed = urlparse((raw or "").strip())
+    origin = ""
+    if parsed.scheme in ("http", "https") and parsed.netloc and "@" not in parsed.netloc:
+        origin = f"{parsed.scheme}://{parsed.netloc}"
+    if not origin or not _origin_allowed(origin):
+        origin = _default_user_origin()
+    return f"{origin}/subscriptions/payme?{urlencode({'order_id': order})}"
+
+
 def start_payme_checkout(
     *,
     user: User,
@@ -151,6 +203,30 @@ def start_payme_checkout(
     if amount_tiyin <= 0:
         raise PaymePaymentError("To'lov summasi 0 bo'lishi mumkin emas.")
 
+    reusable = (
+        SubscriptionPayment.objects.filter(
+            user=user,
+            provider="payme",
+            plan_code=plan_code,
+            amount_tiyin=amount_tiyin,
+            status=SubscriptionPayment.Status.PENDING,
+            created_at__gte=timezone.now() - timedelta(minutes=15),
+        )
+        .exclude(payme_receipt_id="")
+        .order_by("-created_at")
+        .first()
+    )
+    if reusable:
+        origin = safe_payme_return_url(return_url, reusable.order_id)
+        reusable.checkout_url = build_checkout_url(
+            receipt_id=reusable.payme_receipt_id, return_url=origin
+        )
+        meta = dict(reusable.metadata or {})
+        meta["return_url"] = origin
+        reusable.metadata = meta
+        reusable.save(update_fields=["checkout_url", "metadata", "updated_at"])
+        return serialize_payme_payment(reusable)
+
     from subscriptions.payment import build_subscription_order_id
 
     order_id = build_subscription_order_id(
@@ -170,9 +246,9 @@ def start_payme_checkout(
     if not receipt_id:
         raise PaymePaymentError("Payme chek identifikatori qaytmadi.")
 
-    origin = (return_url or "").strip() or "https://mysaloon.uz/subscriptions/payme"
-    # Payme ssenariy: https://checkout.test.paycom.uz/{receipt_id}
-    checkout_url = build_checkout_url(receipt_id=receipt_id)
+    origin = safe_payme_return_url(return_url, order_id)
+    # Chek yo'li + Payme qaytish parametri (c/callback). Summani klient belgilamaydi.
+    checkout_url = build_checkout_url(receipt_id=receipt_id, return_url=origin)
 
     payment = SubscriptionPayment.objects.create(
         user=user,

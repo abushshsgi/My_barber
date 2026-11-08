@@ -12,12 +12,13 @@ from __future__ import annotations
 
 import json
 import logging
+import re
 import time
 import urllib.error
 import urllib.request
 from decimal import Decimal, ROUND_HALF_UP
 from typing import Any
-from urllib.parse import urlparse
+from urllib.parse import parse_qs, urlencode, urlparse
 
 from django.conf import settings
 
@@ -281,12 +282,40 @@ def receipts_set_fiscal_data(*, receipt_id: str, fiscal_data: dict[str, Any]) ->
     return bool(result.get("success"))
 
 
-def build_checkout_url(*, receipt_id: str) -> str:
-    """Rasmiy ssenariy: {checkout_base}/{receipt_id}"""
+def _return_url_is_payme_status(ret: str) -> bool:
+    """Qaytish havolasi faqat o'z to'lov holati sahifamiz bo'lishi mumkin."""
+    parsed = urlparse((ret or "").strip())
+    if parsed.scheme not in ("https", "http") or not parsed.hostname or "@" in (parsed.netloc or ""):
+        return False
+    if any(ch in ret for ch in "\r\n\t "):
+        return False
+    host = parsed.hostname.lower()
+    if parsed.scheme != "https":
+        if not (getattr(settings, "DEBUG", False) and host in ("localhost", "127.0.0.1")):
+            return False
+    if parsed.path.rstrip("/") != "/subscriptions/payme":
+        return False
+    order = (parse_qs(parsed.query).get("order_id") or [""])[0]
+    return bool(order.startswith("sub-") and not any(ch in order for ch in " /?#&"))
+
+
+def build_checkout_url(*, receipt_id: str, return_url: str = "") -> str:
+    """Chek sahifasi: {checkout_base}/{receipt_id}.
+
+    Payme `c` / `callback` — to'lov yoki bekor qilgandan keyin mijozni
+    shu sahifaga qaytaradi. `ct` — muvaffaqiyatdan keyin kutish (ms).
+    Chek identifikatori yo'lda qoladi, summa o'zgarmaydi.
+    Boshqa manzil qaytish parametriga yozilmaydi.
+    """
     rid = (receipt_id or "").strip()
-    if not rid or any(ch in rid for ch in "/?#:& "):
+    if not re.fullmatch(r"[A-Za-z0-9]{8,64}", rid):
         raise PaymeError("receipt id noto'g'ri.")
-    return f"{payme_checkout_base()}/{rid}"
+    base = f"{payme_checkout_base()}/{rid}"
+    ret = (return_url or "").strip()
+    if not _return_url_is_payme_status(ret):
+        return base
+    query = urlencode({"c": ret, "callback": ret, "ct": "1500"})
+    return f"{base}?{query}"
 
 
 def fiscal_detail(*, title: str, price_tiyin: int) -> dict[str, Any] | None:

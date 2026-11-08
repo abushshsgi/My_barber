@@ -267,6 +267,7 @@ def confirm_provider_payment(
     base = plan_price(plan_code)
     if base is None or amount > base:
         raise ValueError("Narx mos kelmadi — xavfsizlik tekshiruvi.")
+    del transaction_id  # Mijoz yuborgan transaction_id to'lovni tasdiqlamaydi.
 
     if provider == "payme":
         from subscriptions.payme_service import PaymePaymentError, sync_payme_payment
@@ -296,84 +297,5 @@ def confirm_provider_payment(
             raise ValueError("Payme to'lovi qaytarilgan.")
         raise ValueError("Payme to'lovi muvaffaqiyatsiz.")
 
-    if provider == "click":
-        raise ValueError("AI Premium Click orqali to'lanmaydi. Payme Subscribe ishlating.")
-
-    if provider not in ("click", "payme"):
-        raise ValueError("provider payme bo'lishi kerak.")
-
-    configured = _provider_configured(provider)  # type: ignore[arg-type]
-    if not configured and not settings.DEBUG:
-        raise RuntimeError(f"{provider.upper()} hali sozlanmagan.")
-
-    with transaction.atomic():
-        return _confirm_click_payment(
-            user=user,
-            order_id=order_id,
-            provider=provider,
-            plan_code=plan_code,
-            amount=amount,
-            transaction_id=transaction_id,
-            request=request,
-        )
-
-
-def _confirm_click_payment(
-    *,
-    user: User,
-    order_id: str,
-    provider: str,
-    plan_code: str,
-    amount: Decimal,
-    transaction_id: str,
-    request=None,
-) -> UserSubscription:
-    payment = (
-        SubscriptionPayment.objects.select_for_update()
-        .filter(order_id=order_id, user=user)
-        .first()
-    )
-    if not payment:
-        raise ValueError("To'lov topilmadi.")
-
-    if payment.status == SubscriptionPayment.Status.PAID and payment.subscription_id:
-        sub = payment.subscription
-        assert sub is not None
-        return sub
-
-    if payment.amount_uzs != amount or payment.plan_code != plan_code:
-        raise ValueError("To'lov ma'lumotlari buzilgan.")
-
-    tx = (transaction_id or payment.transaction_id or order_id).strip()
-    payment.status = SubscriptionPayment.Status.PAID
-    payment.transaction_id = tx[:128]
-    payment.paid_at = timezone.now()
-    payment.save(update_fields=["status", "transaction_id", "paid_at", "updated_at"])
-
-    source = (
-        UserSubscription.Source.CLICK
-        if provider == "click"
-        else UserSubscription.Source.PAYME
-    )
-    sub = activate_subscription(
-        user=user,
-        plan_code=plan_code,
-        source=source,
-        price_uzs=amount,
-        payment_provider=provider,
-        payment_order_id=order_id,
-        payment_transaction_id=tx,
-        actor=f"user:{user.pk}",
-        request=request,
-    )
-    payment.subscription = sub
-    payment.save(update_fields=["subscription", "updated_at"])
-    log_event(
-        action=SubscriptionEvent.Action.PAYMENT_PAID,
-        user=user,
-        subscription=sub,
-        actor=f"user:{user.pk}",
-        detail={"provider": provider, "amount": str(amount), "order_id": order_id, "tx": tx},
-        request=request,
-    )
-    return sub
+    # Mijoz transaction_id yuborib o'zini to'langan qilib belgilay olmaydi.
+    raise ValueError("AI Premium faqat Payme orqali tasdiqlanadi.")

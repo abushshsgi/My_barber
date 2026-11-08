@@ -146,6 +146,8 @@ class SubscriptionCheckoutView(SubscriptionErrorMixin, APIView):
         method = str(request.data.get("method") or request.data.get("provider") or "payme").strip().lower()
         promo_code = str(request.data.get("promo_code") or "").strip() or None
         return_url = str(request.data.get("return_url") or _default_return_url()).strip()
+        if len(return_url) > 500 or any(ch in return_url for ch in "\r\n\t"):
+            return Response(error_body("return_url_invalid", request), status=status.HTTP_400_BAD_REQUEST)
         if not return_url.startswith(("http://", "https://")):
             return Response(error_body("return_url_invalid", request), status=status.HTTP_400_BAD_REQUEST)
 

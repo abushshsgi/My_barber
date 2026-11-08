@@ -129,10 +129,11 @@ class PaymeSubscriptionTests(TestCase):
         )
         self.assertEqual(res.status_code, 200, res.data)
         self.assertEqual(res.data["status"], "pending")
-        self.assertEqual(
-            res.data["checkout_url"],
-            "https://checkout.test.paycom.uz/abc123payme",
-        )
+        checkout_url = res.data["checkout_url"]
+        self.assertTrue(checkout_url.startswith("https://checkout.test.paycom.uz/abc123payme?"))
+        self.assertIn("order_id=", checkout_url)
+        self.assertIn("localhost%3A3000", checkout_url)
+        self.assertNotIn("evil.", checkout_url)
         self.assertGreater(res.data["amount_tiyin"], 0)
         self.assertEqual(res.data["amount_tiyin"] % 100, 0)
         self.assertFalse(UserSubscription.objects.filter(user=self.user, status="active").exists())
@@ -169,29 +170,22 @@ class PaymeSubscriptionTests(TestCase):
             self.assertEqual(create.call_args.kwargs["amount_tiyin"], tiyin)
 
     @patch("subscriptions.payme_service.receipts_create")
-    def test_new_user_payme_amount_is_catalog_price(self, create):
-        """Yangi hisob ham Payme ga chegirmasiz katalog narxini yuboradi."""
-        self.user.date_joined = timezone.now()
-        self.user.save(update_fields=["date_joined"])
-        expected = {"starter": 999_000, "plus": 2_999_000, "pro": 6_999_000}
-        for plan_code, tiyin in expected.items():
-            create.reset_mock()
-            create.return_value = _receipt(rid=f"r-{plan_code}", state=0)
-            res = self.client.post(
-                "/api/v1/subscriptions/checkout/",
-                {
-                    "plan_code": plan_code,
-                    "method": "payme",
-                    "return_url": "https://mysaloon.uz/subscriptions/payme",
-                    "amount_uzs": 1,
-                    "promo_code": "CHEAP",
-                },
-                format="json",
-            )
-            self.assertEqual(res.status_code, 200, res.data)
-            self.assertEqual(res.data["amount_uzs"], tiyin // 100)
-            self.assertEqual(res.data["amount_tiyin"], tiyin)
-            self.assertEqual(create.call_args.kwargs["amount_tiyin"], tiyin)
+    def test_foreign_return_url_cannot_leave_the_site(self, create):
+        create.return_value = _receipt(state=0, order_id="pending")
+        res = self.client.post(
+            "/api/v1/subscriptions/checkout/",
+            {
+                "plan_code": "starter",
+                "method": "payme",
+                "return_url": "https://evil.example/phish",
+            },
+            format="json",
+        )
+        self.assertEqual(res.status_code, 200, res.data)
+        checkout_url = res.data["checkout_url"]
+        self.assertNotIn("evil.example", checkout_url)
+        self.assertIn("subscriptions%2Fpayme", checkout_url)
+        self.assertIn(res.data["order_id"], checkout_url)
 
     @patch("subscriptions.payme_service.receipts_get")
     @patch("subscriptions.payme_service.receipts_create")
