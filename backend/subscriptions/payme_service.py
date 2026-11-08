@@ -436,6 +436,11 @@ def serialize_payme_payment(payment: SubscriptionPayment) -> dict:
         SubscriptionPayment.Status.EXPIRED: "Payme cheki muddati o'tgan.",
         SubscriptionPayment.Status.REFUNDED: "Payme to'lovi qaytarilgan.",
     }.get(payment.status, "")
+    me = None
+    if payment.status == SubscriptionPayment.Status.PAID:
+        from subscriptions.services import build_me_payload
+
+        me = build_me_payload(payment.user)
     return {
         "payment_id": str(payment.pk),
         "provider": payment.provider,
@@ -452,6 +457,7 @@ def serialize_payme_payment(payment: SubscriptionPayment) -> dict:
         "sandbox": True,
         "message": message,
         "subscription": sub,
+        "me": me,
         "transaction_id": payment.transaction_id or None,
         "base_uzs": (payment.metadata or {}).get("base_uzs"),
         "discount_uzs": (payment.metadata or {}).get("discount_uzs"),

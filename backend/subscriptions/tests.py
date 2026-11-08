@@ -17,6 +17,7 @@ from subscriptions.plans import PLAN_PLUS, PLAN_PRO, PLAN_STARTER
 from subscriptions.services import (
     CANCEL_BLOCK_REBUY_MESSAGE,
     activate_subscription,
+    can_use_morph_voice,
     can_use_morph_care,
     can_use_morph_care_pro,
     cancel_user_subscription,
@@ -48,7 +49,11 @@ def _user(email: str, phone: str, name: str = "Sub User") -> User:
     )
 
 
-@override_settings(MORPH_ENTITLEMENT_BYPASS=False, MORPH_CARE_ACCESS_DEBUG=False)
+@override_settings(
+    MORPH_ENTITLEMENT_BYPASS=False,
+    MORPH_CARE_ACCESS_DEBUG=False,
+    MORPH_VOICE_TEMPORARILY_DISABLED=False,
+)
 class SubscriptionServiceTests(TestCase):
     def setUp(self):
         self.user = _user("subuser@test.local", "+998901111111")
@@ -233,6 +238,77 @@ class SubscriptionServiceTests(TestCase):
         record_morph_chat_tokens(user=self.user, tokens=10_000)
         self.assertIsNone(check_morph_entitlement(user=self.user, kind="chat"))
 
+    def test_matching_plan_code_but_old_usage_resets(self):
+        from subscriptions.models import SubscriptionUsagePeriod
+
+        sub = activate_subscription(
+            user=self.user,
+            plan_code=PLAN_PLUS,
+            source=UserSubscription.Source.PAYME,
+            price_uzs=Decimal("29990"),
+        )
+        SubscriptionUsagePeriod.objects.filter(user=self.user).update(
+            plan_code=PLAN_PLUS,
+            morph_ai_used=20,
+            morph_studio_used=30,
+            morph_chat_tokens_used=150_000,
+            updated_at=sub.starts_at - timedelta(minutes=5),
+        )
+        self.assertIsNone(check_morph_entitlement(user=self.user, kind="tryon"))
+        self.assertIsNone(check_morph_entitlement(user=self.user, kind="studio"))
+        snap = chat_token_snapshot(self.user)
+        self.assertEqual(snap["morph_chat_tokens_used"], 0)
+        from subscriptions.services import build_me_payload
+
+        usage = build_me_payload(self.user)["usage"]
+        self.assertEqual(usage["morph_ai_used"], 0)
+        self.assertEqual(usage["morph_ai_remaining"], 20)
+        self.assertEqual(usage["plan_code"], PLAN_PLUS)
+
+    def test_me_feature_flags_follow_plan(self):
+        from subscriptions.services import build_me_payload
+
+        free = build_me_payload(self.user)["access"]
+        self.assertFalse(free["morph_studio_allowed"])
+        self.assertFalse(free["morph_care_allowed"])
+        self.assertFalse(free["morph_care_pro_allowed"])
+        self.assertFalse(free["morph_voice_allowed"])
+        activate_subscription(
+            user=self.user,
+            plan_code=PLAN_STARTER,
+            source=UserSubscription.Source.ADMIN,
+            price_uzs=Decimal("0"),
+        )
+        starter = build_me_payload(self.user)["access"]
+        self.assertTrue(starter["morph_ai_allowed"])
+        self.assertFalse(starter["morph_studio_allowed"])
+        self.assertFalse(starter["morph_care_allowed"])
+        self.assertTrue(starter["morph_voice_allowed"])
+        activate_subscription(
+            user=self.user,
+            plan_code=PLAN_PLUS,
+            source=UserSubscription.Source.ADMIN,
+            price_uzs=Decimal("0"),
+        )
+        plus = build_me_payload(self.user)["access"]
+        self.assertTrue(plus["morph_studio_allowed"])
+        self.assertTrue(plus["morph_care_allowed"])
+        self.assertFalse(plus["morph_care_pro_allowed"])
+
+    @override_settings(MORPH_VOICE_TEMPORARILY_DISABLED=True)
+    def test_voice_temporarily_disabled_even_with_plan(self):
+        from subscriptions.services import build_me_payload
+
+        activate_subscription(
+            user=self.user,
+            plan_code=PLAN_STARTER,
+            source=UserSubscription.Source.ADMIN,
+            price_uzs=Decimal("0"),
+        )
+        self.assertFalse(build_me_payload(self.user)["access"]["morph_voice_allowed"])
+        self.assertFalse(can_use_morph_voice(self.user))
+        self.assertIsNotNone(check_morph_entitlement(user=self.user, kind="voice"))
+
     def test_usage_from_before_current_plan_does_not_block(self):
         from subscriptions.models import SubscriptionUsagePeriod
 
@@ -364,6 +440,7 @@ class SubscriptionServiceTests(TestCase):
 @override_settings(
     MORPH_ENTITLEMENT_BYPASS=False,
     MORPH_CARE_ACCESS_DEBUG=False,
+    MORPH_VOICE_TEMPORARILY_DISABLED=False,
     CACHES={
         "default": {
             "BACKEND": "django.core.cache.backends.locmem.LocMemCache",

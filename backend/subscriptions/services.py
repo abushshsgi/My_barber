@@ -7,6 +7,7 @@ from datetime import date, timedelta
 from decimal import Decimal
 from typing import Any
 
+from django.conf import settings
 from django.db import transaction
 from django.db.models import Count, Q, Sum
 from django.db.models.functions import TruncDate
@@ -387,11 +388,12 @@ def align_usage_to_plan(user: User, sub: UserSubscription) -> SubscriptionUsageP
             defaults={"period_end": end, "plan_code": code},
         )
         current = (usage.plan_code or "").strip().lower()
-        if current == code and code:
+        predates = _usage_predates_plan(usage, sub)
+        # Tarif kodi yozilgan bo‘lsa ham, hisoblagich obuna boshlanishidan oldingi
+        # bo‘lsa — yangi tarif kvotasini yemasin.
+        if current == code and code and not predates:
             return usage
-        reset = bool(current and current != code) or (
-            not current and _usage_predates_plan(usage, sub)
-        )
+        reset = bool(current and current != code) or predates
         fields = ["plan_code", "updated_at"]
         if reset:
             usage.morph_ai_used = 0
@@ -512,9 +514,11 @@ def usage_snapshot(user: User, entitlements: dict[str, Any] | None) -> dict[str,
     ai_limit = int((entitlements or {}).get("morph_ai_monthly") or 0)
     studio_limit = int((entitlements or {}).get("morph_studio_monthly") or 0)
     chat = chat_token_snapshot(user)
+    live_plan = (sub.plan_code if sub else PLAN_FREE) or ""
     return {
         "period_start": usage.period_start.isoformat(),
         "period_end": usage.period_end.isoformat(),
+        "plan_code": (usage.plan_code or live_plan).strip().lower(),
         "morph_ai_used": usage.morph_ai_used,
         "morph_ai_limit": ai_limit,
         "morph_ai_remaining": max(0, ai_limit - usage.morph_ai_used) if ai_limit else 0,
@@ -617,6 +621,8 @@ def build_me_payload(user: User) -> dict[str, Any]:
         }
 
     allowed = bool(sub) or credits > 0 or bool(free_left)
+    live_ents = entitlements if sub else free_ents
+    studio_feature = bool(sub) and _quota_int(live_ents, "morph_studio_monthly") > 0
     chat = usage
     chat_remaining = int(chat.get("morph_chat_tokens_remaining") or 0)
     last = None
@@ -652,7 +658,11 @@ def build_me_payload(user: User) -> dict[str, Any]:
         "access": {
             "morph_ai_allowed": allowed,
             "morph_chat_allowed": chat_remaining >= CHAT_TOKEN_MIN_TURN,
-            "morph_voice_allowed": bool(sub),
+            "morph_voice_allowed": bool(sub)
+            and not getattr(settings, "MORPH_VOICE_TEMPORARILY_DISABLED", True),
+            "morph_studio_allowed": studio_feature,
+            "morph_care_allowed": bool(live_ents.get("morph_care")) if sub else False,
+            "morph_care_pro_allowed": bool(live_ents.get("morph_care_pro")) if sub else False,
             "reason": None if allowed else "subscription_required",
             "message": None if allowed else _no_subscription_message(),
             "referral_credits": credits,
@@ -884,11 +894,14 @@ def reactivate_subscription(
         days = extend_days or int((locked.entitlements or {}).get("period_days") or 30)
         ends = now + timedelta(days=days)
     locked.status = UserSubscription.Status.ACTIVE
-    locked.starts_at = locked.starts_at or now
+    locked.starts_at = now
     locked.ends_at = ends
     locked.deactivated_at = None
     locked.deactivated_reason = ""
     locked.deactivated_by = ""
+    snap = entitlement_snapshot(locked.plan_code)
+    if snap:
+        locked.entitlements = snap
     locked.save(
         update_fields=[
             "status",
@@ -897,9 +910,11 @@ def reactivate_subscription(
             "deactivated_at",
             "deactivated_reason",
             "deactivated_by",
+            "entitlements",
             "updated_at",
         ]
     )
+    reset_usage_for_plan(locked.user, locked.plan_code)
     log_event(
         action=SubscriptionEvent.Action.REACTIVATED,
         user=locked.user,
@@ -970,7 +985,9 @@ def morph_care_block(*, user: User, pro: bool = False) -> dict[str, str] | None:
 
 
 def can_use_morph_voice(user: User) -> bool:
-    """Jonli ovoz — faqat faol pullik obuna (bepul 10k chat tokeniga kirmaydi)."""
+    """Jonli ovoz — vaqtincha yopiq; ochilganda faqat faol pullik obuna."""
+    if getattr(settings, "MORPH_VOICE_TEMPORARILY_DISABLED", True):
+        return False
     return get_active_subscription(user) is not None
 
 
@@ -1016,6 +1033,8 @@ def check_morph_entitlement(*, user: User, kind: str) -> str | None:
     sub = get_active_subscription(user)
 
     if kind == "voice":
+        if getattr(settings, "MORPH_VOICE_TEMPORARILY_DISABLED", True):
+            return "Ovozli suhbat tez orada."
         if not can_use_morph_voice(user):
             return "Ovozli suhbat Starter, Plus yoki Pro obunasida mavjud."
         return check_morph_entitlement(user=user, kind="chat")

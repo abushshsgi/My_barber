@@ -288,6 +288,14 @@ MORPH_CARE_ACCESS_DEBUG = os.environ.get("MORPH_CARE_ACCESS_DEBUG", "false").low
     "true",
     "yes",
 )
+# Ovozli suhbat — vaqtincha yopiq. Flag o‘chirilsa yana faqat pullik obuna.
+MORPH_VOICE_TEMPORARILY_DISABLED = os.environ.get(
+    "MORPH_VOICE_TEMPORARILY_DISABLED", "true"
+).lower() in (
+    "1",
+    "true",
+    "yes",
+)
 
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
@@ -565,8 +573,8 @@ REST_FRAMEWORK = {
 }
 
 SIMPLE_JWT = {
-    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=60),
-    "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
+    "ACCESS_TOKEN_LIFETIME": timedelta(hours=24),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=30),
     "ROTATE_REFRESH_TOKENS": True,
     "SIGNING_KEY": JWT_HS256_SIGNING_KEY,
 }

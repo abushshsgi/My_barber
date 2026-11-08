@@ -1,3 +1,4 @@
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -42,7 +43,9 @@ class BarberPushTokenView(APIView):
 
 
 class UserPushTokenView(APIView):
-    """User Capacitor: FCM token ro‘yxatdan o‘tkazish / o‘chirish."""
+    """User web/Capacitor: FCM token ro‘yxatdan o‘tkazish / o‘chirish."""
+
+    permission_classes = [IsAuthenticated]
 
     def post(self, request):
         token = (request.data.get("token") or "").strip()
