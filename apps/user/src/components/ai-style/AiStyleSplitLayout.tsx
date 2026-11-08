@@ -4,17 +4,15 @@ import {
   animate,
   motion,
   useMotionValue,
-  useTransform,
   type PanInfo,
 } from "framer-motion";
-import { Check, ChevronLeft, ChevronRight, ChevronsUp, Loader2, ScanFace, X } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, Clock, Loader2, X } from "lucide-react";
 import { Fragment, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { AiStyleChrome } from "@/components/ai-style/AiStyleChrome";
 import { AiStyleResultsBlock } from "@/components/ai-style/AiStyleResults";
 import { AiStyleScanLine, GalleryValidatingHero } from "@/components/ai-style/AiStyleUi";
 import type { AiAnalysisResult } from "@/components/ai-style/ai-style-shared";
-import { getAiStyleHeroUrl } from "@/lib/cover-images";
 import { refreshAiStyleHistoryCache } from "@/lib/api";
 import {
   FACE_HISTORY_UPDATED_EVENT,
@@ -25,17 +23,9 @@ import type { ExplorePersonaId } from "@/lib/explore-personas";
 import type { Audience } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
 
-const HERO_SLIDES: Record<"men" | "women", readonly string[]> = {
-  men: ["hero-men", "hero-women"],
-  women: ["hero-women", "hero-men"],
-};
-const SLIDE_MS = 4500;
-const UPLOAD_PANEL_HEIGHT = 240;
+const TRY_ON_HERO = "/ai-style/try-on-selfie-hero.png";
+const UPLOAD_PANEL_HEIGHT = 224;
 const UPLOAD_HISTORY_REVEAL_RATIO = 0.48;
-const HISTORY_HINT_MS = 6000;
-const HISTORY_HINT_NUDGE_MS = 1500;
-const HISTORY_HINT_NUDGE_OFFSET = -14;
-const HERO_TEXT_ABOVE_PANEL = 22;
 
 function getHistoryRevealHeight() {
   if (typeof window === "undefined") return 400;
@@ -84,20 +74,19 @@ function StepRail({ step }: { step: 1 | 2 | 3 }) {
 
         return (
           <Fragment key={label}>
-            <div className="flex min-w-0 flex-1 flex-col items-center gap-1.5">
+            <div className="flex min-w-0 flex-1 flex-col items-center gap-1">
               <div
                 className={cn(
-                  "grid h-8 w-8 place-items-center rounded-full text-[11px] font-bold transition-all",
-                  reached ? "bg-black text-white" : "bg-neutral-100 text-neutral-400",
-                  current && "ring-4 ring-black/8",
+                  "grid size-6 place-items-center rounded-full text-[11px] font-bold transition-all",
+                  reached ? "bg-foreground text-background" : "bg-foreground/[0.08] text-muted-foreground",
                 )}
               >
-                {done ? <Check className="h-4 w-4" strokeWidth={2.5} /> : n}
+                {done ? <Check className="size-3.5" strokeWidth={2.5} /> : n}
               </div>
               <p
                 className={cn(
-                  "max-w-[72px] text-center text-[10px] font-bold leading-tight",
-                  current ? "text-black" : reached ? "text-black/60" : "text-neutral-400",
+                  "max-w-[72px] text-center text-[11px] leading-tight",
+                  current ? "font-bold text-foreground" : "font-semibold text-muted-foreground",
                 )}
               >
                 {label}
@@ -106,8 +95,8 @@ function StepRail({ step }: { step: 1 | 2 | 3 }) {
             {index < steps.length - 1 ? (
               <div
                 className={cn(
-                  "mt-4 h-0.5 w-full max-w-[48px] flex-1 rounded-full transition-colors",
-                  step > n ? "bg-black" : "bg-neutral-200",
+                  "mt-3 h-px min-w-6 flex-1",
+                  step > n ? "bg-foreground" : "bg-foreground/10",
                 )}
               />
             ) : null}
@@ -131,79 +120,54 @@ function ResultsHero({ photo }: { photo: string }) {
   );
 }
 
-function HeroCarousel({ audience, hintActive }: { audience: Audience; hintActive: boolean }) {
+/** Ilova try-on sahifasidagi qiz rasmi va yuqori matn. Pastki yozuv va slayd yo'q. */
+function TryOnHero() {
   const { t } = useTranslation();
-  const slides = HERO_SLIDES[audience === "women" ? "women" : "men"];
-  const [index, setIndex] = useState(0);
-
-  useEffect(() => {
-    setIndex(0);
-  }, [audience]);
-
-  useEffect(() => {
-    const id = window.setInterval(() => {
-      setIndex((i) => (i + 1) % slides.length);
-    }, SLIDE_MS);
-    return () => window.clearInterval(id);
-  }, [slides.length]);
-
-  const slideDuration = SLIDE_MS / 1000;
-  const panDirection = index % 2 === 0 ? -1 : 1;
 
   return (
-    <div className="relative h-full w-full overflow-hidden">
-      <AnimatePresence initial={false}>
-        <motion.img
-          key={`${audience}-${slides[index]}-${index}`}
-          src={getAiStyleHeroUrl(slides[index])}
-          alt=""
-          initial={{ opacity: 0, scale: 1.06, x: `${panDirection * -1.5}%` }}
-          animate={{ opacity: 1, scale: 1.12, x: `${panDirection * 1.5}%` }}
-          exit={{ opacity: 0 }}
-          transition={{
-            opacity: { duration: 0.9, ease: "easeInOut" },
-            scale: { duration: slideDuration, ease: "linear" },
-            x: { duration: slideDuration, ease: "linear" },
-          }}
-          className="absolute inset-0 h-full w-full object-cover object-top"
-        />
-      </AnimatePresence>
-
-      <div className="absolute inset-0 bg-gradient-to-b from-black/20 via-transparent to-transparent" />
+    <div className="relative h-full w-full overflow-hidden bg-[#f6f3f0]">
+      <img
+        src={TRY_ON_HERO}
+        alt=""
+        className="absolute inset-0 h-full w-full object-cover object-top"
+      />
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-x-0 bottom-0 h-[42%] bg-gradient-to-t from-black/85 via-black/55 to-transparent"
+        className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_bottom,rgba(0,0,0,0.55)_0%,rgba(0,0,0,0.2)_28%,rgba(255,255,255,0.55)_58%,#ffffff_78%)]"
       />
-
-      <div
-        className="absolute inset-x-0 z-[1] flex flex-col items-center gap-2 px-6 text-center text-white transition-[bottom] duration-[450ms] ease-out"
-        style={{ bottom: hintActive ? "5.5rem" : `${HERO_TEXT_ABOVE_PANEL}px` }}
-      >
-        <p className="text-lg font-bold">{t("aiStylePage.uploadTitle")}</p>
-        <p className="max-w-[260px] text-xs text-white/90">{t("aiStylePage.uploadHint")}</p>
-        <div className="mt-1 flex justify-center gap-1.5">
-          {slides.map((seed, i) => (
-            <span
-              key={`${seed}-${i}`}
-              className={cn(
-                "h-1.5 rounded-full transition-all duration-300",
-                i === index ? "w-5 bg-white" : "w-1.5 bg-white/40",
-              )}
-            />
-          ))}
-        </div>
+      <div className="pointer-events-none absolute inset-x-0 top-0 z-[1] px-6 pt-[max(2.75rem,calc(env(safe-area-inset-top)+2.25rem))] text-center text-white">
+        <p className="text-[26px] font-extrabold tracking-tight drop-shadow-[0_1px_8px_rgba(0,0,0,0.45)]">
+          {t("aiStylePage.uploadTitle")}
+        </p>
+        <p className="mx-auto mt-1 max-w-[280px] text-[13px] font-medium text-white/90 drop-shadow-[0_1px_5px_rgba(0,0,0,0.35)]">
+          {t("aiStylePage.uploadHint")}
+        </p>
       </div>
     </div>
   );
 }
 
-function GalleryStackShape() {
+function FaceScanMark({ className }: { className?: string }) {
   return (
-    <div className="relative h-6 w-6">
-      <span className="absolute bottom-0 left-0 h-4 w-3 rounded-[4px] border border-foreground/25 bg-foreground/10 rotate-[-10deg]" />
-      <span className="absolute bottom-0 right-0 h-4 w-3 rounded-[4px] border border-foreground/30 bg-foreground/15 rotate-[8deg]" />
-      <span className="absolute left-1/2 top-0 h-4 w-3 -translate-x-1/2 rounded-[4px] border border-foreground/40 bg-foreground/20" />
-    </div>
+    <svg viewBox="0 0 28 28" className={className} fill="none" aria-hidden>
+      <path d="M4.5 9.2V6.8A2.3 2.3 0 0 1 6.8 4.5H9.2" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+      <path d="M18.8 4.5h2.4A2.3 2.3 0 0 1 23.5 6.8V9.2" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+      <path d="M4.5 18.8v2.4A2.3 2.3 0 0 0 6.8 23.5H9.2" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+      <path d="M23.5 18.8v2.4a2.3 2.3 0 0 1-2.3 2.3H18.8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+      <circle cx="11" cy="12.2" r="1.35" fill="currentColor" />
+      <circle cx="17" cy="12.2" r="1.35" fill="currentColor" />
+      <path d="M10.4 16.1c.9 1.7 2.1 2.5 3.6 2.5s2.7-.8 3.6-2.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function GalleryStackMark({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 28 28" className={className} aria-hidden>
+      <rect x="4.2" y="7.2" width="13" height="15.5" rx="3" fill="#D4D4D4" transform="rotate(-16 10.7 15)" />
+      <rect x="11" y="6.2" width="13" height="15.5" rx="3" fill="#B0B0B0" transform="rotate(12 17.5 14)" />
+      <rect x="7.5" y="6" width="13" height="16" rx="3.2" fill="currentColor" />
+    </svg>
   );
 }
 
@@ -219,15 +183,15 @@ function UploadActions({
   const { t } = useTranslation();
 
   return (
-    <div className="flex justify-center gap-10">
+    <div className="flex gap-2.5 px-1">
       <button
         type="button"
         disabled={validating}
         onClick={onOpenCamera}
         onPointerDown={(event) => event.stopPropagation()}
-        className="inline-flex w-[9.5rem] min-h-[50px] flex-col items-center justify-center gap-1 rounded-2xl bg-foreground px-2 py-3 text-[12px] font-bold leading-tight text-white shadow-[0_6px_20px_-6px_rgba(0,0,0,0.3)] active:scale-[0.98] disabled:opacity-60"
+        className="inline-flex min-h-[68px] min-w-0 flex-1 flex-col items-center justify-center gap-1.5 rounded-[24px] bg-foreground px-2 py-2.5 text-[12px] font-bold leading-tight text-white active:scale-[0.98] disabled:opacity-60"
       >
-        <ScanFace className="h-6 w-6" strokeWidth={2} />
+        <FaceScanMark className="h-7 w-7" />
         {t("aiStylePage.openCamera")}
       </button>
       <button
@@ -235,65 +199,13 @@ function UploadActions({
         disabled={validating}
         onClick={onOpenGallery}
         onPointerDown={(event) => event.stopPropagation()}
-        className="inline-flex w-[9.5rem] min-h-[50px] flex-col items-center justify-center gap-1 rounded-2xl border-2 border-dashed border-foreground/20 bg-transparent px-2 py-3 text-[12px] font-bold leading-tight text-foreground active:scale-[0.98] disabled:opacity-60"
+        className="inline-flex min-h-[68px] min-w-0 flex-1 flex-col items-center justify-center gap-1.5 rounded-[24px] border-[1.5px] border-dashed border-foreground/25 bg-transparent px-2 py-2.5 text-[12px] font-bold leading-tight text-foreground active:scale-[0.98] disabled:opacity-60"
       >
-        <GalleryStackShape />
+        <GalleryStackMark className="h-7 w-7 text-foreground" />
         {t("aiStylePage.pickFromGallery")}
       </button>
     </div>
   );
-}
-
-function HistorySwipeHint({ visible }: { visible: boolean }) {
-  const { t } = useTranslation();
-
-  return (
-    <AnimatePresence>
-      {visible ? (
-        <motion.div
-          key="history-swipe-hint"
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: 6 }}
-          transition={{ duration: 0.35, ease: "easeOut" }}
-          className="pointer-events-none flex flex-col items-center gap-1.5"
-        >
-          <motion.div
-            initial={{ y: 0 }}
-            animate={{ y: [0, -8, 0] }}
-            transition={{ duration: 0.9, ease: "easeInOut", times: [0, 0.45, 1] }}
-          >
-            <ChevronsUp className="h-6 w-6 text-white drop-shadow-md" strokeWidth={2.25} />
-          </motion.div>
-          <p className="max-w-[220px] text-center text-[11px] font-semibold text-white drop-shadow-[0_1px_6px_rgba(0,0,0,0.55)]">
-            {t("aiStylePage.historySwipeHint")}
-          </p>
-        </motion.div>
-      ) : null}
-    </AnimatePresence>
-  );
-}
-
-function useHistorySwipeHint(isUploadStep: boolean, historyOpen: boolean) {
-  const [hintDismissed, setHintDismissed] = useState(false);
-
-  useEffect(() => {
-    if (!isUploadStep) {
-      setHintDismissed(false);
-      return;
-    }
-
-    if (historyOpen) {
-      setHintDismissed(true);
-      return;
-    }
-
-    setHintDismissed(false);
-    const hideTimer = window.setTimeout(() => setHintDismissed(true), HISTORY_HINT_MS);
-    return () => window.clearTimeout(hideTimer);
-  }, [isUploadStep, historyOpen]);
-
-  return isUploadStep && !historyOpen && !hintDismissed;
 }
 
 function UploadHistorySheet({ open }: { open: boolean }) {
@@ -401,39 +313,8 @@ export function AiStyleSplitLayout(props: AiStyleSplitLayoutProps) {
   const [historyOpen, setHistoryOpen] = useState(false);
   const historyOpenRef = useRef(false);
   const isGalleryValidating = props.validating && !!props.validatingPreview;
-  const showHistoryHint = useHistorySwipeHint(isUploadStep && !isGalleryValidating, historyOpen);
-  const panelY = useMotionValue(UPLOAD_PANEL_HEIGHT);
-  const nudgeY = useMotionValue(0);
-  const panelCombinedY = useTransform([panelY, nudgeY], ([p, n]) => (p as number) + (n as number));
   const panelHeight = useMotionValue(UPLOAD_PANEL_HEIGHT);
   const openPanelHeight = UPLOAD_PANEL_HEIGHT + historyRevealHeight;
-
-  useEffect(() => {
-    if (!isUploadStep || historyOpen || !showHistoryHint) {
-      nudgeY.set(0);
-      return;
-    }
-
-    let cancelled = false;
-    const runSyncedNudge = () => {
-      if (cancelled) return;
-      animate(nudgeY, HISTORY_HINT_NUDGE_OFFSET, {
-        duration: 0.45,
-        ease: "easeInOut",
-      }).then(() => {
-        if (cancelled) return;
-        animate(nudgeY, 0, { duration: 0.45, ease: "easeInOut" });
-      });
-    };
-
-    runSyncedNudge();
-    const id = window.setInterval(runSyncedNudge, HISTORY_HINT_NUDGE_MS);
-    return () => {
-      cancelled = true;
-      window.clearInterval(id);
-      nudgeY.set(0);
-    };
-  }, [isUploadStep, historyOpen, showHistoryHint, nudgeY]);
 
   useEffect(() => {
     const onResize = () => setHistoryRevealHeight(getHistoryRevealHeight());
@@ -443,32 +324,15 @@ export function AiStyleSplitLayout(props: AiStyleSplitLayoutProps) {
 
   useEffect(() => {
     if (!isUploadStep) {
-      panelY.set(0);
       panelHeight.set(UPLOAD_PANEL_HEIGHT);
       historyOpenRef.current = false;
       setHistoryOpen(false);
-      return;
     }
-    panelY.set(UPLOAD_PANEL_HEIGHT);
-    panelHeight.set(UPLOAD_PANEL_HEIGHT);
-    const controls = animate(panelY, 0, {
-      type: "spring",
-      damping: 36,
-      stiffness: 170,
-      mass: 1.15,
-    });
-    return () => controls.stop();
-  }, [isUploadStep, panelY, panelHeight]);
-
-  const resetPanelPosition = () => {
-    panelY.set(0);
-    nudgeY.set(0);
-  };
+  }, [isUploadStep, panelHeight]);
 
   const snapPanel = (open: boolean) => {
     historyOpenRef.current = open;
     setHistoryOpen(open);
-    resetPanelPosition();
     animate(panelHeight, open ? openPanelHeight : UPLOAD_PANEL_HEIGHT, {
       type: "spring",
       stiffness: 420,
@@ -566,41 +430,35 @@ export function AiStyleSplitLayout(props: AiStyleSplitLayoutProps) {
   }
 
   return (
-    <div className="relative flex h-[100dvh] flex-col overflow-hidden bg-white">
+    <div className="relative flex h-full min-h-0 flex-1 flex-col overflow-hidden bg-white">
       <div
         className={cn(
           "relative shrink-0 overflow-hidden",
-          isUploadStep && "min-h-0",
+          isUploadStep && "absolute inset-0",
           showResults && "h-[38dvh]",
         )}
-        style={isUploadStep ? { height: `calc(100dvh - ${UPLOAD_PANEL_HEIGHT}px)` } : undefined}
       >
         {isGalleryValidating ? (
           <GalleryValidatingHero previewUrl={props.validatingPreview!} />
         ) : showResults && props.photo ? (
           <ResultsHero photo={props.photo} />
         ) : (
-          <HeroCarousel audience={props.audience} hintActive={showHistoryHint} />
+          <TryOnHero />
         )}
-        <AiStyleChrome tone="dark" className="absolute inset-x-0 top-0" onBack={props.onGoHome} />
+        {isUploadStep ? null : (
+          <AiStyleChrome tone="dark" className="absolute inset-x-0 top-0" onBack={props.onGoHome} />
+        )}
       </div>
 
       {isUploadStep ? (
         <>
-          <motion.div
-            style={{ y: panelCombinedY, bottom: UPLOAD_PANEL_HEIGHT }}
-            className="pointer-events-none absolute inset-x-0 z-[15] flex justify-center pb-3"
-          >
-            <HistorySwipeHint visible={showHistoryHint} />
-          </motion.div>
-
-          <motion.div style={{ y: panelCombinedY }} className="absolute inset-x-0 bottom-0 z-10">
+          <motion.div className="absolute inset-x-0 bottom-0 z-10">
             <motion.div
               onPan={!historyOpen ? onPanelPan : undefined}
               onPanEnd={!historyOpen ? onPanelPanEnd : undefined}
               style={{ height: panelHeight }}
               className={cn(
-                "flex flex-col overflow-hidden rounded-t-[28px] bg-white px-5 pb-8 pt-5 text-left text-foreground shadow-[0_-16px_48px_-12px_rgba(0,0,0,0.28)]",
+                "flex flex-col overflow-hidden rounded-t-[28px] bg-white px-4 pb-4 pt-3 text-left text-foreground",
                 !historyOpen && "cursor-grab touch-none active:cursor-grabbing",
               )}
             >
@@ -609,7 +467,7 @@ export function AiStyleSplitLayout(props: AiStyleSplitLayoutProps) {
                 onPanEnd={historyOpen ? onPanelPanEnd : undefined}
                 className={cn(
                   "relative mb-2 flex w-full shrink-0 items-center",
-                  historyOpen ? "h-11 touch-none" : "justify-center py-2",
+                  historyOpen ? "h-11 touch-none" : "h-9 justify-center",
                   historyOpen && "cursor-grab active:cursor-grabbing",
                 )}
               >
@@ -631,7 +489,18 @@ export function AiStyleSplitLayout(props: AiStyleSplitLayoutProps) {
                     </div>
                   </>
                 ) : (
-                  <div aria-hidden className="h-1 w-10 rounded-full bg-muted-foreground/25" />
+                  <>
+                    <div aria-hidden className="h-1 w-10 rounded-full bg-foreground/20" />
+                    <button
+                      type="button"
+                      onClick={() => snapPanel(true)}
+                      onPointerDown={(event) => event.stopPropagation()}
+                      aria-label={t("aiStylePage.historyButton")}
+                      className="absolute right-0 grid size-[34px] place-items-center rounded-full bg-foreground/[0.06] text-foreground active:opacity-80"
+                    >
+                      <Clock className="size-4" strokeWidth={1.75} />
+                    </button>
+                  </>
                 )}
               </motion.div>
 
@@ -661,7 +530,7 @@ export function AiStyleSplitLayout(props: AiStyleSplitLayoutProps) {
                       initial={{ opacity: 0, y: 16 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.28, duration: 0.5, ease: "easeOut" }}
-                      className="mt-8 space-y-3"
+                      className="mt-6"
                     >
                       <UploadActions
                         onOpenCamera={props.openCamera}

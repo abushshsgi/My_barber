@@ -657,3 +657,74 @@
     }
   }
 }
+
+/*
+ * Web (brauzer): matn, tugma va navbar kattaroq.
+ * rem (text-sm, h-9, px-4, header 4.5rem) ildiz shrifti bilan o'sadi.
+ * text-[Npx] remga bog'lanmaydi — shu yerda alohida ko'tariladi.
+ * Native ilova (html[data-native-app]) o'z o'lchamida qoladi.
+ */
+@media (min-width: 1024px) {
+  html:not([data-native-app="true"]) {
+    font-size: 19px;
+  }
+
+  html:not([data-native-app="true"]) .text-\[9px\] {
+    font-size: 11px;
+  }
+  html:not([data-native-app="true"]) .text-\[10px\] {
+    font-size: 13px;
+  }
+  html:not([data-native-app="true"]) .text-\[11px\] {
+    font-size: 14px;
+  }
+  html:not([data-native-app="true"]) .text-\[12px\] {
+    font-size: 15px;
+  }
+  html:not([data-native-app="true"]) .text-\[13px\] {
+    font-size: 16px;
+  }
+  html:not([data-native-app="true"]) .text-\[14px\] {
+    font-size: 17px;
+  }
+  html:not([data-native-app="true"]) .text-\[15px\] {
+    font-size: 18px;
+  }
+  html:not([data-native-app="true"]) .text-\[16px\] {
+    font-size: 19px;
+  }
+}
+
+@media (max-width: 1023px) {
+  html:not([data-native-app="true"]) {
+    font-size: clamp(16px, calc(16px + (100vw - 320px) * 0.015), 17.5px);
+  }
+
+  html:not([data-native-app="true"]) .text-\[9px\] {
+    font-size: 11px;
+  }
+  html:not([data-native-app="true"]) .text-\[10px\] {
+    font-size: 12.5px;
+  }
+  html:not([data-native-app="true"]) .text-\[11px\] {
+    font-size: 13.5px;
+  }
+  html:not([data-native-app="true"]) .text-\[12px\] {
+    font-size: 14.5px;
+  }
+  html:not([data-native-app="true"]) .text-\[13px\] {
+    font-size: 15.5px;
+  }
+
+  html:not([data-native-app="true"]) {
+    --mobile-dock: calc(clamp(3.15rem, 11.5vw, 3.6rem) + env(safe-area-inset-bottom, 0px));
+  }
+
+  html:not([data-native-app="true"]) .pb-\[calc\(3\.5rem\+env\(safe-area-inset-bottom\)\)\] {
+    padding-bottom: var(--mobile-dock);
+  }
+
+  html:not([data-native-app="true"]) .bottom-\[calc\(3\.5rem\+env\(safe-area-inset-bottom\,0px\)\)\] {
+    bottom: var(--mobile-dock);
+  }
+}

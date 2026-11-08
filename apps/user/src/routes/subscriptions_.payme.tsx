@@ -6,8 +6,8 @@ export const Route = createFileRoute("/subscriptions_/payme")({
   ssr: false,
   head: () => ({
     meta: [
-      { title: "Payme to'lov — mysaloon.uz" },
-      { name: "description", content: "AI Premium obuna uchun Payme sandbox to'lov holati." },
+      { title: "Payme to‘lov — mysaloon.uz" },
+      { name: "description", content: "AI Premium obuna uchun Payme to‘lov holati." },
     ],
   }),
   component: PaymeReturnPage,
@@ -17,8 +17,7 @@ function PaymeReturnPage() {
   const orderId = typeof window !== "undefined" ? readStoredPaymeOrder() : null;
   return (
     <ProfileSubpageLayout
-      title="Payme Checkout"
-      subtitle="AI Premium to'lovi serverda tekshiriladi"
+      title="To‘lov"
       backTo="/wallet?section=subscriptions"
       strictBack
     >

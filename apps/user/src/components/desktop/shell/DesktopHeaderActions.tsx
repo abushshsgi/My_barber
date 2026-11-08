@@ -28,8 +28,8 @@ export function DesktopHeaderActions({ notificationsUnread = 0, chatUnread = 0 }
 
   const itemClass = (active: boolean) =>
     cn(
-      "relative inline-flex items-center justify-center gap-1.5 rounded-full font-bold transition-colors",
-      "h-9 min-w-9 px-2.5 text-[12px]",
+      "relative inline-flex items-center justify-center gap-2 rounded-full font-bold transition-colors",
+      "h-11 min-w-11 px-3 text-sm",
       active
         ? "bg-foreground text-background shadow-sm"
         : "text-muted-foreground hover:bg-background hover:text-foreground",
@@ -47,7 +47,7 @@ export function DesktopHeaderActions({ notificationsUnread = 0, chatUnread = 0 }
         aria-label={t("nav.notifications")}
         title={t("nav.notifications")}
       >
-        <Bell className="h-4 w-4 shrink-0" strokeWidth={2.2} />
+        <Bell className="h-5 w-5 shrink-0" strokeWidth={2.2} />
         <Badge count={notificationsUnread} />
       </Link>
 
@@ -57,7 +57,7 @@ export function DesktopHeaderActions({ notificationsUnread = 0, chatUnread = 0 }
         aria-label={t("nav.chat")}
         title={t("nav.chat")}
       >
-        <MessageCircle className="h-4 w-4 shrink-0" strokeWidth={2.2} />
+        <MessageCircle className="h-5 w-5 shrink-0" strokeWidth={2.2} />
         <span className="hidden 2xl:inline">{t("nav.chat")}</span>
         <Badge count={chatUnread} />
       </Link>

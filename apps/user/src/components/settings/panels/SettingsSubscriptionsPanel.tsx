@@ -1,177 +1,107 @@
-import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
-import {
-  Droplets,
-  Loader2,
-  Sparkles,
-  UserPlus,
-  Users,
-  Wand2,
-} from "lucide-react";
+import { useNavigate, useRouterState } from "@tanstack/react-router";
+import { ArrowRight, CheckCircle2, Loader2, ShieldCheck, X, XCircle } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
+import { markPaymeAwaitReturn, storePaymeOrder } from "@/components/subscriptions/PaymeCheckoutStatus";
 import {
   useSubscriptionCancel,
   useSubscriptionCheckout,
   useSubscriptionMe,
   useSubscriptionPlans,
 } from "@/hooks/use-subscription";
-import { getPublicSiteOrigin } from "@/lib/public-origin";
+import { hasValidUserSession } from "@/lib/api/client";
 import { type SubscriptionPlan } from "@/lib/api/subscriptions";
-import { storePaymeOrder } from "@/components/subscriptions/PaymeCheckoutStatus";
+import { getPublicSiteOrigin } from "@/lib/public-origin";
 import { pickFeatureLabel, pickPlanName } from "@/lib/plan-labels";
+import { FALLBACK_SUBSCRIPTION_PLANS } from "@/lib/subscription-fallback-plans";
 import { isPlanUpgrade, nextUpgradePlan } from "@/lib/subscription-upgrade";
+import { cn } from "@/lib/utils";
 
-function readSubscriptionDeepLink(searchStr: string) {
+function readFocusPlan(searchStr: string) {
   const sp = new URLSearchParams(searchStr.startsWith("?") ? searchStr.slice(1) : searchStr);
   const planRaw = (sp.get("plan") || "").toLowerCase();
-  const plan = planRaw === "starter" || planRaw === "plus" || planRaw === "pro" ? planRaw : null;
-  const returnToRaw = sp.get("returnTo");
-  const returnTo =
-    returnToRaw && returnToRaw.startsWith("/") && !returnToRaw.startsWith("//")
-      ? returnToRaw
-      : null;
-  return { plan, returnTo };
+  return planRaw === "starter" || planRaw === "plus" || planRaw === "pro" ? planRaw : null;
 }
 
-function dateLocale(lang: string) {
-  if (lang.startsWith("en")) return "en-US";
+function moneyLocale(lang: string) {
   if (lang.startsWith("ru")) return "ru-RU";
+  if (lang.startsWith("en")) return "en-US";
   return "uz-UZ";
-}
-
-function formatUzs(n: number, lang: string, currency: string) {
-  return `${n.toLocaleString(dateLocale(lang))} ${currency}`;
 }
 
 function formatDate(iso: string | null | undefined, lang: string) {
   if (!iso) return "—";
-  return new Date(iso).toLocaleDateString(dateLocale(lang), {
+  return new Date(iso).toLocaleDateString(moneyLocale(lang), {
     day: "numeric",
     month: "long",
     year: "numeric",
   });
 }
 
-function ShopPlanPicker({
-  plans,
-  picked,
-  busyCode,
-  pending,
-  locked = false,
-  upgrade = false,
-  onPick,
-  onSubscribe,
-}: {
-  plans: SubscriptionPlan[];
-  picked: string | null;
-  busyCode: string | null;
-  pending: boolean;
-  locked?: boolean;
-  upgrade?: boolean;
-  onPick: (code: string) => void;
-  onSubscribe: (code: string) => void;
-}) {
-  const { t, i18n } = useTranslation();
-  const lang = i18n.language;
-  const selected = plans.find((plan) => plan.code === picked) ?? plans[0] ?? null;
-  if (!selected) return null;
-  const included = selected.features.filter((feature) => feature.included !== false).slice(0, 4);
-  const busy = busyCode === selected.code || pending;
-  const cta = upgrade
-    ? locked
-      ? t("subscriptions.upgradeWait")
-      : t("subscriptions.upgradeTo", { plan: pickPlanName(selected, lang) })
-    : t("subscriptions.payWithPayme");
+function tagline(code: string, t: (key: string, opts?: { defaultValue?: string }) => string) {
+  if (code === "plus") return t("morph.paywall.taglinePlus", { defaultValue: "Studio, Parvarish va Tarkib ochiladi" });
+  if (code === "pro") return t("morph.paywall.taglinePro", { defaultValue: "100 try-on, Studio va eng yuqori limitlar" });
+  return t("morph.paywall.taglineStarter", { defaultValue: "Faqat try-on va chat" });
+}
+
+function RemainRow({ label, used, limit }: { label: string; used: number; limit: number }) {
+  const { t } = useTranslation();
+  const safeLimit = limit > 0 ? limit : 1;
+  const ratio = Math.min(1, Math.max(0, used / safeLimit));
+  const left = Math.max(0, safeLimit - used);
   return (
-    <div className="flex flex-col gap-3">
-      {plans.length > 1 ? (
-        <div className="flex gap-2">
-          {plans.map((plan) => {
-            const on = plan.code === selected.code;
-            return (
-              <button
-                key={plan.code}
-                type="button"
-                onClick={() => onPick(plan.code)}
-                className={
-                  on
-                    ? "h-10 flex-1 cursor-pointer rounded-full bg-foreground text-sm font-bold text-background"
-                    : "h-10 flex-1 cursor-pointer rounded-full border border-border bg-card text-sm font-bold"
-                }
-              >
-                {pickPlanName(plan, lang)}
-              </button>
-            );
-          })}
-        </div>
-      ) : null}
-      <article className="rounded-2xl border border-border bg-card p-4">
-        <div className="flex items-start justify-between gap-3">
-          <p className="text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
-            {t("subscriptions.upgradeSection")}
-          </p>
-          <p className="text-sm font-bold">
-            {formatUzs(selected.price_uzs, lang, t("common.currencySom"))}
-            <span className="font-semibold text-muted-foreground"> / {t("common.perMonth")}</span>
-          </p>
-        </div>
-        <h3 className="mt-1 text-xl font-bold tracking-tight">{pickPlanName(selected, lang)}</h3>
-        <ul className="mt-3 space-y-1 text-sm font-medium">
-          {included.map((feature) => (
-            <li key={feature.key} className="truncate">
-              {pickFeatureLabel(feature, lang)}
-            </li>
-          ))}
-        </ul>
-        <button
-          type="button"
-          disabled={busy || locked}
-          onClick={() => onSubscribe(selected.code)}
-          className="mt-4 flex h-11 w-full cursor-pointer items-center justify-center rounded-full bg-foreground text-sm font-bold text-background disabled:opacity-60"
-        >
-          {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : cta}
-        </button>
-      </article>
+    <div>
+      <div className="flex items-center justify-between text-[15px] font-bold">
+        <span>{label}</span>
+        <span>{t("profile.leftCount", { count: left, defaultValue: "{{count}} qoldi" })}</span>
+      </div>
+      <div className="mt-1 h-1.5 overflow-hidden rounded-full bg-black/10">
+        <div className="h-full rounded-full bg-[var(--morph-fg,#111)]" style={{ width: `${Math.round(ratio * 100)}%` }} />
+      </div>
     </div>
   );
 }
 
+/** Obuna sahifasi — ilovadagi SubscriptionsScreen tartibi va xavfsizlik qoidalari. */
 export function SettingsSubscriptionsPanel() {
   const { t, i18n } = useTranslation();
   const lang = i18n.language;
   const navigate = useNavigate();
   const searchStr = useRouterState({ select: (s) => s.location.searchStr });
-  const { plan: focusPlan } = useMemo(
-    () => readSubscriptionDeepLink(searchStr),
-    [searchStr],
-  );
+  const focusPlan = useMemo(() => readFocusPlan(searchStr), [searchStr]);
   const plansQ = useSubscriptionPlans();
   const meQ = useSubscriptionMe();
   const checkout = useSubscriptionCheckout();
   const cancelSub = useSubscriptionCancel();
   const [busyCode, setBusyCode] = useState<string | null>(null);
-  const [cancelOpen, setCancelOpen] = useState(false);
-  const [pickedPlan, setPickedPlan] = useState<string | null>(null);
+  const [pendingCode, setPendingCode] = useState<string | null>(null);
+  const [picked, setPicked] = useState<string | null>(null);
+  const [cancelView, setCancelView] = useState(false);
   const me = meQ.data;
-  const activeCode = me?.subscription?.plan_code ?? null;
   const sub = me?.subscription;
+  const activeCode = me?.has_active ? sub?.plan_code ?? null : null;
   const isCancelled = Boolean(
     me?.has_active && (me.status === "cancelled" || sub?.status === "cancelled" || sub?.cancelled_at),
   );
   const canCancel = Boolean(me?.can_cancel ?? sub?.can_cancel);
-  const endsLabel = formatDate(sub?.expires_at ?? sub?.ends_at ?? me?.expires_at, lang);
-  const refGenOn =
-    me?.referral_generation_enabled ?? me?.access?.referral_generation_enabled ?? true;
-  const daysLeft = me?.days_remaining ?? sub?.days_remaining ?? null;
+  const usage = me?.usage;
+  const endsAt = formatDate(sub?.expires_at ?? sub?.ends_at ?? me?.expires_at, lang);
 
-  const offerPlans = useMemo(() => {
-    const all = (plansQ.data ?? []).filter(
-      (plan) => plan.code !== "free" && plan.purchasable !== false,
+  const shopPlans = useMemo(() => {
+    const catalog = plansQ.data?.length ? plansQ.data : plansQ.isError ? FALLBACK_SUBSCRIPTION_PLANS : [];
+    return catalog.filter((plan) => plan.code !== "free" && plan.purchasable !== false);
+  }, [plansQ.data, plansQ.isError]);
+  const upgradeChoices = useMemo(() => {
+    if (!me?.has_active) return shopPlans;
+    return shopPlans.filter(
+      (plan) => (plan.code === "plus" || plan.code === "pro") && isPlanUpgrade(plan.code, activeCode),
     );
-    if (!me?.has_active || !activeCode) return all;
-    return all.filter((plan) => isPlanUpgrade(plan.code, activeCode));
-  }, [plansQ.data, me?.has_active, activeCode]);
+  }, [shopPlans, me?.has_active, activeCode]);
+
+  useEffect(() => {
+    setPicked(null);
+  }, [activeCode]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -182,311 +112,343 @@ export function SettingsSubscriptionsPanel() {
     void navigate({ to: "/subscriptions/payme" });
   }, [navigate]);
 
-  const usageRows = useMemo(() => {
-    if (!me?.has_active) return [];
-    const u = me.usage;
-    return [
-      {
-        icon: Sparkles,
-        label: t("subscriptions.usageAi"),
-        used: u.morph_ai_used,
-        limit: u.morph_ai_limit,
-        remaining: u.morph_ai_remaining,
-      },
-      {
-        icon: Wand2,
-        label: t("subscriptions.usageStudio"),
-        used: u.morph_studio_used,
-        limit: u.morph_studio_limit,
-        remaining: u.morph_studio_remaining,
-      },
-    ];
-  }, [me, t]);
+  const nextCode = me?.has_active ? nextUpgradePlan(activeCode) : null;
+  const selected =
+    upgradeChoices.find((plan) => plan.code === picked) ??
+    upgradeChoices.find((plan) => plan.code === focusPlan) ??
+    upgradeChoices.find((plan) => plan.code === nextCode) ??
+    upgradeChoices[0] ??
+    null;
 
-  const onSubscribe = async (plan_code: string) => {
-    if (isCancelled) {
-      toast.message(t("subscriptions.stillPremium"));
+  const currentName =
+    me?.has_active && sub
+      ? sub.plan
+        ? pickPlanName(sub.plan, lang)
+        : sub.plan_code.toUpperCase()
+      : me?.current_plan
+        ? pickPlanName(me.current_plan, lang)
+        : "Free";
+
+  const startCheckout = async (planCode: string) => {
+    if (!hasValidUserSession()) {
+      void navigate({ to: "/auth" });
       return;
     }
-    setBusyCode(plan_code);
+    if (isCancelled) return;
+    if (me?.has_active && !isPlanUpgrade(planCode, activeCode)) return;
+    if (!upgradeChoices.some((plan) => plan.code === planCode)) return;
+    setBusyCode(planCode);
     try {
       const origin = typeof window !== "undefined" ? window.location.origin : getPublicSiteOrigin();
-      const return_url = `${origin}/subscriptions/payme`;
       const res = await checkout.mutateAsync({
-        plan_code,
+        plan_code: planCode,
         method: "payme",
-        return_url,
+        return_url: `${origin}/subscriptions/payme`,
       });
-      if (res.order_id) storePaymeOrder(res.order_id);
-      if (res.checkout_url) {
-        window.location.assign(res.checkout_url);
+      if (!res.checkout_url || !res.order_id) {
+        toast.error(res.message || t("subscriptions.checkoutFailed", { defaultValue: "To‘lov ochilmadi" }));
         return;
       }
-      toast.error(res.message || t("subscriptions.checkoutFailed"));
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : t("subscriptions.genericError"));
+      storePaymeOrder(res.order_id);
+      markPaymeAwaitReturn();
+      setPendingCode(null);
+      window.location.assign(res.checkout_url);
+    } catch (error) {
+      const raw = error instanceof Error ? error.message : t("subscriptions.genericError", { defaultValue: "Xatolik" });
+      toast.error(/401|credentials|Authentication/i.test(raw) ? t("profile.paymeLogin", { defaultValue: "To‘lov uchun kiring" }) : raw);
     } finally {
       setBusyCode(null);
     }
   };
 
+  if (cancelView) {
+    return (
+      <CancelView
+        planLabel={currentName}
+        endsAt={endsAt}
+        canCancel={canCancel}
+        isCancelled={isCancelled}
+        busy={cancelSub.isPending}
+        onBack={() => setCancelView(false)}
+        onConfirm={async () => {
+          if (!canCancel) return;
+          try {
+            await cancelSub.mutateAsync();
+            toast.success(t("profile.cancelOk", { defaultValue: "Obuna bekor qilindi. Premium muddati tugaguncha ishlaydi." }));
+          } catch (error) {
+            toast.error(error instanceof Error ? error.message : t("profile.cancelFail", { defaultValue: "Bekor qilib bo‘lmadi" }));
+          }
+        }}
+      />
+    );
+  }
+
   return (
-    <div className="mt-4 space-y-6">
-      <p className="text-sm text-muted-foreground">
-        {me?.has_active
-          ? t("subscriptions.manageLead")
-          : t("subscriptions.subtitle")}
-      </p>
+    <div className="flex flex-col gap-2 pb-4">
+      <section className="rounded-2xl border border-black/10 bg-[var(--morph-card,#fff)] px-3.5 py-3">
+        <div className="flex items-center justify-between gap-3">
+          <p className="text-xs font-extrabold uppercase tracking-wide text-[var(--morph-muted,#737373)]">
+            {t("profile.subCurrent", { defaultValue: "Joriy obuna" })}
+          </p>
+          {canCancel ? (
+            <button type="button" onClick={() => setCancelView(true)} className="text-sm font-bold text-[var(--morph-muted,#737373)]">
+              {t("profile.cancelCta", { defaultValue: "Obunani bekor qilish" })}
+            </button>
+          ) : (
+            <p className="text-sm font-bold">
+              {me?.has_active
+                ? isCancelled
+                  ? t("profile.subCancelledActive", { defaultValue: "Bekor qilingan — Premium hali faol" })
+                  : t("profile.subActive", { defaultValue: "Faol" })
+                : "Free"}
+            </p>
+          )}
+        </div>
+        <p className="mt-1 truncate text-[22px] font-extrabold tracking-tight">{currentName}</p>
+        {me?.has_active ? (
+          <p className="text-sm font-semibold text-[var(--morph-muted,#737373)]">
+            {t("profile.subDaysLeft", {
+              count: sub?.days_remaining ?? me.days_remaining ?? 0,
+              defaultValue: "{{count}} kun qoldi",
+            })}
+          </p>
+        ) : null}
+        {usage ? (
+          <div className="mt-2 space-y-2">
+            <RemainRow
+              label={t("profile.meterAi", { defaultValue: "Morf AI" })}
+              used={usage.morph_ai_used}
+              limit={usage.morph_ai_limit || 1}
+            />
+            {typeof usage.morph_chat_tokens_limit === "number" ? (
+              <RemainRow
+                label={t("profile.meterChat", { defaultValue: "Chat" })}
+                used={usage.morph_chat_tokens_used ?? 0}
+                limit={usage.morph_chat_tokens_limit}
+              />
+            ) : null}
+          </div>
+        ) : null}
+      </section>
 
-      {/* Joriy holat — faol yoki yopiq */}
-      <section className="rounded-2xl border border-border bg-card p-4 shadow-[0_1px_2px_rgba(15,15,15,0.05)]">
-        {me?.has_active && sub ? (
-          <>
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <div className="min-w-0">
-                <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
-                  {t("subscriptions.current")}
-                </p>
-                <p className="mt-1 text-lg font-bold">
-                  {sub.plan ? pickPlanName(sub.plan, lang) : sub.plan_code}
-                  {sub.is_trial || sub.source === "referral_trial" ? (
-                    <span className="ml-2 text-sm font-semibold text-sky-600">
-                      · {t("subscriptions.trial")}
-                    </span>
-                  ) : null}
-                </p>
-                <dl className="mt-3 grid gap-1.5 text-xs text-muted-foreground sm:grid-cols-2">
-                  <div>
-                    <dt className="inline text-muted-foreground/80">{t("subscriptions.statusLabel")}: </dt>
-                    <dd className="inline font-semibold text-foreground">
-                      {isCancelled
-                        ? t("subscriptions.cancelledActive")
-                        : t("subscriptions.active")}
-                    </dd>
-                  </div>
-                  <div>
-                    <dt className="inline text-muted-foreground/80">{t("subscriptions.sourceLabel")}: </dt>
-                    <dd className="inline font-semibold text-foreground">
-                      {sub.is_trial || sub.source === "referral_trial"
-                        ? t("subscriptions.sourceReferral")
-                        : sub.source === "wallet"
-                          ? t("subscriptions.sourceWallet")
-                          : sub.source === "click" || sub.source === "payme"
-                            ? t("subscriptions.sourcePayment")
-                            : sub.source === "admin"
-                              ? t("subscriptions.sourceAdmin")
-                              : sub.source || t("subscriptions.sourceDefault")}
-                    </dd>
-                  </div>
-                  <div>
-                    <dt className="inline text-muted-foreground/80">{t("subscriptions.starts")}: </dt>
-                    <dd className="inline font-semibold text-foreground">
-                      {formatDate(sub.starts_at, lang)}
-                    </dd>
-                  </div>
-                  <div>
-                    <dt className="inline text-muted-foreground/80">{t("subscriptions.validUntil")}: </dt>
-                    <dd className="inline font-semibold text-foreground">
-                      {formatDate(sub.ends_at, lang)}
-                      {typeof daysLeft === "number" ? (
-                        <span className="text-muted-foreground">
-                          {" "}
-                          (
-                          {daysLeft === 0
-                            ? t("subscriptions.endsToday")
-                            : t("subscriptions.daysLeft", { count: daysLeft })}
-                          )
-                        </span>
-                      ) : null}
-                    </dd>
-                  </div>
-                </dl>
-              </div>
-              <span className="rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-bold text-emerald-700">
-                {isCancelled ? t("subscriptions.cancelledActive") : t("subscriptions.active")}
-              </span>
-            </div>
+      {plansQ.isError ? (
+        <button type="button" onClick={() => { void meQ.refetch(); void plansQ.refetch(); }} className="rounded-xl bg-black/5 px-3 py-3 text-left text-sm text-[var(--morph-muted,#737373)]">
+          {t("profile.plansLoadFail", { defaultValue: "Tariflar yuklanmadi. Qayta urinib ko‘ring." })}
+        </button>
+      ) : null}
 
-            <div className="mt-4 grid gap-3 sm:grid-cols-2">
-              {usageRows.map((row) => {
-                const pct =
-                  row.limit > 0 ? Math.min(100, Math.round((row.used / row.limit) * 100)) : 0;
-                const Icon = row.icon;
+      {plansQ.isLoading && shopPlans.length === 0 ? (
+        <div className="grid place-items-center py-8">
+          <Loader2 className="size-5 animate-spin" />
+        </div>
+      ) : selected ? (
+        <>
+          {upgradeChoices.length > 1 ? (
+            <div className="flex rounded-full bg-black/5 p-0.5">
+              {upgradeChoices.map((plan) => {
+                const on = plan.code === selected.code;
                 return (
-                  <div
-                    key={row.label}
-                    className="rounded-xl border border-border bg-background p-3"
+                  <button
+                    key={plan.code}
+                    type="button"
+                    onClick={() => setPicked(plan.code)}
+                    className={cn(
+                      "h-9 flex-1 rounded-full text-base font-semibold",
+                      on ? "bg-[var(--morph-fg,#111)] font-extrabold text-[var(--morph-bg,#fff)]" : "text-[var(--morph-muted,#737373)]",
+                    )}
                   >
-                    <div className="flex items-center gap-2 text-sm font-semibold">
-                      <Icon className="h-4 w-4" />
-                      {row.label}
-                    </div>
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      {row.limit > 0
-                        ? `${row.used} / ${row.limit} · ${t("subscriptions.usageLeft", { count: row.remaining })}`
-                        : t("subscriptions.notInPlan")}
-                    </p>
-                    {row.limit > 0 ? (
-                      <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-background">
-                        <div
-                          className="h-full rounded-full bg-foreground transition-all"
-                          style={{ width: `${pct}%` }}
-                        />
-                      </div>
-                    ) : null}
-                  </div>
+                    {pickPlanName(plan, lang)}
+                  </button>
                 );
               })}
             </div>
+          ) : null}
 
-            <div className="mt-3 flex flex-wrap gap-2 text-xs">
-              <span className="inline-flex items-center gap-1 rounded-full border border-border px-2.5 py-1">
-                <Users className="h-3.5 w-3.5" />
-                {me.family_unlimited
-                  ? t("subscriptions.familyUnlimited")
-                  : t("subscriptions.familyCount", { count: me.family_members_max ?? 0 })}
-              </span>
-              {me.morph_care ? (
-                <Link
-                  to="/ai-style/care"
-                  className="inline-flex items-center gap-1 rounded-full border border-border px-2.5 py-1 font-medium"
-                >
-                  <Droplets className="h-3.5 w-3.5" />
-                  {t("subscriptions.care")}
-                </Link>
-              ) : null}
-            </div>
-            <p className="mt-3 text-xs text-muted-foreground">{t("subscriptions.autoRenewOff")}</p>
-            {isCancelled ? (
-              <p className="mt-2 text-sm text-muted-foreground">
-                {t("subscriptions.cancelledBody", { date: endsLabel })}
-              </p>
-            ) : null}
-            {canCancel ? (
-              <button
-                type="button"
-                onClick={() => setCancelOpen(true)}
-                className="mt-4 inline-flex h-10 cursor-pointer items-center justify-center rounded-xl border border-border px-4 text-xs font-bold transition-colors duration-200 hover:bg-muted/50"
-              >
-                {t("subscriptions.cancelCta")}
-              </button>
-            ) : null}
-            {cancelOpen ? (
-              <div className="mt-4 rounded-xl border border-border bg-background p-4">
-                <p className="text-[15px] font-bold">{t("subscriptions.cancelTitle")}</p>
-                <p className="mt-2 text-sm text-muted-foreground">{t("subscriptions.cancelBody")}</p>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  <button
-                    type="button"
-                    disabled={cancelSub.isPending}
-                    onClick={async () => {
-                      try {
-                        const res = await cancelSub.mutateAsync();
-                        setCancelOpen(false);
-                        toast.success(t("subscriptions.cancelOk"));
-                      } catch (e) {
-                        toast.error(e instanceof Error ? e.message : t("subscriptions.cancelFail"));
-                      }
-                    }}
-                    className="inline-flex h-10 cursor-pointer items-center justify-center rounded-xl bg-foreground px-4 text-xs font-bold text-background disabled:opacity-60"
-                  >
-                    {cancelSub.isPending ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      t("subscriptions.cancelConfirm")
-                    )}
-                  </button>
-                  <button
-                    type="button"
-                    disabled={cancelSub.isPending}
-                    onClick={() => setCancelOpen(false)}
-                    className="inline-flex h-10 cursor-pointer items-center justify-center rounded-xl border border-border px-4 text-xs font-bold"
-                  >
-                    {t("subscriptions.cancelBack")}
-                  </button>
-                </div>
-              </div>
-            ) : null}
-          </>
-        ) : (
-          <>
-            <div className="flex flex-wrap items-start justify-between gap-3">
-              <div>
-                <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
-                  {t("subscriptions.current")}
-                </p>
-                <p className="mt-1 text-lg font-bold">
-                  {me?.current_plan ? pickPlanName(me.current_plan, lang) : "Free"}
-                </p>
-                <p className="mt-2 max-w-md text-sm text-muted-foreground">
-                  {t("subscriptions.freePlanBody")}
-                </p>
-              </div>
-              <span className="rounded-full bg-emerald-500/10 px-3 py-1 text-xs font-bold text-emerald-700">
-                Free
-              </span>
-            </div>
-            {me?.usage ? (
-              <div className="mt-4 grid gap-2 text-sm">
-                <p className="font-semibold">
-                  {t("subscriptions.usageAi")}: {me.usage.morph_ai_used}/{me.usage.morph_ai_limit || 1}
-                </p>
-                <p className="font-semibold">
-                  {t("subscriptions.usageChat")}:{" "}
-                  {me.usage.morph_chat_tokens_used ?? 0}/{me.usage.morph_chat_tokens_limit ?? 10000}
-                </p>
-              </div>
-            ) : null}
+          <Offer plan={selected} lang={lang} />
 
-            {refGenOn ? (
-              <div className="mt-4 rounded-xl border border-border bg-background p-3">
-                <div className="flex items-center justify-between gap-2 text-sm font-semibold">
-                  <span className="inline-flex items-center gap-2">
-                    <UserPlus className="h-4 w-4" />
-                    {t("subscriptions.referralOne")}
-                  </span>
-                  <span className="text-xs text-muted-foreground">
-                    {t("subscriptions.referralCredit", {
-                      count: me?.referral_credits ?? me?.access?.referral_credits ?? 0,
-                    })}
-                  </span>
-                </div>
-                <p className="mt-2 text-xs text-muted-foreground">{t("subscriptions.referralHint")}</p>
-                <Link
-                  to="/referrals"
-                  className="mt-3 inline-flex h-10 cursor-pointer items-center justify-center rounded-xl border border-border bg-card px-4 text-xs font-bold transition-colors duration-200 hover:bg-muted/50"
-                >
-                  {t("subscriptions.inviteFriends")}
-                </Link>
-              </div>
-            ) : null}
-          </>
-        )}
-      </section>
-
-      {meQ.isLoading || plansQ.isLoading ? (
-        <div className="flex justify-center py-10">
-          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-        </div>
-      ) : offerPlans.length ? (
-        <ShopPlanPicker
-          plans={offerPlans}
-          picked={pickedPlan ?? (me?.has_active ? nextUpgradePlan(activeCode) : focusPlan)}
-          busyCode={busyCode}
-          pending={checkout.isPending}
-          locked={isCancelled}
-          upgrade={Boolean(me?.has_active)}
-          onPick={setPickedPlan}
-          onSubscribe={onSubscribe}
-        />
+          <button
+            type="button"
+            disabled={isCancelled || busyCode === selected.code}
+            onClick={() => setPendingCode(selected.code)}
+            className="mt-auto flex h-12 items-center justify-center gap-2 rounded-full bg-[var(--morph-fg,#111)] text-base font-extrabold text-[var(--morph-bg,#fff)] disabled:opacity-45"
+          >
+            {busyCode === selected.code ? (
+              <Loader2 className="size-5 animate-spin" />
+            ) : (
+              <>
+                {isCancelled
+                  ? t("profile.upgradeWait", { defaultValue: "Muddat tugagach" })
+                  : t("morph.paywall.ctaCards", { defaultValue: "Uzcard / Humo orqali to‘lash" })}
+                {isCancelled ? null : <ArrowRight className="size-4" />}
+              </>
+            )}
+          </button>
+        </>
       ) : me?.has_active ? (
-        <p className="text-sm text-muted-foreground">{t("subscriptions.highestPlan")}</p>
+        <p className="text-sm text-[var(--morph-muted,#737373)]">
+          {t("profile.highestPlan", { defaultValue: "Siz Pro tarifidasiz — bu eng yuqori reja." })}
+        </p>
       ) : null}
 
-      <p className="text-[11px] leading-relaxed text-muted-foreground">
-        {t("subscriptions.footnote")}
-        {refGenOn ? t("subscriptions.footnoteReferral") : ""}
+      {pendingCode ? (
+        <PaySheet
+          busy={Boolean(busyCode)}
+          onClose={() => { if (!busyCode) setPendingCode(null); }}
+          onPay={() => void startCheckout(pendingCode)}
+        />
+      ) : null}
+    </div>
+  );
+}
+
+function Offer({ plan, lang }: { plan: SubscriptionPlan; lang: string }) {
+  const { t } = useTranslation();
+  return (
+    <article className="rounded-[18px] border border-black/10 bg-[var(--morph-card,#fff)] px-3.5 py-2.5">
+      <h2 className="text-2xl font-extrabold tracking-tight">{pickPlanName(plan, lang)}</h2>
+      <p className="truncate text-sm text-[var(--morph-muted,#737373)]">{tagline(plan.code, t)}</p>
+      <p className="mt-1 flex items-baseline gap-1.5">
+        <span className="text-[32px] font-extrabold leading-9 tracking-tight">
+          {plan.price_uzs.toLocaleString(moneyLocale(lang))}
+        </span>
+        <span className="text-[15px] font-semibold text-[var(--morph-muted,#737373)]">
+          {t("morph.paywall.currencyShort", { defaultValue: "so‘m" })} / {t("morph.paywall.monthShort", { defaultValue: "oy" })}
+        </span>
       </p>
+      <div className="my-2 h-px bg-black/10" />
+      <p className="mb-1 text-xs font-extrabold uppercase tracking-wide text-[var(--morph-muted,#737373)]">
+        {t("morph.paywall.includes", { defaultValue: "Nima kiradi" })}
+      </p>
+      <ul className="space-y-0.5">
+        {plan.features.map((feature) => {
+          const included = feature.included !== false;
+          return (
+            <li key={feature.key} className="flex items-center gap-2">
+              {included ? (
+                <CheckCircle2 className="size-4 shrink-0" />
+              ) : (
+                <XCircle className="size-4 shrink-0 text-[var(--morph-muted,#737373)]" />
+              )}
+              <span className={cn("truncate text-[15px] font-medium", !included && "text-[var(--morph-muted,#737373)]")}>
+                {pickFeatureLabel(feature, lang)}
+              </span>
+            </li>
+          );
+        })}
+      </ul>
+    </article>
+  );
+}
+
+function PaySheet({ busy, onClose, onPay }: { busy: boolean; onClose: () => void; onPay: () => void }) {
+  const { t } = useTranslation();
+  const steps = [
+    t("morph.paywall.payStep1", { defaultValue: "Karta raqami va amal qilish muddatini kiriting" }),
+    t("morph.paywall.payStep2", { defaultValue: "SMS-kod bilan tasdiqlang — u karta ulangan raqamga keladi" }),
+    t("morph.paywall.payStep3", { defaultValue: "Ilovaga qayting va Premium oling" }),
+  ];
+  return (
+    <div className="fixed inset-0 z-50 flex items-end bg-black/40" onClick={onClose}>
+      <div
+        className="w-full rounded-t-3xl bg-[var(--morph-card,#fff)] px-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-3 text-[var(--morph-fg,#111)]"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <div className="mb-3 flex items-center justify-between">
+          <span className="mx-auto h-1 w-10 rounded-full bg-black/15" />
+          <button type="button" onClick={onClose} aria-label={t("common.close", { defaultValue: "Yopish" })} className="grid size-8 place-items-center rounded-full bg-black/5">
+            <X className="size-4" />
+          </button>
+        </div>
+        <p className="text-lg font-extrabold">{t("morph.paywall.paySheetTitle", { defaultValue: "Uzcard yoki Humo kartasi bilan to‘lov" })}</p>
+        <p className="mt-1 text-sm text-[var(--morph-muted,#737373)]">
+          {t("morph.paywall.paySheetLead", { defaultValue: "Hozir xavfsiz Payme sahifasi ochiladi. O‘zbekistondagi istalgan bank kartasi — Uzcard yoki Humo — mos keladi." })}
+        </p>
+        <div className="mt-3 flex gap-2">
+          {["HUMO", "UZCARD", "VISA"].map((brand) => (
+            <span key={brand} className="rounded-lg bg-[#111] px-2 py-1 text-[11px] font-extrabold text-white">{brand}</span>
+          ))}
+          <span className="inline-flex items-center gap-1 rounded-lg bg-black/5 px-2 py-1 text-[11px] font-bold text-[#2563EB]">
+            <ShieldCheck className="size-3.5" />
+            3D Secure
+          </span>
+        </div>
+        <ol className="mt-3 space-y-2 rounded-2xl bg-black/5 p-3">
+          {steps.map((line, index) => (
+            <li key={line} className="flex items-center gap-2 text-sm font-medium">
+              <span className="grid size-5 shrink-0 place-items-center rounded-full bg-[var(--morph-fg,#111)] text-[11px] font-bold text-[var(--morph-bg,#fff)]">{index + 1}</span>
+              {line}
+            </li>
+          ))}
+        </ol>
+        <button
+          type="button"
+          disabled={busy}
+          onClick={onPay}
+          className="mt-4 flex h-12 w-full items-center justify-center gap-2 rounded-full bg-[var(--morph-fg,#111)] text-base font-extrabold text-[var(--morph-bg,#fff)] disabled:opacity-60"
+        >
+          {busy ? <Loader2 className="size-5 animate-spin" /> : t("morph.paywall.paySheetCta", { defaultValue: "To‘lash" })}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function CancelView({
+  planLabel,
+  endsAt,
+  canCancel,
+  isCancelled,
+  busy,
+  onBack,
+  onConfirm,
+}: {
+  planLabel: string;
+  endsAt: string;
+  canCancel: boolean;
+  isCancelled: boolean;
+  busy: boolean;
+  onBack: () => void;
+  onConfirm: () => Promise<void>;
+}) {
+  const { t } = useTranslation();
+  const title = isCancelled
+    ? t("profile.subCancelledActive", { defaultValue: "Bekor qilingan — Premium hali faol" })
+    : t("profile.cancelTitle", { defaultValue: "Obunani bekor qilasizmi?" });
+  const body = isCancelled
+    ? t("profile.subCancelledBody", { date: endsAt, defaultValue: "Obunangiz bekor qilindi. Premium imkoniyatlari {{date}} gacha ishlaydi." })
+    : t("profile.cancelBody", { defaultValue: "Obunani bekor qilsangiz ham, to‘langan muddat tugaguncha AI Premium ishlaydi. To‘lov qaytarilmaydi." });
+  const facts = [
+    `${t("profile.premiumName", { defaultValue: "AI Premium" })} · ${planLabel}`,
+    t("profile.cancelKeepUntil", { date: endsAt, defaultValue: "Premium {{date}} gacha ishlaydi" }),
+    t("profile.subAutoRenewOff", { defaultValue: "Avtomatik yangilanish: o‘chirilgan" }),
+    t("profile.cancelNoRefund", { defaultValue: "To‘lov avtomatik qaytarilmaydi" }),
+    t("profile.cancelPaymeSafe", { defaultValue: "Payme tranzaksiyasi o‘zgarmaydi" }),
+  ];
+  return (
+    <div className="pb-6">
+      <h2 className="text-xl font-extrabold">{title}</h2>
+      <p className="mt-2 text-sm text-[var(--morph-muted,#737373)]">{body}</p>
+      <ul className="mt-4 space-y-2">
+        {facts.map((fact) => (
+          <li key={fact} className="flex items-start gap-2 text-sm font-medium">
+            <ShieldCheck className="mt-0.5 size-4 shrink-0" />
+            {fact}
+          </li>
+        ))}
+      </ul>
+      {canCancel && !isCancelled ? (
+        <button
+          type="button"
+          disabled={busy}
+          onClick={() => void onConfirm()}
+          className="mt-5 flex h-12 w-full items-center justify-center rounded-2xl bg-[var(--morph-fg,#111)] text-sm font-extrabold text-[var(--morph-bg,#fff)] disabled:opacity-60"
+        >
+          {busy ? <Loader2 className="size-4 animate-spin" /> : t("profile.cancelConfirm", { defaultValue: "Obunani bekor qilish" })}
+        </button>
+      ) : null}
+      <button type="button" disabled={busy} onClick={onBack} className="mt-2 flex h-11 w-full items-center justify-center text-sm font-bold">
+        {t("profile.cancelBack", { defaultValue: "Ortga qaytish" })}
+      </button>
     </div>
   );
 }

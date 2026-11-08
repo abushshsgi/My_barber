@@ -64,7 +64,7 @@ export function SalonSectionNav({
     <nav
       className={cn(
         "sticky z-20 border-b border-border bg-background/95 backdrop-blur-md",
-        isMobile ? "-mx-4 top-0 py-2.5" : "top-0 -mx-1 py-3 lg:top-[4.5rem]",
+        isMobile ? "-mx-4 top-0 py-2.5" : "top-0 -mx-1 py-3 lg:top-[5.25rem]",
       )}
       style={isMobile ? { top: "env(safe-area-inset-top, 0px)" } : undefined}
     >

@@ -46,7 +46,7 @@ export function MorphMobileProfile() {
   const history = historyQ.data ?? [];
 
   return (
-    <div className="min-h-[70vh] bg-[var(--morph-bg,var(--background))] px-4 pb-[max(6rem,calc(env(safe-area-inset-bottom)+5rem))] pt-[max(2.5rem,env(safe-area-inset-top))] text-[var(--morph-fg,inherit)]">
+    <div className="-mx-4 min-h-[70vh] bg-[var(--morph-bg,var(--background))] px-[clamp(0.75rem,3.2vw,1.25rem)] pb-[max(6rem,calc(env(safe-area-inset-bottom)+5rem))] pt-[max(1.25rem,env(safe-area-inset-top))] text-[var(--morph-fg,inherit)] sm:-mx-6 md:-mx-8">
       <div className="flex items-center gap-3">
         <UserAvatar name={user.name} src={user.avatar} size={56} editable={loggedIn} />
         <Link to="/settings" className="min-w-0 flex-1">
@@ -62,7 +62,7 @@ export function MorphMobileProfile() {
 
       <Link
         to="/subscriptions"
-        className="mt-5 block rounded-3xl border border-black/10 bg-[var(--morph-card,#fff)] p-4"
+        className="mt-5 block rounded-3xl border border-black/12 bg-[var(--morph-card,#fff)] p-[clamp(0.85rem,3vw,1.15rem)]"
       >
         <div className="flex items-center gap-4">
           <div className="min-w-0 flex-1">
@@ -93,18 +93,17 @@ export function MorphMobileProfile() {
         </p>
       </Link>
 
-      <div className="mt-4 grid grid-cols-3 gap-2">
+      <div className="mt-4 grid grid-cols-3 gap-[clamp(0.4rem,2vw,0.75rem)]">
         <Quick to="/wallet" icon={Wallet} label={t("profile.wallet")} />
         <Quick
           to="/ai-style/history"
           icon={Images}
           label={t("morph.looks", { defaultValue: "Looklar" })}
-          value={String(history.length)}
         />
         <Quick to="/ai-style/studio" icon={Sparkles} label={t("nav.morphStudio", { defaultValue: "Studio" })} />
       </div>
 
-      <div className="mt-4 overflow-hidden rounded-3xl bg-[var(--morph-card,#fff)]">
+      <div className="mt-4 overflow-hidden rounded-3xl border border-black/12 bg-[var(--morph-card,#fff)]">
         <Row to="/settings" icon={Settings} title={t("profile.settings")} subtitle={t("profile.settingsSubtitle", { defaultValue: "Hisob, til, ko‘rinish" })} />
         <Row
           to="/notifications"
@@ -131,7 +130,7 @@ export function MorphMobileProfile() {
       {history.length === 0 ? (
         <Link
           to="/ai-style"
-          className="mt-3 flex items-center gap-3 rounded-3xl bg-[var(--morph-card,#fff)] p-4"
+          className="mt-3 flex items-center gap-3 rounded-3xl border border-black/12 bg-[var(--morph-card,#fff)] p-[clamp(0.85rem,3vw,1.15rem)]"
         >
           <span className="grid size-10 place-items-center rounded-2xl bg-black/5">
             <Camera className="size-5" />
@@ -152,7 +151,7 @@ export function MorphMobileProfile() {
             <Link
               key={item.id}
               to="/ai-style/history"
-              className="relative h-28 w-24 shrink-0 overflow-hidden rounded-2xl bg-black/5"
+              className="relative h-[clamp(6.5rem,28vw,8rem)] w-[clamp(5.25rem,22vw,6.5rem)] shrink-0 overflow-hidden rounded-2xl border border-black/10 bg-black/5"
             >
               {item.after_url || item.before_url ? (
                 <img
@@ -173,7 +172,7 @@ export function MorphMobileProfile() {
         <button
           type="button"
           onClick={handleLogout}
-          className="mt-6 flex w-full items-center justify-center gap-2 rounded-2xl py-3 text-sm font-semibold text-[#FF3B30]"
+          className="mt-6 flex w-full items-center justify-center gap-2 rounded-2xl border border-[#FF3B30]/25 py-3 text-sm font-semibold text-[#FF3B30]"
         >
           <LogOut className="size-4" />
           {t("profile.logout", { defaultValue: "Chiqish" })}
@@ -219,20 +218,18 @@ function Quick({
   to,
   icon: Icon,
   label,
-  value,
 }: {
   to: "/wallet" | "/ai-style/history" | "/ai-style/studio";
   icon: typeof Wallet;
   label: string;
-  value?: string;
 }) {
   return (
-    <Link to={to} className="flex flex-col items-center gap-2 rounded-3xl bg-[var(--morph-card,#fff)] px-2 py-3 text-center">
-      <span className="grid size-10 place-items-center rounded-2xl bg-black/5">
-        <Icon className="size-5" />
-      </span>
-      {value ? <span className="text-sm font-semibold">{value}</span> : null}
-      <span className="text-[11px] font-semibold leading-tight">{label}</span>
+    <Link
+      to={to}
+      className="relative flex h-full min-h-[4.75rem] min-w-0 items-center justify-center rounded-2xl border border-black/12 bg-[var(--morph-card,#fff)] px-1.5 text-center"
+    >
+      <Icon className="size-6 -translate-y-1.5" strokeWidth={1.5} />
+      <span className="absolute inset-x-1 bottom-1.5 text-[11px] font-semibold leading-tight">{label}</span>
     </Link>
   );
 }
@@ -258,7 +255,7 @@ function Row({
     <Link
       to={to}
       search={search}
-      className={`flex items-center gap-3 px-4 py-3.5 ${last ? "" : "border-b border-black/5"}`}
+      className={`flex items-center gap-3 px-[clamp(0.85rem,3vw,1.15rem)] py-3.5 ${last ? "" : "border-b border-black/10"}`}
     >
       <Icon className="size-5 shrink-0" />
       <span className="min-w-0 flex-1">

@@ -48,13 +48,13 @@ export function AudienceSwitch({ showProfileHint = true, variant = "default" }: 
               title={t(opt.tKey)}
               onClick={() => setAudience(opt.key)}
               className={cn(
-                "inline-flex items-center gap-1.5 rounded-full px-2 py-2 text-[12px] font-bold transition-colors 2xl:px-3",
+                "inline-flex items-center gap-2 rounded-full px-2.5 py-2 text-sm font-bold transition-colors 2xl:px-3.5",
                 active
                   ? "bg-foreground text-background shadow-sm"
                   : "text-muted-foreground hover:bg-background hover:text-foreground",
               )}
             >
-              <Icon className="h-3.5 w-3.5 shrink-0" strokeWidth={2.2} />
+              <Icon className="h-4 w-4 shrink-0" strokeWidth={2.2} />
               <span className="hidden 2xl:inline">{t(opt.tKey)}</span>
             </button>
           );

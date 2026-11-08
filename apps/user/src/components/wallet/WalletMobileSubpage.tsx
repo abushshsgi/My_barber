@@ -15,8 +15,14 @@ export function WalletMobileSubpage({ section, backTo = "/wallet" }: Props) {
 
   return (
     <MobilePageShell
-      title={t("walletPage.title")}
-      subtitle={t(meta.titleKey, { defaultValue: meta.defaultTitle })}
+      title={
+        section === "subscriptions"
+          ? t("profile.subscriptions", { defaultValue: "Obunalar" })
+          : t("walletPage.title")
+      }
+      subtitle={
+        section === "subscriptions" ? undefined : t(meta.titleKey, { defaultValue: meta.defaultTitle })
+      }
       backTo={backTo}
       strictBack
       flush

@@ -3,9 +3,11 @@ import { z } from "zod";
 import { DesktopPageSplit } from "@/components/desktop/DesktopPageSplit";
 import { SettingsDesktopPage } from "@/components/desktop/pages/SettingsDesktopPage";
 import { ProfileUpgradeButton } from "@/components/profile/ProfileUpgradeButton";
+import { MorphMobileSettings } from "@/components/settings/MorphMobileSettings";
 import { SettingsAirbnbSidebar } from "@/components/settings/SettingsAirbnbSidebar";
 import { SettingsPanelContent } from "@/components/settings/SettingsPanelContent";
 import { useSettingsPage } from "@/components/settings/useSettingsPage";
+import { useAppShell } from "@/hooks/use-app-shell";
 import { ProfileSubpageLayout } from "@/components/profile/ProfileSubpageLayout";
 import {
   parseSettingsEdit,
@@ -113,6 +115,7 @@ function SettingsMobile(props: PanelProps & { showIndex: boolean }) {
 }
 
 function Settings() {
+  const { shell } = useAppShell();
   const state = useSettingsPage();
   const search = Route.useSearch();
   const navigate = Route.useNavigate();
@@ -147,9 +150,17 @@ function Settings() {
     onAddressEditorClose,
   };
 
+  const morphHub = shell === "morph" && section !== "security";
+
   return (
     <DesktopPageSplit
-      mobile={<SettingsMobile {...panelProps} showIndex={!hasMobileDetail} />}
+      mobile={
+        morphHub ? (
+          <MorphMobileSettings />
+        ) : (
+          <SettingsMobile {...panelProps} showIndex={!hasMobileDetail} />
+        )
+      }
       desktop={<SettingsDesktopPage {...panelProps} />}
     />
   );

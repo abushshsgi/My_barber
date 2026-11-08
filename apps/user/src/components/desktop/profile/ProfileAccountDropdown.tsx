@@ -43,7 +43,7 @@ export function ProfileAccountDropdown({ notificationsUnread: notificationsUnrea
     );
 
   const triggerClass = cn(
-    "relative inline-flex h-9 min-w-9 items-center justify-center rounded-full px-2 font-bold transition-colors",
+    "relative inline-flex h-11 min-w-11 items-center justify-center rounded-full px-2 font-bold transition-colors",
     profileActive
       ? "bg-foreground text-background shadow-sm"
       : "text-muted-foreground hover:bg-background hover:text-foreground",
@@ -59,14 +59,14 @@ export function ProfileAccountDropdown({ notificationsUnread: notificationsUnrea
         {initials ? (
           <span
             className={cn(
-              "grid h-6 w-6 place-items-center rounded-full text-[10px] font-bold leading-none",
+              "grid h-8 w-8 place-items-center rounded-full text-xs font-bold leading-none",
               profileActive ? "bg-background text-foreground" : "bg-foreground/10 text-foreground",
             )}
           >
             {initials}
           </span>
         ) : (
-          <User className="h-4 w-4 shrink-0" strokeWidth={2.2} />
+          <User className="h-5 w-5 shrink-0" strokeWidth={2.2} />
         )}
       </DropdownMenuTrigger>
       <DropdownMenuContent

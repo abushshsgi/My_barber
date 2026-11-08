@@ -170,7 +170,7 @@ export function MorphChatAppView({
               else onSend();
             }
           }}
-          className="max-h-16 min-h-6 flex-1 resize-none bg-transparent px-2 py-1 text-[15px] leading-5 text-[#111111] outline-none placeholder:text-[#737373] disabled:opacity-50"
+          className="no-scrollbar max-h-16 min-h-6 flex-1 resize-none bg-transparent px-2 py-1 text-base leading-6 text-[#111111] outline-none placeholder:text-[#737373] disabled:opacity-50"
         />
         {input.trim() || sending ? (
           <button
@@ -311,7 +311,7 @@ export function MorphChatAppView({
           <Grid3X3 className="size-5" />
           {t("aiStylePage.chat.menu.library")}
         </button>
-        <div className="mt-2 min-h-0 flex-1 overflow-y-auto">
+        <div className="no-scrollbar mt-2 min-h-0 flex-1 overflow-y-auto">
           <p className="px-2 text-[12px] font-semibold text-[#737373]">{t("aiStylePage.chat.menu.history")}</p>
           {recent.length === 0 ? (
             <p className="px-2 py-3 text-[13px] text-[#737373]">{t("aiStylePage.chat.historyEmpty")}</p>
@@ -380,7 +380,7 @@ export function MorphChatAppView({
 
   if (!chatOpen) {
     return (
-      <div className="flex h-dvh flex-col bg-[var(--morph-bg,#FAFAFA)] text-[var(--morph-fg,#111111)] lg:h-[calc(100dvh-6rem)]">
+      <div className="flex h-dvh flex-col overflow-hidden bg-[var(--morph-bg,#FAFAFA)] text-[var(--morph-fg,#111111)] lg:h-[calc(100dvh-6rem)]">
         <header className="flex items-center px-4 pt-[max(0.75rem,env(safe-area-inset-top))]">
           <button
             type="button"
@@ -401,21 +401,17 @@ export function MorphChatAppView({
           </button>
         </header>
         <div className="flex flex-1 flex-col items-center justify-center px-6 text-center">
-          <span className="mb-3 inline-flex items-center gap-1.5 rounded-full border border-black/15 px-3 py-1.5 text-[11px] font-bold tracking-wide uppercase dark:border-white/20">
-            <Sparkles className="size-3" />
-            Morf AI
-          </span>
-          <h1 className="max-w-[16rem] text-[22px] leading-7 font-bold tracking-tight">
+          <h1 className="max-w-[22rem] text-[28px] leading-[34px] font-bold tracking-tight">
             {t("aiStylePage.chat.home.headline")}
           </h1>
-          <span className="mt-2 h-0.5 w-8 rounded-full bg-current" />
-          <p className="mt-2 max-w-[18rem] text-[13px] leading-5 text-[var(--morph-muted,#737373)]">
+          <span className="mt-3 h-[3px] w-10 rounded-full bg-current" />
+          <p className="mt-3 max-w-[22rem] text-[15px] leading-6 text-[var(--morph-muted,#737373)]">
             {t("aiStylePage.chat.home.subtitle")}
           </p>
         </div>
         <div className="px-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
           {notice}
-          <div className="mb-3 flex gap-2 overflow-x-auto pb-1">
+          <div className="no-scrollbar mb-3 flex gap-2 overflow-x-auto pb-1">
             {prompts.map((prompt) => {
               const Icon = prompt.icon;
               return (
@@ -424,7 +420,7 @@ export function MorphChatAppView({
                   type="button"
                   disabled={sending || chatLocked}
                   onClick={() => onQuick(prompt.text)}
-                  className="inline-flex max-w-[220px] shrink-0 cursor-pointer items-center gap-1.5 rounded-2xl border border-black/10 bg-white px-3 py-2 text-[12.5px] font-medium disabled:opacity-45 dark:border-white/15 dark:bg-[#141414]"
+                  className="inline-flex max-w-[240px] shrink-0 cursor-pointer items-center gap-1.5 rounded-2xl border border-black/10 bg-white px-3.5 py-2.5 text-sm font-medium disabled:opacity-45 dark:border-white/15 dark:bg-[#141414]"
                 >
                   <Icon className="size-3.5 shrink-0" />
                   <span className="truncate">{prompt.label}</span>
@@ -440,7 +436,7 @@ export function MorphChatAppView({
   }
 
   return (
-    <div className="flex h-dvh flex-col bg-[var(--morph-bg,#FAFAFA)] text-[var(--morph-fg,#111111)] lg:h-[calc(100dvh-6rem)]">
+    <div className="flex h-dvh flex-col overflow-hidden bg-[var(--morph-bg,#FAFAFA)] text-[var(--morph-fg,#111111)] lg:h-[calc(100dvh-6rem)]">
       <header className="relative flex items-center gap-1.5 border-b border-black/10 px-3 py-1 pt-[max(0.35rem,env(safe-area-inset-top))] dark:border-white/10">
         <button
           type="button"
@@ -471,7 +467,7 @@ export function MorphChatAppView({
           <ArrowRight className="size-5" />
         </button>
       </header>
-      <div className="min-h-0 flex-1 overflow-y-auto py-3">
+      <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto py-3">
         {messages.map((msg) => {
           if (msg.role === "assistant" && msg.id === "pending" && !msg.content && !msg.blocks?.length) {
             return (
@@ -487,7 +483,7 @@ export function MorphChatAppView({
           if (msg.role === "user") {
             return (
               <div key={msg.id} className="mb-4 flex justify-end px-4">
-                <p className="max-w-[82%] rounded-[22px] rounded-br-md border border-black/10 bg-white px-4 py-3 text-[14px] leading-5 dark:border-white/15 dark:bg-[#1C1C1C]">
+                <p className="max-w-[82%] rounded-[22px] rounded-br-md border border-black/10 bg-white px-4 py-3 text-base leading-6 dark:border-white/15 dark:bg-[#1C1C1C]">
                   {msg.content}
                 </p>
               </div>
@@ -495,7 +491,7 @@ export function MorphChatAppView({
           }
           const rendered = visualBlocks(msg.content, msg.blocks, msg.hairstyles);
           return (
-            <div key={msg.id} className="mb-4 px-4 text-[14px] leading-5">
+            <div key={msg.id} className="mb-4 px-4 text-base leading-6">
               {rendered.length ? (
                 <ChatContentBlocks blocks={rendered} onOpenHairstyle={openStyle} />
               ) : (

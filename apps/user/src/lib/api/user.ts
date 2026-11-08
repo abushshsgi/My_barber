@@ -33,6 +33,11 @@ export async function uploadMyAvatar(file: File): Promise<ApiUser> {
   return apiJson<ApiUser>("/api/v1/users/me/", { method: "PATCH", body });
 }
 
+/** POST /api/v1/users/me/delete/ — ilova bilan bir xil: hisob hozir o‘chadi. */
+export async function deleteMyAccount(): Promise<{ ok: boolean; code: string }> {
+  return apiJson("/api/v1/users/me/delete/", { method: "POST" });
+}
+
 export async function clearMyAvatar(): Promise<ApiUser> {
   return apiJson<ApiUser>("/api/v1/users/me/", {
     method: "PATCH",

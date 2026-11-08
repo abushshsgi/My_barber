@@ -3,10 +3,10 @@ export const DESKTOP_SHELL_INSET =
   "mx-auto w-full px-4 sm:px-6 md:px-8 lg:max-w-[1680px] lg:px-10 xl:px-12 2xl:px-12";
 
 /** Desktop sticky header height — keep in sync with calc(100dvh-…) consumers. */
-export const DESKTOP_HEADER_HEIGHT = "4.5rem";
-export const DESKTOP_HEADER_HEIGHT_CLASS = "h-[4.5rem]";
-export const DESKTOP_HEADER_OFFSET_CLASS = "lg:top-[4.5rem]";
-export const DESKTOP_VIEWPORT_BELOW_HEADER = "h-[calc(100dvh-4.5rem)]";
+export const DESKTOP_HEADER_HEIGHT = "5.25rem";
+export const DESKTOP_HEADER_HEIGHT_CLASS = "h-[5.25rem]";
+export const DESKTOP_HEADER_OFFSET_CLASS = "lg:top-[5.25rem]";
+export const DESKTOP_VIEWPORT_BELOW_HEADER = "h-[calc(100dvh-5.25rem)]";
 
 /** Bazaar-style pages align main content with the shell inset. */
 export const DESKTOP_BAZAAR_INSET = DESKTOP_SHELL_INSET;

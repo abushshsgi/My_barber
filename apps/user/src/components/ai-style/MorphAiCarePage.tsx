@@ -62,6 +62,10 @@ export function MorphAiCarePage() {
     texture: "",
     colorStatus: "",
   });
+  const [forceQuiz, setForceQuiz] = useState(() => {
+    if (typeof sessionStorage === "undefined") return false;
+    return sessionStorage.getItem("mysaloon.care.retake") === "1";
+  });
   const [step, setStep] = useState<QuizStep | "plan">(0);
   const [savingQuiz, setSavingQuiz] = useState(false);
   const [quizError, setQuizError] = useState("");
@@ -141,7 +145,14 @@ export function MorphAiCarePage() {
   }, []);
 
   useEffect(() => {
-    if (hydratedHair.current || !hairQ.data?.complete) return;
+    if (!forceQuiz) return;
+    sessionStorage.removeItem("mysaloon.care.retake");
+    setStep(0);
+    setQuiz({ condition: "", texture: "", colorStatus: "" });
+  }, [forceQuiz]);
+
+  useEffect(() => {
+    if (forceQuiz || hydratedHair.current || !hairQ.data?.complete) return;
     hydratedHair.current = true;
     const next: CareQuizAnswers = {
       condition: hairQ.data.condition as HairCondition,
@@ -151,12 +162,12 @@ export function MorphAiCarePage() {
     setQuiz(next);
     saveCareQuiz(next);
     setStep("plan");
-  }, [hairQ.data]);
+  }, [hairQ.data, forceQuiz]);
 
   useEffect(() => {
-    if (!hairQ.isSuccess || hairQ.data.complete) return;
+    if (forceQuiz || !hairQ.isSuccess || hairQ.data.complete) return;
     setStep((current) => (current === "plan" ? 0 : current));
-  }, [hairQ.isSuccess, hairQ.data]);
+  }, [forceQuiz, hairQ.isSuccess, hairQ.data]);
 
   const goSubscribe = () => {
     void navigate({ to: "/wallet", search: { section: "subscriptions" } });
@@ -198,6 +209,7 @@ export function MorphAiCarePage() {
           return;
         }
         saveCareQuiz(quiz);
+        setForceQuiz(false);
         setStep("plan");
       })
       .catch((e: unknown) => {
@@ -206,7 +218,7 @@ export function MorphAiCarePage() {
       .finally(() => setSavingQuiz(false));
   };
 
-  if (!hairQ.data?.complete) {
+  if (!hairQ.data?.complete || forceQuiz) {
     const questions = [
       {
         title: t("aiStylePage.care.quiz.conditionQ", { defaultValue: "Sochingiz qanday?" }),

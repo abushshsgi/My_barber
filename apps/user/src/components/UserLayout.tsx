@@ -6,6 +6,7 @@ import { DesktopAppHeader } from "@/components/desktop/shell/DesktopShellParts";
 import { MobileDockNav } from "@/components/mobile/MobileDockNav";
 import { SiteFooter } from "@/components/SiteFooter";
 import { ScrollToTopIndicator } from "@/components/ui/ScrollToTopIndicator";
+import { PaymeReturnCatcher } from "@/components/subscriptions/PaymeCheckoutStatus";
 import { useAppShell } from "@/hooks/use-app-shell";
 import { useLayoutRouteFlags } from "@/hooks/use-layout-route-flags";
 import { useMorphAppearance } from "@/hooks/use-morph-appearance";
@@ -103,6 +104,7 @@ export function UserLayout({ children }: { children: React.ReactNode }) {
     >
       <ClientOnly>
         <DemoEnvironmentBanner />
+        <PaymeReturnCatcher />
       </ClientOnly>
       <div className="hidden lg:block">
         <DesktopAppHeader
@@ -124,10 +126,10 @@ export function UserLayout({ children }: { children: React.ReactNode }) {
             showMobileDock || pathname === "/onboarding" ? "max-w-none" : "max-w-md",
             pathname === "/onboarding" && "lg:pt-3",
             flags.isMap &&
-              "fixed inset-x-0 top-0 bottom-[calc(3.5rem+env(safe-area-inset-bottom,0px))] z-10 max-w-none flex-none overflow-hidden overscroll-none lg:static lg:inset-auto lg:z-auto lg:h-[calc(100dvh-4.5rem)] lg:max-w-none lg:overflow-hidden",
+              "fixed inset-x-0 top-0 bottom-[calc(3.5rem+env(safe-area-inset-bottom,0px))] z-10 max-w-none flex-none overflow-hidden overscroll-none lg:static lg:inset-auto lg:z-auto lg:h-[calc(100dvh-5.25rem)] lg:max-w-none lg:overflow-hidden",
             flags.isAiStyle &&
               cn(
-                "fixed inset-x-0 top-0 z-10 overflow-hidden overscroll-none lg:static lg:z-auto lg:h-[calc(100dvh-4.5rem)] lg:max-h-[calc(100dvh-4.5rem)] lg:overflow-hidden",
+                "fixed inset-x-0 top-0 z-10 overflow-hidden overscroll-none lg:static lg:z-auto lg:h-[calc(100dvh-5.25rem)] lg:max-h-[calc(100dvh-5.25rem)] lg:overflow-hidden",
                 showMobileDock
                   ? "bottom-[calc(3.5rem+env(safe-area-inset-bottom,0px))] h-auto max-h-none"
                   : "h-[100dvh] max-h-[100dvh]",

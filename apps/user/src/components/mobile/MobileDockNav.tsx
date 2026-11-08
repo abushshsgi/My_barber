@@ -1,8 +1,7 @@
 import { Link, useNavigate, useRouter, useRouterState } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Bot, Droplets, Home, Sparkles, User } from "lucide-react";
+import { Droplet, Home, MessageCircle, Sparkles, User } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { MysaloonAppMark } from "@/components/brand/MysaloonAppMark";
 import { useAppShell } from "@/hooks/use-app-shell";
 import { isNavTabActive, isNavTabCurrent } from "@/lib/navigation";
 import { shouldShowMobileDock } from "@/lib/layout-routes";
@@ -16,8 +15,8 @@ const mysaloonRightTabs = [{ to: "/profile", icon: User, key: "profile" }] as co
 
 /** Morf — Chat, Parvarish | Try-on, Profil. Tarkib parvarishdan ochiladi. */
 const morphLeftTabs = [
-  { to: "/ai-style/chat", icon: Bot, key: "morphChat" },
-  { to: "/ai-style/care", icon: Droplets, key: "morphCare" },
+  { to: "/ai-style/chat", icon: MessageCircle, key: "morphChat" },
+  { to: "/ai-style/care", icon: Droplet, key: "morphCare" },
 ] as const;
 
 const morphRightTabs = [
@@ -44,14 +43,12 @@ function DockTab({
   icon: Icon,
   labelKey,
   active,
-  compact,
   onClick,
 }: {
   to: string;
   icon: DockIcon;
   labelKey: string;
   active: boolean;
-  compact?: boolean;
   onClick: (event: React.MouseEvent<HTMLAnchorElement>) => void;
 }) {
   const { t } = useTranslation();
@@ -63,27 +60,19 @@ function DockTab({
       onClick={onClick}
       aria-label={t(labelKey)}
       aria-current={active ? "page" : undefined}
-      className={cn(
-        "group flex min-h-11 min-w-0 flex-1 flex-col items-center justify-center gap-0.5 px-0.5 py-1 outline-none transition focus-visible:ring-2 focus-visible:ring-ring min-[390px]:px-1",
-        compact && "px-0.5",
-      )}
+      className="group flex min-w-0 flex-1 flex-col items-center justify-end gap-0.5 px-[clamp(1px,0.6vw,4px)] pb-[clamp(0.2rem,1vw,0.4rem)] outline-none transition focus-visible:ring-2 focus-visible:ring-ring"
     >
-      <span
+      <Icon
         className={cn(
-          "grid place-items-center rounded-xl transition",
-          compact ? "size-8" : "size-9",
-          active
-            ? "bg-foreground text-background"
-            : "text-muted-foreground group-active:text-foreground",
+          "size-[clamp(18px,5.4vw,22px)] transition-colors",
+          active ? "text-foreground" : "text-muted-foreground group-active:text-foreground",
         )}
-      >
-        <Icon className={compact ? "size-4" : "size-5"} strokeWidth={active ? 2.25 : 2} />
-      </span>
+        strokeWidth={active ? 2.25 : 1.75}
+      />
       <span
         className={cn(
-          "max-w-full truncate font-semibold leading-none",
-          compact ? "text-[9px]" : "text-[10px]",
-          active ? "text-foreground" : "text-muted-foreground",
+          "max-w-full truncate text-[clamp(9px,2.55vw,11px)] leading-none tracking-tight",
+          active ? "font-bold text-foreground" : "font-semibold text-muted-foreground",
         )}
         suppressHydrationWarning
       >
@@ -112,7 +101,6 @@ export function MobileDockNav({ unreadCount: _unreadCount = 0 }: Props) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const { shell, switchToMorph, switchToMysaloon } = useAppShell();
   const [faceCameraOpen, setFaceCameraOpen] = useState(false);
-  const compact = shell === "morph";
 
   useEffect(() => {
     preloadRoutes.forEach((tab) => {
@@ -155,10 +143,10 @@ export function MobileDockNav({ unreadCount: _unreadCount = 0 }: Props) {
 
   return (
     <nav
-      className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-surface/95 backdrop-blur-xl lg:hidden"
+      className="fixed inset-x-0 bottom-0 z-40 h-[var(--mobile-dock,calc(3.25rem+env(safe-area-inset-bottom,0px)))] border-t border-black/15 bg-white lg:hidden"
       aria-label={shell === "morph" ? "Morf AI navigatsiya" : "Asosiy navigatsiya"}
     >
-      <div className="relative flex min-h-[56px] items-end px-0.5 pb-[env(safe-area-inset-bottom,0px)] pt-1">
+      <div className="relative flex h-full items-end px-[clamp(2px,1vw,6px)] pb-[max(0.2rem,env(safe-area-inset-bottom,0px))]">
         <div className="flex min-w-0 flex-1 items-stretch">
           {leftTabs.map(({ to, icon, key }) => (
             <DockTab
@@ -167,7 +155,6 @@ export function MobileDockNav({ unreadCount: _unreadCount = 0 }: Props) {
               icon={icon}
               labelKey={`nav.${key}`}
               active={isNavTabActive(pathname, to)}
-              compact={compact}
               onClick={handleTabClick(to)}
             />
           ))}
@@ -178,16 +165,15 @@ export function MobileDockNav({ unreadCount: _unreadCount = 0 }: Props) {
             type="button"
             onClick={switchToMysaloon}
             aria-label={t("nav.mysaloon")}
-            className="relative mx-0.5 flex w-12 shrink-0 flex-col items-center justify-end pb-0.5 min-[390px]:w-[58px]"
+            className="relative z-10 mx-[clamp(1px,0.6vw,4px)] flex w-[clamp(44px,13vw,56px)] shrink-0 items-center justify-center self-center active:scale-95"
           >
-            <span className="grid size-10 place-items-center overflow-hidden rounded-full border-2 border-border bg-background shadow-soft transition-transform active:scale-95 min-[390px]:size-[46px]">
-              <MysaloonAppMark size={28} tone="onLight" useImage />
-            </span>
-            <span
-              className="mt-1 max-w-full truncate text-[9px] font-semibold leading-none text-muted-foreground"
-              suppressHydrationWarning
-            >
-              {t("nav.mysaloon")}
+            <span className="grid size-[clamp(34px,10vw,42px)] place-items-center overflow-hidden rounded-full bg-white shadow-[0_2px_10px_rgba(0,0,0,0.16)] ring-2 ring-white">
+              <img
+                src="/mysaloon-app-icon.png"
+                alt=""
+                className="size-full object-cover"
+                draggable={false}
+              />
             </span>
           </button>
         ) : (
@@ -195,16 +181,10 @@ export function MobileDockNav({ unreadCount: _unreadCount = 0 }: Props) {
             type="button"
             onClick={switchToMorph}
             aria-label={t("nav.aiStyle")}
-            className="relative mx-0.5 flex w-12 shrink-0 flex-col items-center justify-end pb-0.5 min-[390px]:w-[62px]"
+            className="relative z-10 mx-[clamp(1px,0.6vw,4px)] flex w-[clamp(44px,13vw,56px)] shrink-0 items-center justify-center self-center active:scale-95"
           >
-            <span className="grid size-10 place-items-center rounded-full border-2 border-border bg-foreground text-background shadow-soft transition-transform active:scale-95 min-[390px]:size-[46px]">
+            <span className="grid size-[clamp(34px,10vw,42px)] place-items-center rounded-full bg-[#1e1e1e] text-white shadow-[0_2px_10px_rgba(0,0,0,0.22)] ring-2 ring-white">
               <MorfDockMark />
-            </span>
-            <span
-              className="mt-1 max-w-full truncate text-[10px] font-semibold leading-none text-muted-foreground"
-              suppressHydrationWarning
-            >
-              {t("nav.aiStyle")}
             </span>
           </button>
         )}
@@ -217,7 +197,6 @@ export function MobileDockNav({ unreadCount: _unreadCount = 0 }: Props) {
               icon={icon}
               labelKey={`nav.${key}`}
               active={isNavTabActive(pathname, to)}
-              compact={compact}
               onClick={handleTabClick(to)}
             />
           ))}
