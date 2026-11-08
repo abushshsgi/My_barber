@@ -1,7 +1,12 @@
+import { AnimatePresence, motion } from "framer-motion";
 import { Sparkles } from "lucide-react";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { FaceAnalysisRings } from "@/components/ai-style/FaceAnalysisRings";
 import type { AiAnalysisResult } from "@/components/ai-style/ai-style-shared";
+
+const RING_COUNT = 3;
+const RING_STAGGER_MS = 720;
+const GENERATE_AFTER_MS = 280 + RING_COUNT * RING_STAGGER_MS + 160;
 
 const THUMB = 46;
 const ACCENT = "#C026A0";
@@ -95,14 +100,37 @@ export function FaceAnalysisSummarySheet({
   result: AiAnalysisResult;
   onStartGenerate: () => void;
 }) {
+  const [revealedCount, setRevealedCount] = useState(0);
+  const [showGenerate, setShowGenerate] = useState(false);
+
+  useEffect(() => {
+    const timers = [
+      ...Array.from({ length: RING_COUNT }, (_, index) =>
+        window.setTimeout(() => setRevealedCount(index + 1), 280 + index * RING_STAGGER_MS),
+      ),
+      window.setTimeout(() => setShowGenerate(true), GENERATE_AFTER_MS),
+    ];
+    return () => timers.forEach((id) => window.clearTimeout(id));
+  }, []);
+
   return (
     <div
       className="w-full rounded-t-[28px] bg-white px-4 pt-[18px]"
       style={{ paddingBottom: "max(14px, env(safe-area-inset-bottom))" }}
     >
-      <FaceAnalysisRings result={result} compact />
-      <div className="mt-4">
-        <GenerateSlider onComplete={onStartGenerate} />
+      <FaceAnalysisRings result={result} compact revealedCount={revealedCount} />
+      <div className="mt-4 min-h-[58px]">
+        <AnimatePresence>
+          {showGenerate ? (
+            <motion.div
+              initial={{ opacity: 0, y: 14 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+            >
+              <GenerateSlider onComplete={onStartGenerate} />
+            </motion.div>
+          ) : null}
+        </AnimatePresence>
       </div>
     </div>
   );

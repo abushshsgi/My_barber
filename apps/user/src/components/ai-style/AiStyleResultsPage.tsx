@@ -95,9 +95,8 @@ export function AiStyleResultsPage({
   };
 
   return (
-    <div className="relative min-h-[100dvh] bg-[#FAFAFA]">
-      <div className="overflow-y-auto pb-[max(28px,env(safe-area-inset-bottom))]">
-        {featured.length > 0 ? (
+    <div className="relative flex h-full min-h-0 flex-1 flex-col overflow-y-auto overscroll-y-contain bg-[#FAFAFA] pb-[max(28px,env(safe-area-inset-bottom))]">
+      {featured.length > 0 ? (
           <section className="bg-white pb-4">
             <div className="relative">
               <div
@@ -331,7 +330,6 @@ export function AiStyleResultsPage({
             />
           </section>
         ) : null}
-      </div>
 
       {shareOpen && activePreview && active ? (
         <AiStyleShareSheet

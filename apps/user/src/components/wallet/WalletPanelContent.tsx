@@ -3,7 +3,6 @@ import { WalletGiftPanel } from "@/components/wallet/panels/WalletGiftPanel";
 import { WalletLoyaltyPanel } from "@/components/wallet/panels/WalletLoyaltyPanel";
 import { WalletTransactionsPanel } from "@/components/wallet/WalletTransactionsPanel";
 import { SettingsPaymentMethodsPanel } from "@/components/settings/panels/SettingsPaymentMethodsPanel";
-import { SettingsSubscriptionsPanel } from "@/components/settings/panels/SettingsSubscriptionsPanel";
 import { WALLET_SECTION_TITLE_KEYS, type WalletSection } from "@/lib/wallet-nav";
 import { useTranslation } from "react-i18next";
 
@@ -36,8 +35,6 @@ export function WalletPanelContent({ section, hideTitle }: Props) {
         {section === "gift" && <WalletGiftPanel />}
 
         {section === "loyalty" && <WalletLoyaltyPanel />}
-
-        {section === "subscriptions" && <SettingsSubscriptionsPanel />}
       </div>
     </div>
   );

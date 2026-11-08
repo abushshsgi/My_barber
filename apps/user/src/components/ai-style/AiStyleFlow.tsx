@@ -151,7 +151,7 @@ export function AiStyleFlow({ audience, menPersonaId: menPersonaIdProp, focusSty
   }, [showHome]);
 
   useEffect(() => {
-    if (showHome) return;
+    if (showHome || done) return;
     const prevHtml = document.documentElement.style.overflow;
     const prevBody = document.body.style.overflow;
     document.documentElement.style.overflow = "hidden";
@@ -160,7 +160,7 @@ export function AiStyleFlow({ audience, menPersonaId: menPersonaIdProp, focusSty
       document.documentElement.style.overflow = prevHtml === "hidden" ? "" : prevHtml;
       document.body.style.overflow = prevBody === "hidden" ? "" : prevBody;
     };
-  }, [showHome]);
+  }, [showHome, done]);
 
   const lastErrorToastRef = useRef<string | null>(null);
   useEffect(() => {
@@ -247,27 +247,29 @@ export function AiStyleFlow({ audience, menPersonaId: menPersonaIdProp, focusSty
 
   return (
     <>
-      {showHome ? (
-        <DesktopPageSplit
-          mobile={<AiStyleSplitLayout {...layoutProps} />}
-          desktop={
-            <MorphAiHome
-              audience={audience}
-              onStartNew={() => void gatedStartNew()}
-              onOpenCamera={() => void gatedOpenCamera()}
-              onOpenGallery={() => void gatedOpenGallery()}
-              ensureMorphAccess={limitGate.ensureTryOn}
-              ensureMorphStudio={limitGate.ensureStudio}
-              ensureMorphCare={limitGate.ensureCare}
-            />
-          }
-        />
-      ) : (
-        <DesktopPageSplit
-          mobile={<AiStyleSplitLayout {...layoutProps} />}
-          desktop={<AiStyleDesktopLayout {...layoutProps} />}
-        />
-      )}
+      <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
+        {showHome ? (
+          <DesktopPageSplit
+            mobile={<AiStyleSplitLayout {...layoutProps} />}
+            desktop={
+              <MorphAiHome
+                audience={audience}
+                onStartNew={() => void gatedStartNew()}
+                onOpenCamera={() => void gatedOpenCamera()}
+                onOpenGallery={() => void gatedOpenGallery()}
+                ensureMorphAccess={limitGate.ensureTryOn}
+                ensureMorphStudio={limitGate.ensureStudio}
+                ensureMorphCare={limitGate.ensureCare}
+              />
+            }
+          />
+        ) : (
+          <DesktopPageSplit
+            mobile={<AiStyleSplitLayout {...layoutProps} />}
+            desktop={<AiStyleDesktopLayout {...layoutProps} />}
+          />
+        )}
+      </div>
 
       <AiStylePhotoInput fileRef={fileRef} onFile={onFile} />
       <AiStyleCamera open={cameraOpen} onClose={closeCamera} onCapture={onCameraCapture} />

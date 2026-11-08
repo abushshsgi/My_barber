@@ -57,26 +57,29 @@ export function FaceAnalysisRings({
   result,
   compact,
   className,
+  revealedCount,
 }: {
   result: AiAnalysisResult;
   compact?: boolean;
   className?: string;
+  /** Compact tahlilda soch → yuz → rang ketma-ket ochilishi. undefined = hammasi. */
+  revealedCount?: number;
 }) {
   const { t } = useTranslation();
   const cards: MetricCard[] = [
+    {
+      key: "hair",
+      label: "SOCH",
+      detail: t(`aiStylePage.hairTypes.${result.hairTypeKey}`),
+      percent: toPercent(result.hairTypeConfidence, 0.78),
+      color: "#3B6EF5",
+    },
     {
       key: "face",
       label: "YUZ",
       detail: t(`aiStylePage.faceShapes.${result.faceShapeKey}`),
       percent: toPercent(result.faceConfidence, 0.86),
       color: "#111111",
-    },
-    {
-      key: "length",
-      label: "UZUNLIK",
-      detail: t(`aiStylePage.hairTypes.${result.hairTypeKey}`),
-      percent: toPercent(result.hairTypeConfidence, 0.78),
-      color: "#3B6EF5",
     },
     {
       key: "color",
@@ -86,21 +89,31 @@ export function FaceAnalysisRings({
       color: "#E85D04",
     },
   ];
+  const visible = revealedCount == null ? cards.length : Math.max(0, Math.min(cards.length, revealedCount));
 
   return (
     <div className={cn("space-y-3", className)}>
       <div className="flex items-stretch justify-between gap-2">
-        {cards.map((card) => (
-          <div key={card.key} className="flex min-w-0 flex-1 flex-col items-center gap-2 px-1 py-2">
-            <p className="text-center text-[11px] font-extrabold uppercase tracking-[0.06em] text-[#0A0A0A]">
-              {card.label}
-            </p>
-            <MiniRing percent={card.percent} color={card.color} />
-            <p className="px-0.5 text-center text-[11px] font-semibold leading-tight text-[#0A0A0A]">
-              {card.detail}
-            </p>
-          </div>
-        ))}
+        {cards.map((card, index) => {
+          const shown = index < visible;
+          return (
+            <div
+              key={card.key}
+              className={cn(
+                "flex min-w-0 flex-1 flex-col items-center gap-2 px-1 py-2 transition-all duration-500 ease-out",
+                shown ? "translate-y-0 scale-100 opacity-100" : "translate-y-3 scale-95 opacity-0",
+              )}
+            >
+              <p className="text-center text-[11px] font-extrabold uppercase tracking-[0.06em] text-[#0A0A0A]">
+                {card.label}
+              </p>
+              <MiniRing percent={card.percent} color={card.color} />
+              <p className="px-0.5 text-center text-[11px] font-semibold leading-tight text-[#0A0A0A]">
+                {card.detail}
+              </p>
+            </div>
+          );
+        })}
       </div>
       {!compact && result.summaryUz ? (
         <p className="px-0.5 text-[12px] font-medium leading-[17px] text-[#0A0A0A]">{result.summaryUz}</p>

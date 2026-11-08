@@ -25,9 +25,8 @@ export function MorphPromoUrgencyBanner({ onNavigate, className, variant = "glas
   if (!next) return null;
   return (
       <Link
-        to="/wallet"
+        to="/subscriptions"
         search={{
-          section: "subscriptions",
           plan: next,
           returnTo: "/ai-style",
         }}

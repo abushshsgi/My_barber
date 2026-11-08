@@ -100,6 +100,7 @@ export const SETTINGS_NAV: SettingsNavItem[] = [
     icon: Repeat,
     labelKey: "settings.hubs.subscriptions.title",
     defaultLabel: "Obunalar",
+    externalTo: "/subscriptions",
   },
   {
     id: "addresses",

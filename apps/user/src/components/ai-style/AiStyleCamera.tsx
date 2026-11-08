@@ -142,29 +142,6 @@ export function AiStyleCamera({ open, onClose, onCapture }: Props) {
     };
   }, [open, t]);
 
-  useEffect(() => {
-    if (!open || !ready) return;
-    let cancelled = false;
-    let attempts = 0;
-    const tick = () => {
-      if (cancelled || capturingRef.current) return;
-      const video = videoRef.current;
-      if (video && video.readyState >= 2 && video.videoWidth > 0) {
-        captureFrame();
-        return;
-      }
-      attempts += 1;
-      if (attempts < 45) {
-        requestAnimationFrame(tick);
-      }
-    };
-    const timer = window.setTimeout(tick, 80);
-    return () => {
-      cancelled = true;
-      window.clearTimeout(timer);
-    };
-  }, [open, ready, captureFrame]);
-
   if (!open || typeof document === "undefined") return null;
 
   return createPortal(

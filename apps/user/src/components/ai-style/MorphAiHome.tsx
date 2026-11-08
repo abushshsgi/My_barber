@@ -110,8 +110,8 @@ function LimitBadge({ remaining, limit }: { remaining: number; limit: number }) 
   const low = remaining <= Math.max(1, Math.floor(limit * 0.2));
   return (
     <Link
-      to="/wallet"
-      search={{ section: "subscriptions", plan: "plus", returnTo: "/ai-style" }}
+      to="/subscriptions"
+      search={{ plan: "plus", returnTo: "/ai-style" }}
       className={cn(
         "absolute -right-1 -top-1 grid min-w-7 cursor-pointer place-items-center rounded-full px-1.5 py-0.5 text-[10px] font-bold tabular-nums ring-2 ring-[#050505]",
         low ? "bg-[#CA8A04] text-black" : "bg-white text-black",

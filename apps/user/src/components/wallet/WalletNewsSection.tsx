@@ -10,8 +10,8 @@ type NewsItem = {
   defaultTitle: string;
   bodyKey: string;
   defaultBody: string;
-  to: "/wallet" | "/wallet/top-up" | "/map" | "/offers";
-  search?: { section: "gift" | "loyalty" | "subscriptions"; plan?: string };
+  to: "/wallet" | "/wallet/top-up" | "/map" | "/offers" | "/subscriptions";
+  search?: { section: "gift" | "loyalty"; plan?: string };
   /** Monochrome accents only — no rainbow chips */
   tone: "dark" | "soft";
 };
@@ -35,8 +35,8 @@ const NEWS_ITEMS: NewsItem[] = [
     defaultTitle: "Pro Imtiyozlar",
     bodyKey: "walletPage.news.proBody",
     defaultBody: "AI stil va bonuslar — balansdan bir zumda.",
-    to: "/wallet",
-    search: { section: "subscriptions", plan: "pro" },
+    to: "/subscriptions",
+    search: { plan: "pro" },
     tone: "soft",
   },
 ];

@@ -88,7 +88,7 @@ export function UserNameWithBadge({
 
   if (asLink) {
     return (
-      <Link to="/wallet" search={{ section: "subscriptions" }} className="inline-flex max-w-full">
+      <Link to="/subscriptions" className="inline-flex max-w-full">
         <span className={cn("inline-flex max-w-full items-center gap-1.5", className)}>
           {nameEl}
           <SubscriptionVerifiedBadge badge={resolved} size={size} interactive={false} />

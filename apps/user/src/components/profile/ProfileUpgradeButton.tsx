@@ -39,8 +39,8 @@ export function ProfileUpgradeButton({ className, variant = "pill" }: Props) {
 
   return (
     <Link
-      to="/wallet"
-      search={{ section: "subscriptions", plan }}
+      to="/subscriptions"
+      search={{ plan }}
       className={cn(
         "inline-flex items-center justify-center gap-1.5 font-bold transition-[transform,opacity] active:scale-[0.98]",
         variant === "bar" && "w-full rounded-2xl bg-foreground px-4 py-3.5 text-sm text-background",

@@ -9,7 +9,6 @@ import {
 import { Check, ChevronLeft, ChevronRight, Clock, Loader2, X } from "lucide-react";
 import { Fragment, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { AiStyleChrome } from "@/components/ai-style/AiStyleChrome";
 import { FaceAnalysisSummarySheet } from "@/components/ai-style/FaceAnalysisSummarySheet";
 import { AiStyleResultsPage } from "@/components/ai-style/AiStyleResultsPage";
 import { GalleryValidatingHero } from "@/components/ai-style/AiStyleUi";
@@ -375,26 +374,28 @@ export function AiStyleSplitLayout(props: AiStyleSplitLayoutProps) {
 
   if (showResults && props.result) {
     return (
-      <AiStyleResultsPage
-        result={props.result}
-        photo={props.photo}
-        tryOnByStyle={props.tryOnByStyle}
-        tryOnLoadingId={props.tryOnLoadingId}
-        menPersonaId={props.menPersonaId}
-        audience={props.audience}
-        onBack={props.onGoHome ?? props.onReset}
-        onGenerateTryOn={props.onGenerateTryOn}
-      />
+      <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
+        <AiStyleResultsPage
+          result={props.result}
+          photo={props.photo}
+          tryOnByStyle={props.tryOnByStyle}
+          tryOnLoadingId={props.tryOnLoadingId}
+          menPersonaId={props.menPersonaId}
+          audience={props.audience}
+          onBack={props.onGoHome ?? props.onReset}
+          onGenerateTryOn={props.onGenerateTryOn}
+        />
+      </div>
     );
   }
 
   if (showSummary && props.result && props.photo) {
     return (
-      <div className="relative h-[100dvh] overflow-hidden bg-black">
+      <div className="relative h-full min-h-0 flex-1 overflow-hidden bg-black">
         <img
           src={props.photo}
           alt=""
-          className="absolute inset-0 h-full w-full bg-black object-contain object-center"
+          className="absolute inset-0 h-full w-full origin-center bg-black object-cover object-[center_28%] max-lg:scale-[1.06] lg:object-contain lg:object-center"
         />
         <button
           type="button"
@@ -414,18 +415,24 @@ export function AiStyleSplitLayout(props: AiStyleSplitLayoutProps) {
 
   if (isPhotoPreview) {
     return (
-      <div className="relative h-[100dvh] overflow-hidden bg-black">
+      <div className="relative h-full min-h-0 flex-1 overflow-hidden bg-black">
         <img
           src={props.photo!}
           alt=""
-          className="absolute inset-0 h-full w-full bg-black object-contain object-center"
+          className="absolute inset-0 h-full w-full origin-center bg-black object-cover object-[center_28%] max-lg:scale-[1.06] lg:object-contain lg:object-center"
         />
         <div aria-hidden className="absolute inset-0 bg-black/22" />
-        <AiStyleChrome
-          tone="dark"
-          className="absolute inset-x-0 top-0"
-          onBack={busy ? undefined : props.onGoHome ?? props.onReset}
-        />
+        {!busy ? (
+          <button
+            type="button"
+            onClick={props.onGoHome ?? props.onReset}
+            className="absolute left-3 z-20 grid size-8 place-items-center rounded-full bg-white/94"
+            style={{ top: "max(10px, env(safe-area-inset-top))" }}
+            aria-label={t("common.back")}
+          >
+            <ChevronLeft className="h-[18px] w-[18px] text-[#0A0A0A]" strokeWidth={2.4} />
+          </button>
+        ) : null}
         <div
           className="absolute inset-x-0 z-10 px-4"
           style={{ bottom: "max(3.5rem, calc(env(safe-area-inset-bottom) + 2.5rem))" }}

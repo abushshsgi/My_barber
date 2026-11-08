@@ -53,8 +53,8 @@ const USE_ACTIONS = [
   },
   {
     id: "pro",
-    to: "/wallet" as const,
-    search: { section: "subscriptions" as const, plan: "pro" as const },
+    to: "/subscriptions" as const,
+    search: { plan: "pro" as const },
     icon: Crown,
     title: "Obuna",
     hint: "Pro · AI",
@@ -169,8 +169,8 @@ function ReceivedGiftCard({
             Bron qilish
           </Link>
           <Link
-            to="/wallet"
-            search={{ section: "subscriptions", plan: "pro" }}
+            to="/subscriptions"
+            search={{ plan: "pro" }}
             className="inline-flex items-center justify-center gap-1.5 rounded-2xl border border-border bg-card px-3 py-2.5 text-[12px] font-bold transition-transform active:scale-[0.98]"
           >
             <Crown className="h-3.5 w-3.5" />

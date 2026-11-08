@@ -26,7 +26,7 @@ function PaymeReturnPage() {
   return (
     <ProfileSubpageLayout
       title="To‘lov"
-      backTo="/wallet?section=subscriptions"
+      backTo="/subscriptions"
       strictBack
     >
       {orderId ? (

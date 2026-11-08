@@ -2,11 +2,11 @@ import { describe, expect, it } from "vitest";
 import { parseWalletManageFlag, parseWalletSearch, parseWalletSection } from "./wallet-nav";
 
 describe("parseWalletSearch", () => {
-  it("keeps subscriptions section when manage=false is in the query", () => {
+  it("drops unknown wallet sections such as subscriptions", () => {
     const search = parseWalletSearch({ section: "subscriptions", manage: "false" });
     expect(search.section).toBe("subscriptions");
     expect(search.manage).toBeUndefined();
-    expect(parseWalletSection(search.section, search.manage)).toBe("subscriptions");
+    expect(parseWalletSection(search.section, search.manage)).toBe("overview");
   });
 
   it("does not throw on junk query values", () => {

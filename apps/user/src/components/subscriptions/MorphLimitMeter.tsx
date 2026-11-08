@@ -61,8 +61,8 @@ export function MorphLimitMeter({
       </div>
       {low ? (
         <Link
-          to="/wallet"
-          search={{ section: "subscriptions", plan: "plus", returnTo: "/ai-style" }}
+          to="/subscriptions"
+          search={{ plan: "plus", returnTo: "/ai-style" }}
           className={cn(
             "mt-2 inline-flex text-[11px] font-bold underline-offset-2 hover:underline",
             oled ? "text-[#CA8A04]" : "text-foreground",

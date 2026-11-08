@@ -42,9 +42,8 @@ export function SubscriptionWinBackBanner({ className }: { className?: string })
           </p>
         </div>
         <Link
-          to="/wallet"
+          to="/subscriptions"
           search={{
-            section: "subscriptions",
             plan: me.subscription?.plan_code || "starter",
             returnTo: "/ai-style",
           }}

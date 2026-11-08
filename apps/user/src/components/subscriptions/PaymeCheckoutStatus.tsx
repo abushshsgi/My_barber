@@ -164,7 +164,7 @@ export function PaymeCheckoutStatus({ orderId }: { orderId: string }) {
   useEffect(() => {
     if (row?.status !== "paid") return;
     const timer = window.setTimeout(() => {
-      void navigate({ to: "/wallet", search: { section: "subscriptions" } as never, replace: true });
+      void navigate({ to: "/subscriptions", replace: true });
     }, 1400);
     return () => window.clearTimeout(timer);
   }, [row?.status, navigate]);
@@ -209,8 +209,7 @@ export function PaymeCheckoutStatus({ orderId }: { orderId: string }) {
           </Link>
         ) : (
           <Link
-            to="/wallet"
-            search={{ section: "subscriptions" } as never}
+            to="/subscriptions"
             onClick={() => clearPaymeAwaitReturn()}
             className="inline-flex h-12 items-center justify-center rounded-full bg-[var(--morph-fg,#111)] px-4 text-sm font-extrabold text-[var(--morph-bg,#fff)]"
           >

@@ -12,6 +12,15 @@ export const Route = createFileRoute("/wallet")({
     if (search.section === "offers") {
       throw redirect({ to: "/offers" });
     }
+    if (search.section === "subscriptions") {
+      throw redirect({
+        to: "/subscriptions",
+        search: {
+          plan: search.plan,
+          returnTo: search.returnTo,
+        },
+      });
+    }
   },
   ssr: false,
   head: () => ({

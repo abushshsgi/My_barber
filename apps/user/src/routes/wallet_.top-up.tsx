@@ -21,8 +21,7 @@ function TopUpPage() {
           sahifasida to'lanadi — kartani bizning saytda kiritmaysiz.
         </p>
         <Link
-          to="/wallet"
-          search={{ section: "subscriptions" } as never}
+          to="/subscriptions"
           className="mt-4 inline-flex h-11 items-center rounded-xl bg-foreground px-4 text-sm font-bold text-background"
         >
           Payme orqali obuna

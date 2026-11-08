@@ -93,8 +93,8 @@ export function SubscriptionPlanAds({
           return (
             <Link
               key={plan.code}
-              to="/wallet"
-              search={{ section: "subscriptions", plan: plan.code }}
+              to="/subscriptions"
+              search={{ plan: plan.code }}
               onClick={onNavigate}
               className={cn(
                 "flex min-w-[148px] shrink-0 flex-col gap-2 rounded-2xl border px-3.5 py-3 transition-[transform,background-color] active:scale-[0.98]",
@@ -153,8 +153,8 @@ export function SubscriptionPlanAds({
         return (
           <Link
             key={plan.code}
-            to="/wallet"
-            search={{ section: "subscriptions", plan: plan.code }}
+            to="/subscriptions"
+            search={{ plan: plan.code }}
             onClick={onNavigate}
             className={cn(
               "group relative flex items-stretch gap-3 overflow-hidden rounded-[22px] border p-3.5 transition-[transform,background-color] active:scale-[0.985]",

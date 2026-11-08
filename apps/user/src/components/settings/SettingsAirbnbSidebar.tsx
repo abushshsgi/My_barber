@@ -66,8 +66,8 @@ export function SettingsAirbnbSidebar({ active, t, compact, large, mobileList }:
                   return (
                     <li key={item.id}>
                       <Link
-                        to="/settings"
-                        search={{ section: item.id }}
+                        to={(item.externalTo ?? "/settings") as "/settings" | "/subscriptions"}
+                        search={item.externalTo ? {} : { section: item.id }}
                         className="flex cursor-pointer items-center gap-3 px-3.5 py-3.5 transition-colors duration-200 hover:bg-muted/50 active:bg-muted"
                       >
                         <div className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-muted">
@@ -109,8 +109,8 @@ export function SettingsAirbnbSidebar({ active, t, compact, large, mobileList }:
         return (
           <Link
             key={item.id}
-            to="/settings"
-            search={{ section: item.id }}
+            to={(item.externalTo ?? "/settings") as "/settings" | "/subscriptions"}
+            search={item.externalTo ? {} : { section: item.id }}
             className={cn(
               "flex cursor-pointer items-center rounded-xl font-medium transition-colors duration-200",
               large

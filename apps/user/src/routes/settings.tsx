@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 import { z } from "zod";
 import { DesktopPageSplit } from "@/components/desktop/DesktopPageSplit";
 import { SettingsDesktopPage } from "@/components/desktop/pages/SettingsDesktopPage";
@@ -33,6 +33,11 @@ const settingsSearchSchema = z.object({
 
 export const Route = createFileRoute("/settings")({
   validateSearch: settingsSearchSchema,
+  beforeLoad: ({ search }) => {
+    if (search.section === "subscriptions") {
+      throw redirect({ to: "/subscriptions" });
+    }
+  },
   head: () => ({ meta: [{ title: "Sozlamalar — mysaloon.uz" }] }),
   component: Settings,
 });

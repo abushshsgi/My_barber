@@ -100,8 +100,8 @@ export function MorphLookShareLanding({ styleId }: Props) {
         </button>
 
         <Link
-          to="/wallet"
-          search={{ section: "subscriptions", plan: "starter", returnTo: "/ai-style" }}
+          to="/subscriptions"
+          search={{ plan: "starter", returnTo: "/ai-style" }}
           className="flex w-full min-h-11 items-center justify-center gap-2 rounded-2xl border border-white/20 text-sm font-bold text-white/90 touch-manipulation"
         >
           <Wand2 className="h-4 w-4" />

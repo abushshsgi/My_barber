@@ -3,7 +3,6 @@ import {
   Gift,
   LayoutGrid,
   Receipt,
-  Repeat,
   Sparkles,
   type LucideIcon,
 } from "lucide-react";
@@ -14,7 +13,6 @@ export const WALLET_SECTIONS = [
   "payments",
   "gift",
   "loyalty",
-  "subscriptions",
 ] as const;
 export type WalletSection = (typeof WALLET_SECTIONS)[number];
 
@@ -101,10 +99,9 @@ export const WALLET_NAV: WalletNavItem[] = [
     labelKey: "walletPage.nav.loyalty",
     defaultLabel: "Bonus dasturi",
   },
-  { id: "subscriptions", icon: Repeat, labelKey: "subscriptions.title", defaultLabel: "Obunalar" },
 ];
 
-export const WALLET_HUB_SECTIONS = ["payments", "loyalty", "gift", "subscriptions"] as const;
+export const WALLET_HUB_SECTIONS = ["payments", "loyalty", "gift"] as const;
 export type WalletHubSection = (typeof WALLET_HUB_SECTIONS)[number];
 
 export const WALLET_HUB_LINKS: {
@@ -126,12 +123,6 @@ export const WALLET_HUB_LINKS: {
     defaultLabel: "Bonus dasturi",
   },
   { section: "gift", icon: Gift, labelKey: "profile.giftcard", defaultLabel: "Sovg'a karta" },
-  {
-    section: "subscriptions",
-    icon: Repeat,
-    labelKey: "subscriptions.title",
-    defaultLabel: "Obunalar",
-  },
 ];
 
 export const WALLET_SECTION_TITLE_KEYS: Record<
@@ -143,5 +134,4 @@ export const WALLET_SECTION_TITLE_KEYS: Record<
   payments: { titleKey: "paymentMethods.title", defaultTitle: "To'lov usullari" },
   gift: { titleKey: "walletPage.nav.gift", defaultTitle: "Sovg'a karta" },
   loyalty: { titleKey: "walletPage.nav.loyalty", defaultTitle: "Bonus dasturi" },
-  subscriptions: { titleKey: "subscriptions.title", defaultTitle: "Obunalar" },
 };

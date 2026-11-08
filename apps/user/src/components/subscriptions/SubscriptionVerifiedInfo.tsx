@@ -96,8 +96,7 @@ function VerifiedInfoBody({ badge, onClose }: { badge: BadgeLevel; onClose: () =
 
       <div className="space-y-2.5 pt-1">
         <Link
-          to="/wallet"
-          search={{ section: "subscriptions" }}
+          to="/subscriptions"
           onClick={onClose}
           className="flex w-full items-center justify-center rounded-2xl bg-foreground px-4 py-3.5 text-sm font-bold text-background transition-opacity active:opacity-90"
         >
