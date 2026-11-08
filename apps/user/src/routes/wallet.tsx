@@ -1,29 +1,13 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
-import { z } from "zod";
 import { DesktopPageSplit } from "@/components/desktop/DesktopPageSplit";
 import { WalletDesktopPage } from "@/components/desktop/pages/WalletDesktopPage";
 import { WalletMobileOverview } from "@/components/wallet/WalletMobileOverview";
 import { WalletMobileSubpage } from "@/components/wallet/WalletMobileSubpage";
-import { parseWalletSection, type WalletSection } from "@/lib/wallet-nav";
+import { parseWalletSearch, parseWalletSection, type WalletSection } from "@/lib/wallet-nav";
 import { resolveActivityBackTo } from "@/lib/activity-nav";
 
-const walletSearchSchema = z.object({
-  section: z.string().optional(),
-  /** Prefocus / scroll to this subscription plan code (starter|plus|pro). */
-  plan: z.string().optional(),
-  /** @deprecated Promokodlar olib tashlangan — e'tiborsiz. */
-  promo: z.string().optional(),
-  /** After successful checkout, navigate here (e.g. /ai-style). */
-  returnTo: z.string().optional(),
-  backTo: z.string().optional(),
-  manage: z
-    .union([z.boolean(), z.literal("1"), z.literal(1)])
-    .optional()
-    .transform((v) => v === true || v === "1" || v === 1),
-});
-
 export const Route = createFileRoute("/wallet")({
-  validateSearch: walletSearchSchema,
+  validateSearch: (search: Record<string, unknown>) => parseWalletSearch(search),
   beforeLoad: ({ search }) => {
     if (search.section === "offers") {
       throw redirect({ to: "/offers" });

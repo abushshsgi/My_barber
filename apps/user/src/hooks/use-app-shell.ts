@@ -14,7 +14,10 @@ import { isMysaloonPausedPath } from "@/lib/mysaloon-paused";
 import { hapticLight } from "@/lib/native-haptics";
 
 export function useAppShell() {
-  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const location = useRouterState({
+    select: (s) => ({ pathname: s.location.pathname, search: s.location.searchStr }),
+  });
+  const pathname = location.pathname;
   const navigate = useNavigate();
   const [storedShell, setStoredShell] = useState<AppShell>("morph");
   const [hydrated, setHydrated] = useState(false);
@@ -27,7 +30,9 @@ export function useAppShell() {
   useEffect(() => {
     if (pathname === "/auth" || pathname === "/onboarding") return;
 
-    recordRouteVisit(pathname);
+    const search = location.search || "";
+    const href = search && !search.startsWith("?") ? `${pathname}?${search}` : `${pathname}${search}`;
+    recordRouteVisit(href);
 
     if (isMorphPath(pathname)) {
       writeAppShell("morph");
@@ -58,7 +63,7 @@ export function useAppShell() {
       writeLastShellRoute("mysaloon", pathname);
       setStoredShell("mysaloon");
     }
-  }, [navigate, pathname]);
+  }, [navigate, pathname, location.search]);
 
   const shell: AppShell = isMorphPath(pathname)
     ? "morph"

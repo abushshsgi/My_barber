@@ -35,6 +35,39 @@ export function parseWalletSection(value: unknown, legacyManage?: boolean): Wall
   return "overview";
 }
 
+export type WalletSearch = {
+  section?: string;
+  plan?: string;
+  promo?: string;
+  returnTo?: string;
+  backTo?: string;
+  manage?: boolean;
+};
+
+function optString(value: unknown): string | undefined {
+  if (typeof value !== "string") return undefined;
+  const trimmed = value.trim();
+  return trimmed ? trimmed : undefined;
+}
+
+/** Faqat aniq true. `manage=false` qidiruvi validatsiyani sindirmasligi va URL da qolmasligi kerak. */
+export function parseWalletManageFlag(value: unknown): true | undefined {
+  if (value === true || value === "true" || value === "1" || value === 1) return true;
+  return undefined;
+}
+
+/** validateSearch hech qachon throw qilmasin — noto'g'ri query bo'sh sahifa/spinner qilmasin. */
+export function parseWalletSearch(search: Record<string, unknown>): WalletSearch {
+  return {
+    section: optString(search.section),
+    plan: optString(search.plan),
+    promo: optString(search.promo),
+    returnTo: optString(search.returnTo),
+    backTo: optString(search.backTo),
+    manage: parseWalletManageFlag(search.manage),
+  };
+}
+
 export type WalletNavItem = {
   id: WalletSection;
   icon: LucideIcon;

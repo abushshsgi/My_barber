@@ -1,4 +1,4 @@
-import { useEffect, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { useNavigate, useRouterState } from "@tanstack/react-router";
 import { getAuthUser } from "@/lib/auth";
 import { hasValidUserSession } from "@/lib/api/client";
@@ -12,12 +12,19 @@ export function OnboardingGuard({ children }: { children: ReactNode }) {
   const hasCachedUser = Boolean(getAuthUser());
   const hasSession = hasValidUserSession();
   const loggedIn = hasSession || hasCachedUser;
+  const [waitedTooLong, setWaitedTooLong] = useState(false);
+
+  useEffect(() => {
+    if (!loggedIn) return;
+    const timer = window.setTimeout(() => setWaitedTooLong(true), 4000);
+    return () => window.clearTimeout(timer);
+  }, [loggedIn]);
 
   useEffect(() => {
     // Mehmon: onboarding majburiy emas.
     if (!loggedIn) return;
     // /me hali kelmagan — home/onboarding qarorini bermaymiz.
-    if (isPending || isLoading) return;
+    if ((isPending || isLoading) && !waitedTooLong) return;
     if (required && !onOnboarding) {
       void navigate({ to: "/onboarding", replace: true });
       return;
@@ -25,14 +32,14 @@ export function OnboardingGuard({ children }: { children: ReactNode }) {
     if (!required && onOnboarding) {
       void navigate({ to: "/", replace: true });
     }
-  }, [required, isLoading, isPending, onOnboarding, navigate, loggedIn]);
+  }, [required, isLoading, isPending, onOnboarding, navigate, loggedIn, waitedTooLong]);
 
   if (!loggedIn) {
     return children;
   }
 
   // Login bo'lgan: /me aniqlangunicha home flash bo'lmasin.
-  if (isPending || isLoading) {
+  if ((isPending || isLoading) && !waitedTooLong) {
     return (
       <div className="flex min-h-[40vh] items-center justify-center">
         <p className="text-sm text-muted-foreground">Yuklanmoqda…</p>

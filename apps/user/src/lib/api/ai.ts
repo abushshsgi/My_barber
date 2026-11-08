@@ -554,6 +554,12 @@ export type IngredientScanResponse = {
   matched_product_id?: number | null;
   fit_uz?: string;
   catalog_notes_uz?: string;
+  catalog_fit?: {
+    match_percent?: number | null;
+    fit_verdict?: string | null;
+    fit_reasons?: string[];
+  };
+  hair_fit?: { overall?: number | null };
   matched_product?: {
     id: number;
     name: string;

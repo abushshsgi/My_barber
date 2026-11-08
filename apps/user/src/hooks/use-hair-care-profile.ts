@@ -5,6 +5,7 @@ import {
   type HairCareProfile,
   type HairCareProfileUpdate,
 } from "@/lib/api/hair-care-profile";
+import { careProductsQueryKey } from "@/hooks/use-care-products";
 import { authQueryEnabled } from "@/lib/auth-query";
 
 export const hairCareProfileQueryKey = ["users", "me", "hair-care-profile"] as const;
@@ -24,6 +25,8 @@ export function useUpdateHairCareProfile() {
     mutationFn: (body: HairCareProfileUpdate) => updateHairCareProfile(body),
     onSuccess: (data) => {
       qc.setQueryData<HairCareProfile>(hairCareProfileQueryKey, data);
+      void qc.invalidateQueries({ queryKey: careProductsQueryKey });
+      void qc.invalidateQueries({ queryKey: ["ai", "care", "weather"] });
     },
   });
 }

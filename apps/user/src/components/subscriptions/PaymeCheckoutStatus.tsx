@@ -1,4 +1,4 @@
-import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
+import { Link, useNavigate } from "@tanstack/react-router";
 import { CheckCircle2, Clock3, Loader2, XCircle } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -57,13 +57,11 @@ export function clearPaymeAwaitReturn() {
   }
 }
 
-/** Payme Referer orqali bosh sahifaga qaytarsa ham to'lov holatiga olib kiradi. */
+/** Payme'dan to'liq qaytganda bir marta holat sahifasiga olib kiradi. Client routingni qamab qo'ymaydi. */
 export function PaymeReturnCatcher() {
-  const pathname = useRouterState({ select: (s) => s.location.pathname });
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (pathname === "/subscriptions/payme" || pathname.startsWith("/subscriptions/payme/")) return;
     let awaiting = false;
     let order: string | null = null;
     try {
@@ -72,10 +70,12 @@ export function PaymeReturnCatcher() {
     } catch {
       return;
     }
-    if (!awaiting || !order || !order.startsWith("sub-")) return;
     clearPaymeAwaitReturn();
+    if (!awaiting || !order || !order.startsWith("sub-")) return;
+    const path = typeof window !== "undefined" ? window.location.pathname : "";
+    if (path === "/subscriptions/payme" || path.startsWith("/subscriptions/payme/")) return;
     void navigate({ to: "/subscriptions/payme", replace: true });
-  }, [pathname, navigate]);
+  }, [navigate]);
 
   return null;
 }

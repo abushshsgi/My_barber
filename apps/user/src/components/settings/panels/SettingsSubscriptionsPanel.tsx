@@ -89,9 +89,9 @@ export function SettingsSubscriptionsPanel() {
   const endsAt = formatDate(sub?.expires_at ?? sub?.ends_at ?? me?.expires_at, lang);
 
   const shopPlans = useMemo(() => {
-    const catalog = plansQ.data?.length ? plansQ.data : plansQ.isError ? FALLBACK_SUBSCRIPTION_PLANS : [];
+    const catalog = plansQ.data?.length ? plansQ.data : FALLBACK_SUBSCRIPTION_PLANS;
     return catalog.filter((plan) => plan.code !== "free" && plan.purchasable !== false);
-  }, [plansQ.data, plansQ.isError]);
+  }, [plansQ.data]);
   const upgradeChoices = useMemo(() => {
     if (!me?.has_active) return shopPlans;
     return shopPlans.filter(
@@ -140,11 +140,15 @@ export function SettingsSubscriptionsPanel() {
     setBusyCode(planCode);
     try {
       const origin = typeof window !== "undefined" ? window.location.origin : getPublicSiteOrigin();
-      const res = await checkout.mutateAsync({
+      const checkoutPromise = checkout.mutateAsync({
         plan_code: planCode,
         method: "payme",
         return_url: `${origin}/subscriptions/payme`,
       });
+      const timeout = new Promise<never>((_, reject) => {
+        window.setTimeout(() => reject(new Error(t("subscriptions.genericError", { defaultValue: "Xatolik" }))), 25_000);
+      });
+      const res = await Promise.race([checkoutPromise, timeout]);
       if (!res.checkout_url || !res.order_id) {
         toast.error(res.message || t("subscriptions.checkoutFailed", { defaultValue: "To‘lov ochilmadi" }));
         return;
@@ -237,11 +241,7 @@ export function SettingsSubscriptionsPanel() {
         </button>
       ) : null}
 
-      {plansQ.isLoading && shopPlans.length === 0 ? (
-        <div className="grid place-items-center py-8">
-          <Loader2 className="size-5 animate-spin" />
-        </div>
-      ) : selected ? (
+      {selected ? (
         <>
           {upgradeChoices.length > 1 ? (
             <div className="flex rounded-full bg-black/5 p-0.5">
@@ -293,7 +293,10 @@ export function SettingsSubscriptionsPanel() {
       {pendingCode ? (
         <PaySheet
           busy={Boolean(busyCode)}
-          onClose={() => { if (!busyCode) setPendingCode(null); }}
+          onClose={() => {
+            setPendingCode(null);
+            setBusyCode(null);
+          }}
           onPay={() => void startCheckout(pendingCode)}
         />
       ) : null}

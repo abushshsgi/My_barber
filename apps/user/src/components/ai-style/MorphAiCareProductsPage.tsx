@@ -1,4 +1,5 @@
 import { Link, useRouter } from "@tanstack/react-router";
+import { HairConditionAsk } from "@/components/ai-style/HairConditionAsk";
 import { ChevronLeft, Loader2, Search } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -45,17 +46,14 @@ export function MorphAiCareProductsPage() {
         >
           <ChevronLeft className="size-5" strokeWidth={2.25} />
         </button>
-        <div className="mx-auto mt-24 max-w-md text-center">
-          <h1 className="text-lg font-semibold tracking-tight">Avval soch tahlilini saqlang</h1>
-          <p className="mt-2 text-sm leading-relaxed text-[#111111]/55">
-            Tavsiyalar soch holatingiz bazaga yozilgandan keyin ochiladi.
-          </p>
-          <Link
-            to="/ai-style/care"
-            className="mt-8 inline-flex h-12 items-center rounded-full bg-[#111111] px-6 text-sm font-semibold text-white"
-          >
-            Soch tahlilini boshlash
-          </Link>
+        <div className="mx-auto mt-8 max-w-lg">
+          <HairConditionAsk
+            lead={t("aiStylePage.chat.hairAsk.lead", {
+              defaultValue:
+                "Morf AI chatbot yaxshi ishlashi uchun o‘zingizning soch holatingizni kiriting.",
+            })}
+            onDone={() => undefined}
+          />
         </div>
       </div>
     );

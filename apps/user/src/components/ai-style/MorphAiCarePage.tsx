@@ -1,24 +1,25 @@
-import { Link, useNavigate, useRouter } from "@tanstack/react-router";
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { useNavigate, useRouter } from "@tanstack/react-router";
 import {
   ChevronLeft,
   ChevronRight,
-  CloudSun,
+  Heart,
   Loader2,
+  Plus,
   Search,
-  ShoppingBag,
+  SlidersHorizontal,
   Sparkles,
+  X,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { navigateBack } from "@/lib/mobile-back";
 import { CareAiRoutine } from "@/components/ai-style/CareAiRoutine";
+import { CareHubCardArt, CareQuickArt } from "@/components/ai-style/CareHubArt";
 import { CareWeatherPanel } from "@/components/ai-style/CareWeatherPanel";
+import { HairConditionAsk } from "@/components/ai-style/HairConditionAsk";
 import {
   buildCarePlan,
-  careOptionImage,
-  isCareQuizComplete,
   saveCareQuiz,
   type CareQuizAnswers,
   type ColorStatus,
@@ -26,35 +27,34 @@ import {
   type HairTexture,
 } from "@/lib/morf-ai-care";
 import { loadFaceProfile } from "@/lib/face-profile";
+import { hasValidUserSession } from "@/lib/api/client";
 import { fetchCareAccess } from "@/lib/api/subscriptions";
 import { cn } from "@/lib/utils";
-import { useHairCareProfile, useUpdateHairCareProfile } from "@/hooks/use-hair-care-profile";
+import { useHairCareProfile } from "@/hooks/use-hair-care-profile";
 import { useCareProducts } from "@/hooks/use-care-products";
 import { BadHairDaySosSheet } from "@/components/ai-style/BadHairDaySosSheet";
 import { CareShelfTracker } from "@/components/ai-style/CareShelfTracker";
-import { fetchMyCareProducts, fetchWeatherCare, type CareProduct } from "@/lib/api/care-products";
+import {
+  addMyCareProduct,
+  fetchMyCareProducts,
+  fetchWeatherCare,
+  toggleCareProductLike,
+  type CareProduct,
+} from "@/lib/api/care-products";
 import { getFastPosition } from "@/lib/native-geolocation";
 import { resolveUzRegion, uzRegionImage, type UzRegionId } from "@/lib/uz-care-regions";
-
-const CONDITION_OPTS: HairCondition[] = ["oily", "dry", "normal", "damaged"];
-const TEXTURE_OPTS: HairTexture[] = ["straight", "wavy", "curly"];
-const COLOR_OPTS: ColorStatus[] = ["natural", "colored", "bleached"];
-
-type QuizStep = 0 | 1 | 2;
-
-const ease = [0.22, 1, 0.36, 1] as const;
 
 export function MorphAiCarePage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const reduce = useReducedMotion();
+  const router = useRouter();
+  const qc = useQueryClient();
   const accessQ = useQuery({
     queryKey: ["subscriptions", "care-access"],
     queryFn: fetchCareAccess,
     staleTime: 30_000,
   });
   const hairQ = useHairCareProfile();
-  const updateHair = useUpdateHairCareProfile();
   const catalogQ = useCareProducts({ recommended: true });
   const profile = useMemo(() => loadFaceProfile(), []);
   const [quiz, setQuiz] = useState<CareQuizAnswers>({
@@ -66,11 +66,10 @@ export function MorphAiCarePage() {
     if (typeof sessionStorage === "undefined") return false;
     return sessionStorage.getItem("mysaloon.care.retake") === "1";
   });
-  const [step, setStep] = useState<QuizStep | "plan">(0);
-  const [savingQuiz, setSavingQuiz] = useState(false);
-  const [quizError, setQuizError] = useState("");
-  const [panel, setPanel] = useState<"hub" | "routine" | "shelf" | "weather" | "growth">("hub");
+  const [panel, setPanel] = useState<"hub" | "routine" | "shelf" | "weather" | "growth" | "mine">("hub");
+  const [searchOpen, setSearchOpen] = useState(false);
   const [search, setSearch] = useState("");
+  const [busyProductId, setBusyProductId] = useState<number | null>(null);
   const [coords, setCoords] = useState<{ lat: number; lon: number } | null>(null);
   const [regionId, setRegionId] = useState<UzRegionId | null>(null);
   const [sosOpen, setSosOpen] = useState(false);
@@ -97,13 +96,13 @@ export function MorphAiCarePage() {
         lon: regionId ? undefined : coords?.lon,
         region_id: regionId || undefined,
       }),
-    enabled: Boolean(accessQ.data?.allowed && hairQ.data?.complete),
+    enabled: Boolean(hairQ.data?.complete),
     staleTime: 10 * 60_000,
   });
   const myQ = useQuery({
     queryKey: ["ai", "care", "my-products"],
     queryFn: fetchMyCareProducts,
-    enabled: Boolean(accessQ.data?.allowed && hairQ.data?.complete),
+    enabled: Boolean(hairQ.data?.complete),
     staleTime: 20_000,
   });
   const plan = useMemo(
@@ -147,7 +146,6 @@ export function MorphAiCarePage() {
   useEffect(() => {
     if (!forceQuiz) return;
     sessionStorage.removeItem("mysaloon.care.retake");
-    setStep(0);
     setQuiz({ condition: "", texture: "", colorStatus: "" });
   }, [forceQuiz]);
 
@@ -161,13 +159,7 @@ export function MorphAiCarePage() {
     };
     setQuiz(next);
     saveCareQuiz(next);
-    setStep("plan");
   }, [hairQ.data, forceQuiz]);
-
-  useEffect(() => {
-    if (forceQuiz || !hairQ.isSuccess || hairQ.data.complete) return;
-    setStep((current) => (current === "plan" ? 0 : current));
-  }, [forceQuiz, hairQ.isSuccess, hairQ.data]);
 
   const goSubscribe = () => {
     void navigate({ to: "/wallet", search: { section: "subscriptions" } });
@@ -187,181 +179,88 @@ export function MorphAiCarePage() {
     );
   }
 
-  const finishQuiz = () => {
-    if (!isCareQuizComplete(quiz) || savingQuiz) return;
-    setSavingQuiz(true);
-    setQuizError("");
-    void updateHair
-      .mutateAsync({
-        condition: quiz.condition,
-        texture: quiz.texture,
-        color_status: quiz.colorStatus,
-        scalp:
-          quiz.condition === "oily"
-            ? "oily"
-            : quiz.condition === "dry" || quiz.condition === "damaged"
-              ? "dry"
-              : "normal",
-      })
-      .then((saved) => {
-        if (!saved.complete) {
-          setQuizError("Soch tahlili saqlanmadi. Qayta urinib ko‘ring.");
-          return;
-        }
-        saveCareQuiz(quiz);
-        setForceQuiz(false);
-        setStep("plan");
-      })
-      .catch((e: unknown) => {
-        setQuizError(e instanceof Error ? e.message : "Saqlab bo‘lmadi.");
-      })
-      .finally(() => setSavingQuiz(false));
+  const likeProduct = async (productId: number) => {
+    try {
+      const res = await toggleCareProductLike(productId);
+      qc.setQueryData<CareProduct[]>(["ai", "care", "products", "", "", "rec"], (prev) =>
+        prev?.map((row) =>
+          row.id === productId
+            ? { ...row, liked_by_me: res.liked, likes_count: res.likes_count }
+            : row,
+        ),
+      );
+    } catch {
+      /* like qaytariladi — ro‘yxat keyingi yangilanishda to‘g‘rilanadi */
+    }
+  };
+
+  const addProduct = async (productId: number) => {
+    if (busyProductId) return;
+    setBusyProductId(productId);
+    try {
+      await addMyCareProduct({ product_id: productId, source: "recommended" });
+      await qc.invalidateQueries({ queryKey: ["ai", "care", "my-products"] });
+    } finally {
+      setBusyProductId(null);
+    }
   };
 
   if (!hairQ.data?.complete || forceQuiz) {
-    const questions = [
-      {
-        title: t("aiStylePage.care.quiz.conditionQ", { defaultValue: "Sochingiz qanday?" }),
-        sub: t("aiStylePage.care.quiz.conditionSub", {
-          defaultValue: "Parvarish, ob-havo, tarkib va chatbot shu javobga qarab ishlaydi.",
-        }),
-        options: CONDITION_OPTS,
-        value: quiz.condition,
-        onPick: (v: string) => setQuiz((q) => ({ ...q, condition: v as HairCondition })),
-        labelKey: "aiStylePage.care.conditions",
-      },
-      {
-        title: t("aiStylePage.care.quiz.textureQ", { defaultValue: "Teksturasi qanday?" }),
-        sub: t("aiStylePage.care.quiz.textureSub", {
-          defaultValue: "Tekis, to‘lqinli yoki jingalak — mahsulot shunga moslanadi.",
-        }),
-        options: TEXTURE_OPTS,
-        value: quiz.texture,
-        onPick: (v: string) => setQuiz((q) => ({ ...q, texture: v as HairTexture })),
-        labelKey: "aiStylePage.care.textures",
-      },
-      {
-        title: t("aiStylePage.care.quiz.colorQ", { defaultValue: "Rang holati?" }),
-        sub: t("aiStylePage.care.quiz.colorSub", {
-          defaultValue: "Tabiiy, bo‘yalgan yoki oqartirilgan soch uchun alohida rejim bor.",
-        }),
-        options: COLOR_OPTS,
-        value: quiz.colorStatus,
-        onPick: (v: string) => setQuiz((q) => ({ ...q, colorStatus: v as ColorStatus })),
-        labelKey: "aiStylePage.care.colors",
-      },
-    ] as const;
-    const current = questions[step];
-    const progress = ((step + 1) / questions.length) * 100;
-
+    if (!hasValidUserSession()) {
+      return (
+        <div className="grid min-h-[100dvh] place-items-center bg-[#FAFAFA] px-6 text-center text-[#111111]">
+          <div className="max-w-sm">
+            <h1 className="text-xl font-semibold tracking-tight">Avval hisobingizga kiring</h1>
+            <p className="mt-2 text-sm leading-relaxed text-[#111111]/55">
+              Soch holati shu hisobga saqlanadi. Parvarish va chatbot shundan keyin ochiladi.
+            </p>
+            <button
+              type="button"
+              onClick={() =>
+                void navigate({ to: "/auth", search: { redirect: "/ai-style/care" } })
+              }
+              className="mt-6 h-12 cursor-pointer rounded-full bg-[#111111] px-6 text-sm font-semibold text-white"
+            >
+              Kirish
+            </button>
+          </div>
+        </div>
+      );
+    }
     return (
-      <div className="relative min-h-[100dvh] overflow-x-hidden overflow-y-auto bg-[#FAFAFA] text-[#111111]">
-        <div className="pointer-events-none absolute inset-x-0 top-0 h-56 bg-[radial-gradient(ellipse_at_50%_0%,rgba(255,255,255,0.07),transparent_65%)]" />
+      <div className="min-h-[100dvh] bg-[#FAFAFA] text-[#111111]">
         <div
-          className="relative z-[1] mx-auto flex min-h-[100dvh] w-full max-w-lg flex-col px-5 pb-[max(6rem,calc(env(safe-area-inset-bottom)+5rem))] md:max-w-3xl lg:max-w-4xl"
-          style={{ paddingTop: "max(1rem, env(safe-area-inset-top))" }}
+          className="mx-auto flex min-h-[100dvh] w-full max-w-lg flex-col px-5 pb-[max(2rem,env(safe-area-inset-bottom))]"
+          style={{ paddingTop: "max(0.75rem, env(safe-area-inset-top))" }}
         >
           <div className="flex items-center justify-between">
             <BackLink label={t("common.back")} />
-            <span className="text-[12px] tabular-nums text-[#111111]/35">{step + 1}/3</span>
+            <span className="text-[13px] font-semibold text-[#111111]/55">
+              {t("aiStylePage.care.onboarding.badge", { defaultValue: "Soch tahlili" })}
+            </span>
+            <span className="size-11" />
           </div>
-
-          <div className="mt-6 h-[2px] overflow-hidden rounded-full bg-white">
-            <motion.div
-              className="h-full rounded-full bg-white"
-              initial={false}
-              animate={{ width: `${progress}%` }}
-              transition={{ duration: reduce ? 0 : 0.4, ease }}
+          <div className="mt-8 flex-1">
+            <HairConditionAsk
+              lead={t("aiStylePage.chat.hairAsk.lead", {
+                defaultValue:
+                  "Morf AI chatbot yaxshi ishlashi uchun o‘zingizning soch holatingizni kiriting.",
+              })}
+              onDone={(answers) => {
+                setQuiz({
+                  condition: answers.condition,
+                  texture: answers.texture,
+                  colorStatus: answers.color_status,
+                });
+                setForceQuiz(false);
+              }}
             />
           </div>
-
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={step}
-              initial={reduce ? false : { opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={reduce ? undefined : { opacity: 0, y: -12 }}
-              transition={{ duration: 0.32, ease }}
-              className="mt-10 flex-1"
-            >
-              <h1 className="max-w-xl text-[1.7rem] font-semibold leading-[1.15] tracking-tight lg:text-[2.1rem]">
-                {current.title}
-              </h1>
-              <p className="mt-3 max-w-xl text-sm leading-relaxed text-[#111111]/55 lg:text-base">
-                {current.sub}
-              </p>
-
-              <div
-                className={cn(
-                  "mt-7 grid gap-2.5 md:gap-4",
-                  current.options.length === 3 ? "grid-cols-3" : "grid-cols-2 md:grid-cols-4",
-                )}
-              >
-                {current.options.map((opt, i) => {
-                  const selected = current.value === opt;
-                  return (
-                    <motion.button
-                      key={opt}
-                      type="button"
-                      initial={reduce ? false : { opacity: 0, scale: 0.96 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      transition={{ delay: 0.05 * i, duration: 0.3, ease }}
-                      onClick={() => current.onPick(opt)}
-                      className={cn(
-                        "relative cursor-pointer overflow-hidden rounded-[20px] border text-left touch-manipulation",
-                        selected ? "border-white" : "border-black/10",
-                      )}
-                    >
-                      <div className="relative aspect-[3/4]">
-                        <img
-                          src={careOptionImage(opt)}
-                          alt=""
-                          className="h-full w-full object-cover object-top"
-                          draggable={false}
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent" />
-                        <p className="absolute inset-x-0 bottom-0 px-2.5 pb-2.5 text-[12px] font-semibold leading-tight">
-                          {t(`${current.labelKey}.${opt}`, { defaultValue: opt })}
-                        </p>
-                      </div>
-                    </motion.button>
-                  );
-                })}
-              </div>
-            </motion.div>
-          </AnimatePresence>
-
-          <div className="mt-8 flex gap-2">
-            {step > 0 ? (
-              <button
-                type="button"
-                onClick={() => setStep((step - 1) as QuizStep)}
-                className="h-12 flex-1 cursor-pointer rounded-full border border-black/10 text-sm font-semibold"
-              >
-                {t("common.back")}
-              </button>
-            ) : null}
-            <button
-              type="button"
-              disabled={!current.value || savingQuiz}
-              onClick={() => {
-                if (step === 2) finishQuiz();
-                else setStep((step + 1) as QuizStep);
-              }}
-              className="h-12 flex-[1.6] cursor-pointer rounded-full bg-[#111111] text-sm font-semibold text-white active:scale-[0.98] disabled:opacity-40"
-            >
-              {savingQuiz
-                ? "Saqlanmoqda…"
-                : step === 2
-                  ? t("aiStylePage.care.quiz.seePlan", { defaultValue: "Saqlash va ochish" })
-                  : t("common.next")}
-            </button>
-          </div>
-          {quizError ? <p className="mt-3 text-center text-sm text-red-600">{quizError}</p> : null}
         </div>
       </div>
     );
   }
+
 
   const weather = weatherQ.data;
   const weatherKey = weather?.current?.condition_key || "unknown";
@@ -399,9 +298,7 @@ export function MorphAiCarePage() {
       <div
         className={cn(
           "relative z-[1] mx-auto w-full px-4 pb-[max(2.5rem,env(safe-area-inset-bottom))] md:px-8",
-          panel === "hub" || panel === "weather"
-            ? "max-w-lg sm:max-w-xl md:max-w-4xl lg:max-w-[1100px] xl:max-w-[1200px]"
-            : "max-w-lg md:max-w-2xl",
+          panel === "hub" ? "max-w-[430px] px-3" : panel === "weather" ? "max-w-lg" : "max-w-lg md:max-w-2xl",
         )}
         style={
           panel === "weather" ? undefined : { paddingTop: "max(0.75rem, env(safe-area-inset-top))" }
@@ -410,7 +307,7 @@ export function MorphAiCarePage() {
         <div
           className={cn(
             "flex items-center",
-            panel === "weather" && "hidden",
+            (panel === "weather" || panel === "hub") && "hidden",
             panel === "routine"
               ? "grid grid-cols-[44px_1fr_44px]"
               : panel === "hub"
@@ -452,7 +349,9 @@ export function MorphAiCarePage() {
               {panel === "weather"
                 ? "Ob-havo"
                 : panel === "shelf"
-                  ? "Mening mahsulotlarim"
+                  ? "Javon"
+                  : panel === "mine"
+                    ? "Mening mahsulotlarim"
                   : panel === "growth"
                     ? "O‘sish · Tez orada"
                     : "Parvarish"}
@@ -462,215 +361,207 @@ export function MorphAiCarePage() {
         </div>
 
         {panel === "hub" ? (
-          <>
-            <div className="mt-4">
-              <button
-                type="button"
-                onClick={() => {
-                  if (needPlus()) return;
-                  setPanel("weather");
-                }}
-                className="relative h-48 w-full overflow-hidden rounded-3xl text-left text-white shadow-[0_16px_40px_-18px_rgba(0,0,0,0.45)] lg:h-56"
-              >
-                {regionHero ? (
-                  <img
-                    src={regionHero}
-                    alt=""
-                    className="absolute inset-0 size-full object-cover object-right"
-                  />
-                ) : (
-                  <span className="absolute inset-0 bg-gradient-to-br from-sky-400 via-sky-500 to-indigo-600" />
-                )}
-                <span className="absolute inset-0 bg-gradient-to-r from-black/75 via-black/40 to-black/15" />
-                <span className="relative flex h-full flex-col justify-between p-4 lg:p-6">
-                  <span className="flex items-start justify-between gap-3">
-                    <CloudSun className="size-6 text-white/90" />
-                    <span className="max-w-[12rem] truncate rounded-full bg-black/35 px-3 py-1 text-[12px] font-semibold backdrop-blur-sm lg:max-w-[16rem] lg:text-sm">
-                      {city}
-                    </span>
+          <div className="mx-auto flex w-full max-w-[430px] flex-col">
+            <button
+              type="button"
+              onClick={() => {
+                if (needPlus()) return;
+                setPanel("weather");
+              }}
+              className="relative mt-2 h-[168px] w-full overflow-hidden rounded-[28px] text-left text-white"
+            >
+              {regionHero ? (
+                <img src={regionHero} alt="" className="absolute inset-0 size-full object-cover" />
+              ) : (
+                <span className="absolute inset-0 bg-gradient-to-br from-sky-400 via-sky-500 to-indigo-600" />
+              )}
+              <span className="absolute inset-0 bg-gradient-to-b from-black/55 via-black/15 to-black/70" />
+              <span className="relative flex h-full flex-col justify-between px-4 py-3">
+                <span className="flex items-start justify-between gap-3">
+                  <span
+                    role="presentation"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      navigateBack(router, "/ai-style");
+                    }}
+                    className="inline-flex size-10 items-center justify-center rounded-xl bg-white text-[#111111]"
+                  >
+                    <ChevronLeft className="size-5" strokeWidth={2.25} />
                   </span>
-                  <span className="flex items-end justify-between gap-3">
-                    <span>
-                      <span className="block text-5xl font-bold tracking-tight tabular-nums lg:text-6xl">
-                        {tempLabel}
-                      </span>
-                      <span className="mt-1 block text-sm font-medium text-white/90">
-                        {weatherName}
-                      </span>
-                      {weather?.current?.humidity_pct != null ? (
-                        <span className="mt-0.5 block text-xs text-white/75">
-                          Namlik {Math.round(weather.current.humidity_pct)}%
-                        </span>
-                      ) : null}
-                    </span>
-                    <span className="rounded-full bg-white px-3 py-2 text-[12px] font-bold text-[#111111] lg:px-4 lg:py-2.5 lg:text-sm">
-                      Tavsiyalar →
-                    </span>
+                  <span className="max-w-[11rem] truncate rounded-full bg-black/35 px-3 py-1.5 text-[12px] font-semibold backdrop-blur-sm">
+                    {city}
                   </span>
                 </span>
-              </button>
+                <span className="flex items-end justify-between gap-3 pb-1">
+                  <span className="flex items-end gap-3">
+                    <span className="text-[52px] leading-none font-bold tracking-tight tabular-nums">
+                      {tempLabel}
+                    </span>
+                    <span className="mb-1">
+                      <span className="block text-[15px] font-semibold">{weatherName}</span>
+                      <span className="block text-[12px] text-white/80">
+                        {weather?.current?.humidity_pct != null
+                          ? `Namlik ${Math.round(weather.current.humidity_pct)}%`
+                          : "Mahsulotlaringiz uchun maslahatlar"}
+                      </span>
+                    </span>
+                  </span>
+                  <span className="mb-1 inline-flex items-center rounded-full bg-white px-3 py-2 text-[12px] font-bold text-[#111111]">
+                    Maslahatlarni ko‘rish →
+                  </span>
+                </span>
+              </span>
+            </button>
 
-              <div className="mt-4 grid grid-cols-3 gap-2 lg:mt-5 lg:gap-4">
+            <div className="mt-3 grid h-[92px] grid-cols-3 gap-2">
+              {(
+                [
+                  { key: "sos" as const, label: "SOS" },
+                  { key: "shelf" as const, label: "Javon" },
+                  { key: "growth" as const, label: "O‘sish" },
+                ]
+              ).map((card) => (
                 <button
+                  key={card.key}
                   type="button"
+                  disabled={card.key === "growth"}
                   onClick={() => {
-                    if (!accessQ.data?.pro_allowed) {
-                      void navigate({ to: "/wallet", search: { section: "subscriptions" } });
-                      return;
-                    }
-                    setSosOpen(true);
-                  }}
-                  className="relative h-28 cursor-pointer overflow-hidden rounded-2xl text-left text-white lg:h-40 lg:rounded-3xl"
-                >
-                  <img
-                    src="/care/care-card-sos.jpg"
-                    alt=""
-                    className="absolute inset-0 size-full object-cover"
-                  />
-                  <span className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
-                  <span className="absolute bottom-2.5 left-2.5 text-[12px] font-bold leading-tight lg:bottom-3.5 lg:left-3.5 lg:text-sm">
-                    SOS
-                  </span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (!accessQ.data?.pro_allowed) {
-                      void navigate({ to: "/wallet", search: { section: "subscriptions" } });
-                      return;
-                    }
-                    setPanel("shelf");
-                  }}
-                  className="relative h-28 cursor-pointer overflow-hidden rounded-2xl text-left text-white lg:h-40 lg:rounded-3xl"
-                >
-                  <img
-                    src="/care/care-card-shelf.jpg"
-                    alt=""
-                    className="absolute inset-0 size-full object-cover"
-                  />
-                  <span className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/15 to-transparent" />
-                  <span className="absolute bottom-2.5 left-2.5 text-[12px] font-bold leading-tight lg:bottom-3.5 lg:left-3.5 lg:text-sm">
-                    Javon
-                  </span>
-                </button>
-                <button
-                  type="button"
-                  disabled
-                  className="relative h-28 cursor-not-allowed overflow-hidden rounded-2xl bg-gradient-to-br from-[#FFF3E8] to-[#E7B48A] text-left text-white opacity-85 lg:h-40 lg:rounded-3xl"
-                  aria-label="O‘sish — Tez orada"
-                >
-                  <span className="absolute inset-0 bg-gradient-to-t from-black/35 to-transparent" />
-                  <span className="absolute right-2 top-2 rounded-full bg-black/60 px-2 py-0.5 text-[10px] font-bold text-white backdrop-blur-sm lg:right-3 lg:top-3 lg:text-[11px]">
-                    Tez orada
-                  </span>
-                  <span className="absolute bottom-2.5 left-2.5 text-[12px] font-bold leading-tight lg:bottom-3.5 lg:left-3.5 lg:text-sm">
-                    O‘sish
-                  </span>
-                </button>
-              </div>
-            </div>
-
-            <label className="mt-4 flex h-12 items-center gap-2 rounded-full bg-white px-4 ring-1 ring-black/10 lg:mt-6 lg:h-14 lg:px-5">
-              <Search className="size-4 text-[#111111]/40" />
-              <input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Tavsiya va mahsulot qidirish"
-                className="h-full w-full bg-transparent text-sm font-medium outline-none placeholder:text-[#111111]/35 lg:text-[15px]"
-              />
-            </label>
-
-            <div className="mt-5 lg:mt-8">
-              <div className="mb-3 flex items-center justify-between">
-                <h2 className="text-[13px] font-bold lg:text-base">Tavsiyalar</h2>
-                <Link
-                  to="/ai-style/care/products"
-                  className="text-[12px] font-semibold text-[#111111]/45 lg:text-sm"
-                >
-                  Hammasi
-                </Link>
-              </div>
-              {search.trim() && searchQ.isLoading ? (
-                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-                  {[0, 1, 2, 3].map((i) => (
-                    <div key={i} className="aspect-[4/5] animate-pulse rounded-3xl bg-white" />
-                  ))}
-                </div>
-              ) : search.trim() && featured.length === 0 ? (
-                <p className="rounded-2xl bg-white px-4 py-3 text-sm text-[#111111]/45">
-                  Topilmadi
-                </p>
-              ) : (
-                <div
-                  className={cn(
-                    search.trim()
-                      ? "grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5"
-                      : "-mx-4 flex gap-3 overflow-x-auto px-4 pb-1 [scrollbar-width:none] md:mx-0 md:grid md:grid-cols-3 md:gap-4 md:overflow-visible md:px-0 lg:grid-cols-4 xl:grid-cols-5 [&::-webkit-scrollbar]:hidden [&>a]:w-[9.5rem] [&>a]:shrink-0 md:[&>a]:w-auto",
-                  )}
-                >
-                  {(catalogQ.isLoading ? [] : featured)
-                    .slice(0, search.trim() ? 12 : 8)
-                    .map((p) => (
-                      <CareCatalogCard key={p.id} product={p} locked={!accessQ.data?.allowed} onLocked={goSubscribe} />
-                    ))}
-                </div>
-              )}
-            </div>
-
-            <div className="mt-5 lg:mt-8">
-              <button
-                type="button"
-                onClick={() => {
-                  if (!accessQ.data?.pro_allowed) {
-                    goSubscribe();
-                    return;
-                  }
-                  setPanel("shelf");
-                }}
-                className="flex w-full cursor-pointer items-center gap-2 rounded-3xl bg-white px-4 py-3 text-left shadow-sm ring-1 ring-black/5 lg:hidden"
-              >
-                <ShoppingBag className="size-4" />
-                <span className="flex-1 text-sm font-bold">Mening mahsulotlarim</span>
-                <ChevronRight className="size-4 text-[#111111]/35" />
-              </button>
-              <div className="mt-2 grid grid-cols-2 gap-2 lg:mt-0 lg:grid-cols-3 lg:gap-4">
-                <button
-                  type="button"
-                  onClick={() => {
+                    if (card.key === "growth") return;
                     if (!accessQ.data?.pro_allowed) {
                       goSubscribe();
                       return;
                     }
-                    setPanel("shelf");
+                    if (card.key === "sos") setSosOpen(true);
+                    else setPanel("shelf");
                   }}
-                  className="relative hidden h-44 overflow-hidden rounded-3xl text-left text-white lg:block"
+                  className={cn(
+                    "relative h-[92px] overflow-hidden rounded-2xl text-left",
+                    card.key === "growth" && "cursor-not-allowed opacity-90",
+                  )}
                 >
-                  <img
-                    src="/care/care-card-shelf.jpg"
-                    alt=""
-                    className="absolute inset-0 size-full object-cover"
-                  />
-                  <span className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
-                  <span className="absolute inset-x-3 bottom-3 text-sm font-bold">
-                    Mening mahsulotlarim
-                  </span>
+                  <CareQuickArt kind={card.key} />
+                  <span className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
+                  {card.key === "growth" ? (
+                    <span className="absolute top-1.5 right-1.5 rounded-full bg-black/60 px-1.5 py-0.5 text-[9px] font-bold text-white">
+                      Tez orada
+                    </span>
+                  ) : null}
+                  <span className="absolute bottom-2 left-2 text-[12px] font-bold text-white">{card.label}</span>
                 </button>
+              ))}
+            </div>
+
+            <button
+              type="button"
+              onClick={() => {
+                setSearch("");
+                setSearchOpen(true);
+              }}
+              className="mt-3 flex h-12 w-full cursor-pointer items-center gap-2 rounded-full bg-white px-4 text-left ring-1 ring-black/10"
+            >
+              <Search className="size-4 text-[#111111]" />
+              <span className="flex-1 text-[14px] text-[#737373]">Mahsulot qidirish...</span>
+              <span className="grid size-8 place-items-center rounded-full bg-[#111111] text-white">
+                <SlidersHorizontal className="size-3.5" />
+              </span>
+            </button>
+
+            <div className="no-scrollbar mt-3 flex gap-2.5 overflow-x-auto pb-1">
+              {catalogQ.isLoading
+                ? [0, 1, 2].map((i) => (
+                    <div key={i} className="h-[168px] w-[132px] shrink-0 animate-pulse rounded-2xl bg-white" />
+                  ))
+                : featured.slice(0, 8).map((product) => {
+                    const mine = (myQ.data || []).some((row) => row.id === product.id);
+                    return (
+                      <button
+                        key={product.id}
+                        type="button"
+                        onClick={() => {
+                          if (needPlus()) return;
+                          void navigate({
+                            to: "/ai-style/care/products/$productId",
+                            params: { productId: String(product.id) },
+                          });
+                        }}
+                        className="relative h-[168px] w-[132px] shrink-0 cursor-pointer overflow-hidden rounded-2xl bg-[#111111] text-left text-white"
+                      >
+                        {product.image_url ? (
+                          <img src={product.image_url} alt="" className="absolute inset-0 size-full object-cover" />
+                        ) : null}
+                        <span className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/10 to-transparent" />
+                        <span
+                          role="presentation"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            void likeProduct(product.id);
+                          }}
+                          className="absolute top-2 right-2 grid size-8 place-items-center rounded-full bg-white text-[#111111]"
+                        >
+                          <Heart
+                            className={cn("size-4", product.liked_by_me && "fill-red-500 text-red-500")}
+                          />
+                        </span>
+                        {typeof product.match_percent === "number" ? (
+                          <span className="absolute top-2 left-2 rounded-full bg-white/95 px-2 py-0.5 text-[10px] font-bold text-[#111111]">
+                            {product.match_percent}%
+                          </span>
+                        ) : null}
+                        <span
+                          role="presentation"
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            if (mine || busyProductId === product.id) return;
+                            if (needPlus()) return;
+                            void addProduct(product.id);
+                          }}
+                          className="absolute right-2 bottom-[34%] grid size-8 place-items-center rounded-full bg-white text-[#111111]"
+                        >
+                          {mine ? (
+                            <span className="text-[11px] font-bold">✓</span>
+                          ) : (
+                            <Plus className="size-4" strokeWidth={2.4} />
+                          )}
+                        </span>
+                        <span className="absolute inset-x-2.5 bottom-2.5">
+                          <span className="block truncate text-[10px] font-medium text-white/75">
+                            {product.brand || "MORF Care"}
+                          </span>
+                          <span className="block truncate text-[13px] font-semibold">{product.name}</span>
+                        </span>
+                      </button>
+                    );
+                  })}
+            </div>
+
+            <div className="mt-3 rounded-3xl bg-white p-3 shadow-sm ring-1 ring-black/5">
+              <button
+                type="button"
+                onClick={() => setPanel("mine")}
+                className="mb-3 inline-flex cursor-pointer items-center gap-2 rounded-full bg-[#F4F4F5] px-3 py-2 text-[13px] font-semibold"
+              >
+                Mening mahsulotlarim
+                <ChevronRight className="size-3.5 text-[#737373]" />
+              </button>
+              <div className="grid h-[148px] grid-cols-2 gap-2">
                 <button
                   type="button"
                   onClick={() => {
                     if (needPlus()) return;
                     setPanel("routine");
                   }}
-                  className="relative h-40 overflow-hidden rounded-2xl text-left text-white lg:h-44 lg:rounded-3xl"
+                  className="relative overflow-hidden rounded-2xl text-left"
                 >
-                  <img
-                    src="/care/care-card-routine.jpg"
-                    alt=""
-                    className="absolute inset-0 size-full object-cover"
-                  />
-                  <span className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
-                  <span className="absolute inset-x-3 bottom-3 text-sm font-bold lg:text-base">
-                    Parvarish
+                  <CareHubCardArt kind="routine" />
+                  <span className="absolute inset-0 bg-gradient-to-t from-black/55 to-transparent" />
+                  <span className="absolute top-2 left-2 rounded-full bg-white/90 px-2 py-0.5 text-[10px] font-bold text-[#111111]">
+                    Faol
+                  </span>
+                  <span className="absolute inset-x-2.5 bottom-2.5 text-white">
+                    <span className="block text-[15px] font-bold">Parvarish</span>
+                    <span className="block text-[12px]">
+                      {t(`aiStylePage.care.conditions.${plan.condition}`, { defaultValue: plan.condition })}
+                    </span>
                   </span>
                 </button>
                 <button
@@ -679,21 +570,20 @@ export function MorphAiCarePage() {
                     if (needPlus()) return;
                     void navigate({ to: "/ai-style/care/ingredient" });
                   }}
-                  className="relative h-40 overflow-hidden rounded-2xl text-left text-white lg:h-44 lg:rounded-3xl"
+                  className="relative overflow-hidden rounded-2xl text-left"
                 >
-                  <img
-                    src="/care/care-card-scan.jpg"
-                    alt=""
-                    className="absolute inset-0 size-full object-cover"
-                  />
-                  <span className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
-                  <span className="absolute inset-x-3 bottom-3 text-sm font-bold lg:text-base">
-                    Tarkib
+                  <CareHubCardArt kind="scan" />
+                  <span className="absolute top-2 left-2 rounded-full bg-white/90 px-2 py-0.5 text-[10px] font-bold text-[#171717]">
+                    Tahlil qilingan
+                  </span>
+                  <span className="absolute inset-x-2.5 bottom-2.5 text-[#171717]">
+                    <span className="block text-[15px] font-bold">Tarkib</span>
+                    <span className="block text-[12px]">Skaner</span>
                   </span>
                 </button>
               </div>
             </div>
-          </>
+          </div>
         ) : panel === "routine" ? (
           <CareAiRoutine
             quiz={quiz}
@@ -729,6 +619,35 @@ export function MorphAiCarePage() {
               Parvarish markaziga qaytish
             </button>
           </div>
+        ) : panel === "mine" ? (
+          <div className="mt-4 grid grid-cols-2 gap-2">
+            {(myQ.data || []).length === 0 ? (
+              <p className="col-span-2 rounded-2xl bg-white px-4 py-6 text-sm text-[#111111]/50">
+                Hali mahsulot qo‘shilmagan. Qidiruvdan qo‘shing.
+              </p>
+            ) : (
+              (myQ.data || []).map((row) => (
+                <button
+                  key={row.id}
+                  type="button"
+                  onClick={() =>
+                    void navigate({
+                      to: "/ai-style/care/products/$productId",
+                      params: { productId: String(row.id) },
+                    })
+                  }
+                  className="overflow-hidden rounded-2xl bg-white text-left ring-1 ring-black/5"
+                >
+                  {row.image_url ? (
+                    <img src={row.image_url} alt="" className="aspect-square w-full object-contain p-3" />
+                  ) : (
+                    <span className="block aspect-square bg-[#F4F4F5]" />
+                  )}
+                  <span className="block px-3 pb-3 text-[13px] font-semibold">{row.name}</span>
+                </button>
+              ))
+            )}
+          </div>
         ) : panel === "shelf" ? (
           <div className="mt-4">
             <CareShelfTracker />
@@ -756,53 +675,91 @@ export function MorphAiCarePage() {
         )}
       </div>
 
+      {searchOpen ? (
+        <div className="fixed inset-0 z-40">
+          <button
+            type="button"
+            aria-label={t("common.close")}
+            className="absolute inset-0 bg-black/40"
+            onClick={() => {
+              setSearchOpen(false);
+              setSearch("");
+            }}
+          />
+          <div className="absolute inset-x-0 bottom-0 mx-auto flex max-h-[86dvh] w-full max-w-[430px] flex-col rounded-t-3xl bg-[#FAFAFA] px-4 pt-3 pb-[max(1rem,env(safe-area-inset-bottom))]">
+            <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-black/15" />
+            <div className="flex items-center gap-2">
+              <label className="flex h-11 flex-1 items-center gap-2 rounded-full bg-white px-3 ring-1 ring-black/10">
+                <Search className="size-4" />
+                <input
+                  autoFocus
+                  value={search}
+                  onChange={(event) => setSearch(event.target.value)}
+                  placeholder="Mahsulot qidirish"
+                  className="h-full w-full bg-transparent text-sm outline-none"
+                />
+              </label>
+              <button
+                type="button"
+                onClick={() => {
+                  setSearchOpen(false);
+                  setSearch("");
+                }}
+                className="grid size-10 cursor-pointer place-items-center rounded-full bg-white ring-1 ring-black/10"
+                aria-label={t("common.close")}
+              >
+                <X className="size-4" />
+              </button>
+            </div>
+            <div className="mt-4 grid min-h-0 flex-1 grid-cols-2 gap-2 overflow-y-auto pb-2">
+              {(search.trim() ? searchQ.data || [] : catalogProducts).map((item) => {
+                const added = (myQ.data || []).some((row) => row.id === item.id);
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => {
+                      if (needPlus()) return;
+                      setSearchOpen(false);
+                      void navigate({
+                        to: "/ai-style/care/products/$productId",
+                        params: { productId: String(item.id) },
+                      });
+                    }}
+                    className="overflow-hidden rounded-2xl bg-white text-left ring-1 ring-black/5"
+                  >
+                    {item.image_url ? (
+                      <img src={item.image_url} alt="" className="aspect-square w-full object-contain p-2" />
+                    ) : (
+                      <span className="block aspect-square bg-[#F4F4F5]" />
+                    )}
+                    <span className="block px-2.5 pt-1 text-[13px] font-semibold leading-snug">{item.name}</span>
+                    {typeof item.match_percent === "number" ? (
+                      <span className="block px-2.5 text-[12px] font-bold text-[#111111]/70">
+                        {item.match_percent}% mos
+                      </span>
+                    ) : null}
+                    <span
+                      role="presentation"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        if (added) return;
+                        if (needPlus()) return;
+                        void addProduct(item.id);
+                      }}
+                      className="mx-2.5 mt-2 mb-2.5 inline-flex h-8 items-center rounded-full bg-[#111111] px-3 text-[12px] font-semibold text-white"
+                    >
+                      {added ? "Qo‘shilgan" : "Qo‘shish"}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      ) : null}
       <BadHairDaySosSheet open={sosOpen} onClose={() => setSosOpen(false)} />
     </div>
-  );
-}
-
-function CareCatalogCard({
-  product,
-  locked,
-  onLocked,
-}: {
-  product: CareProduct;
-  locked?: boolean;
-  onLocked?: () => void;
-}) {
-  if (locked) {
-    return (
-      <button
-        type="button"
-        onClick={onLocked}
-        className="flex w-full min-w-0 cursor-pointer flex-col overflow-hidden rounded-3xl bg-white text-left shadow-sm ring-1 ring-black/[0.06]"
-      >
-        <span className="grid aspect-[4/5] place-items-center bg-white">
-          {product.image_url ? (
-            <img src={product.image_url} alt="" className="size-full object-contain p-3" />
-          ) : null}
-        </span>
-        <span className="line-clamp-2 min-w-0 break-words px-3 py-3 text-[13px] font-semibold leading-snug text-[#111111] lg:text-sm">
-          {product.name}
-        </span>
-      </button>
-    );
-  }
-  return (
-    <Link
-      to="/ai-style/care/products/$productId"
-      params={{ productId: String(product.id) }}
-      className="flex w-full min-w-0 flex-col overflow-hidden rounded-3xl bg-white shadow-sm ring-1 ring-black/[0.06]"
-    >
-      <span className="grid aspect-[4/5] place-items-center bg-white">
-        {product.image_url ? (
-          <img src={product.image_url} alt="" className="size-full object-contain p-3" />
-        ) : null}
-      </span>
-      <span className="line-clamp-2 min-w-0 break-words px-3 py-3 text-[13px] font-semibold leading-snug text-[#111111] lg:text-sm">
-        {product.name}
-      </span>
-    </Link>
   );
 }
 

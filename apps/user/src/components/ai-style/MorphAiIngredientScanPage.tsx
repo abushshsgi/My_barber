@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { HairConditionAsk } from "@/components/ai-style/HairConditionAsk";
 import { navigateBack } from "@/lib/mobile-back";
 import { useIngredientScan } from "@/hooks/use-ingredient-scan";
 import { useHairCareProfile, useUpdateHairCareProfile } from "@/hooks/use-hair-care-profile";
@@ -102,20 +103,14 @@ export function MorphAiIngredientScanPage() {
         style={{ paddingTop: "max(1rem, env(safe-area-inset-top))" }}
       >
         <BackLink label={t("common.back")} />
-        <div className="mx-auto mt-24 max-w-md text-center">
-          <Lock className="mx-auto size-6 text-[#111111]/50" />
-          <h1 className="mt-4 text-lg font-semibold tracking-tight">
-            Avval soch tahlilini saqlang
-          </h1>
-          <p className="mt-2 text-sm leading-relaxed text-[#111111]/55">
-            Tarkib skani soch holati, tekstura va rang bazaga yozilgandan keyin ochiladi.
-          </p>
-          <Link
-            to="/ai-style/care"
-            className="mt-8 inline-flex h-12 items-center rounded-full bg-[#111111] px-6 text-sm font-semibold text-white"
-          >
-            Soch tahlilini boshlash
-          </Link>
+        <div className="mx-auto mt-8 max-w-lg">
+          <HairConditionAsk
+            lead={t("aiStylePage.chat.hairAsk.lead", {
+              defaultValue:
+                "Morf AI chatbot yaxshi ishlashi uchun o‘zingizning soch holatingizni kiriting.",
+            })}
+            onDone={() => undefined}
+          />
         </div>
       </div>
     );
@@ -329,9 +324,19 @@ export function MorphAiIngredientScanPage() {
                 })}
               </p>
             ) : null}
+            <p className="mt-1 text-[13px] font-semibold text-[#111111]/55">Sizga mosligi</p>
             <p className="mt-2 max-w-[22rem] text-[15px] leading-relaxed text-[#111111]/75">
               {result.fit_uz || result.product_analysis.verdict}
             </p>
+            {(result.catalog_fit?.fit_reasons || []).length ? (
+              <ul className="mt-3 max-w-[22rem] space-y-1">
+                {result.catalog_fit!.fit_reasons!.map((reason) => (
+                  <li key={reason} className="text-[13px] leading-relaxed text-[#111111]/65">
+                    {reason}
+                  </li>
+                ))}
+              </ul>
+            ) : null}
             {result.catalog_notes_uz ? (
               <p className="mt-2 max-w-[22rem] text-[12px] leading-relaxed text-[#111111]/40">
                 {result.catalog_notes_uz}

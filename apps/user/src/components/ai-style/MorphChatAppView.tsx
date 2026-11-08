@@ -22,6 +22,7 @@ import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ChatContentBlocks } from "@/components/ai-style/ChatContentBlocks";
 import { ChatHairQuiz, type ChatHairAnswers } from "@/components/ai-style/ChatHairQuiz";
+import { HairConditionAsk } from "@/components/ai-style/HairConditionAsk";
 import { UserAvatar, userInitials } from "@/components/profile/UserAvatar";
 import { useDisplayUser } from "@/hooks/use-me";
 import type { ChatHairstyleCard } from "@/lib/api/ai";
@@ -61,6 +62,7 @@ type Props = {
   sending: boolean;
   chatLocked: boolean;
   hairLoading: boolean;
+  hairRequired: boolean;
   hairDraft: string | null;
   sendError: string | null;
   limitWarning: string | null;
@@ -86,6 +88,7 @@ export function MorphChatAppView({
   sending,
   chatLocked,
   hairLoading,
+  hairRequired,
   hairDraft,
   sendError,
   limitWarning,
@@ -374,6 +377,39 @@ export function MorphChatAppView({
     return (
       <div className="grid h-dvh place-items-center bg-[var(--morph-bg,#FAFAFA)] text-[var(--morph-fg,#111111)] lg:h-[calc(100dvh-6rem)]">
         <Loader2 className="size-6 animate-spin opacity-40" />
+      </div>
+    );
+  }
+
+  if (hairRequired) {
+    return (
+      <div className="flex h-dvh flex-col overflow-hidden bg-[var(--morph-bg,#FAFAFA)] px-5 text-[var(--morph-fg,#111111)] lg:h-[calc(100dvh-6rem)]">
+        <header className="flex items-center justify-between pt-[max(0.75rem,env(safe-area-inset-top))]">
+          <button
+            type="button"
+            aria-label={t("aiStylePage.chat.home.backA11y")}
+            onClick={leave}
+            className="grid size-10 cursor-pointer place-items-center rounded-full bg-[#F0F0F0]"
+          >
+            <ArrowRight className="size-5" />
+          </button>
+          <p className="text-[13px] font-semibold text-[#111111]/55">
+            {t("aiStylePage.care.onboarding.badge", { defaultValue: "Soch tahlili" })}
+          </p>
+          <span className="size-10" />
+        </header>
+        <div className="mt-8 min-h-0 flex-1 overflow-y-auto pb-8">
+          <HairConditionAsk
+            lead={t("aiStylePage.chat.hairAsk.lead")}
+            onDone={(answers) =>
+              onHairSaved({
+                condition: answers.condition,
+                texture: answers.texture,
+                color_status: answers.color_status,
+              })
+            }
+          />
+        </div>
       </div>
     );
   }

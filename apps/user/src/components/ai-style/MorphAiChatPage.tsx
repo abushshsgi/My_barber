@@ -584,6 +584,7 @@ export function MorphAiChatPage() {
       sending={sending}
       chatLocked={chatLocked}
       hairLoading={loggedIn && (hairQ.isLoading || hairQ.isPending) && !hairQ.data}
+      hairRequired={Boolean(loggedIn && hairQ.isSuccess && !hairQ.data?.complete)}
       hairDraft={hairDraft}
       sendError={sendError}
       limitWarning={limitWarning}

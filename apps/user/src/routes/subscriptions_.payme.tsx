@@ -1,5 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { PaymeCheckoutStatus, readStoredPaymeOrder } from "@/components/subscriptions/PaymeCheckoutStatus";
+import { useEffect } from "react";
+import {
+  clearPaymeAwaitReturn,
+  PaymeCheckoutStatus,
+  readStoredPaymeOrder,
+} from "@/components/subscriptions/PaymeCheckoutStatus";
 import { ProfileSubpageLayout } from "@/components/profile/ProfileSubpageLayout";
 
 export const Route = createFileRoute("/subscriptions_/payme")({
@@ -15,6 +20,9 @@ export const Route = createFileRoute("/subscriptions_/payme")({
 
 function PaymeReturnPage() {
   const orderId = typeof window !== "undefined" ? readStoredPaymeOrder() : null;
+  useEffect(() => {
+    clearPaymeAwaitReturn();
+  }, []);
   return (
     <ProfileSubpageLayout
       title="To‘lov"
