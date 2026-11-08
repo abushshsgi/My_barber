@@ -18,6 +18,7 @@
 /dist
 /.build-id
 /version.json
+/public/version.json
 /.wrangler
 /.tanstack
 

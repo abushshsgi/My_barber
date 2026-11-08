@@ -27,6 +27,7 @@ const payload = { buildId, builtAt: new Date().toISOString() };
 
 writeFileSync(path.join(appDir, ".build-id"), buildId);
 writeFileSync(path.join(appDir, "version.json"), JSON.stringify(payload));
+writeFileSync(path.join(appDir, "public", "version.json"), JSON.stringify(payload));
 writeFileSync(
   path.join(appDir, "src/lib/app-build-id.ts"),
   `/** Generated at build — do not edit */\nexport const APP_BUILD_ID = ${JSON.stringify(buildId)};\n`,
@@ -52,17 +53,8 @@ try{
       fetch("/version.json",{cache:"no-store"})
         .then(function(r){return r.ok?r.json():null})
         .then(function(d){
-          if(d&&d.buildId===BUILD){
-            localStorage.setItem(CK,BUILD);
-            sessionStorage.removeItem(BOOT_KEY);
-          }else{
-            sessionStorage.removeItem(BOOT_KEY);
-            purge(function(){
-              var u=new URL(location.href);
-              u.searchParams.set("_boot",Date.now().toString(36));
-              location.replace(u.toString());
-            });
-          }
+          localStorage.setItem(CK,BUILD);
+          sessionStorage.removeItem(BOOT_KEY);
         })
         .catch(function(){
           sessionStorage.removeItem(BOOT_KEY);
