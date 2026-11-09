@@ -5947,6 +5947,47 @@ export async function createAdminWeatherShieldProduct(
   });
 }
 
+export type AdminSiteVisitorRow = {
+  id: number;
+  visitorKey: string;
+  name: string;
+  phone: string;
+  userId: number | null;
+  device: string;
+  language: string;
+  ip: string;
+  firstPath: string;
+  lastPath: string;
+  referrer: string;
+  visits: number;
+  pageviews: number;
+  clicks: number;
+  firstSeen: string | null;
+  lastSeen: string | null;
+};
+
+export type AdminSiteVisitorsResponse = {
+  days: number;
+  summary: {
+    total: number;
+    rangeVisitors: number;
+    today: number;
+    online: number;
+    pageviews: number;
+    clicks: number;
+    newVisitors: number;
+  };
+  daily: Array<{ date: string; pageviews: number; clicks: number }>;
+  visitors: AdminSiteVisitorRow[];
+  events: Array<{ id: number; kind: "page" | "click"; path: string; label: string; at: string }>;
+};
+
+export async function fetchAdminSiteVisitors(days = 30, visitorId?: number): Promise<AdminSiteVisitorsResponse> {
+  const sp = new URLSearchParams({ days: String(days) });
+  if (visitorId) sp.set("visitor", String(visitorId));
+  return apiJson(`/api/v1/admin/statistics/visitors/?${sp}`);
+}
+
 export async function deleteAdminWeatherShieldProduct(productId: number): Promise<void> {
   const res = await apiFetch(`/api/v1/admin/parvarish/weather-shield/products/${productId}/`, {
     method: "DELETE",

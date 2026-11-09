@@ -91,6 +91,7 @@ import { Route as AdminStatisticsRevenueRouteImport } from './routes/admin.stati
 import { Route as AdminStatisticsSalonsRouteImport } from './routes/admin.statistics.salons'
 import { Route as AdminStatisticsSubscriptionsRouteImport } from './routes/admin.statistics.subscriptions'
 import { Route as AdminStatisticsUsersRouteImport } from './routes/admin.statistics.users'
+import { Route as AdminStatisticsVisitorsRouteImport } from './routes/admin.statistics.visitors'
 import { Route as AdminStatisticsWalletRouteImport } from './routes/admin.statistics.wallet'
 import { Route as AdminSubscriptionsSubIdRouteImport } from './routes/admin.subscriptions.$subId'
 import { Route as AdminSupportTicketIdRouteImport } from './routes/admin.support.$ticketId'
@@ -525,6 +526,11 @@ const AdminStatisticsUsersRoute = AdminStatisticsUsersRouteImport.update({
   path: '/users',
   getParentRoute: () => AdminStatisticsRoute,
 } as any)
+const AdminStatisticsVisitorsRoute = AdminStatisticsVisitorsRouteImport.update({
+  id: '/visitors',
+  path: '/visitors',
+  getParentRoute: () => AdminStatisticsRoute,
+} as any)
 const AdminStatisticsWalletRoute = AdminStatisticsWalletRouteImport.update({
   id: '/wallet',
   path: '/wallet',
@@ -700,6 +706,7 @@ export interface FileRoutesByFullPath {
   '/admin/statistics/salons': typeof AdminStatisticsSalonsRoute
   '/admin/statistics/subscriptions': typeof AdminStatisticsSubscriptionsRoute
   '/admin/statistics/users': typeof AdminStatisticsUsersRoute
+  '/admin/statistics/visitors': typeof AdminStatisticsVisitorsRoute
   '/admin/statistics/wallet': typeof AdminStatisticsWalletRoute
   '/admin/subscriptions/$subId': typeof AdminSubscriptionsSubIdRoute
   '/admin/support/$ticketId': typeof AdminSupportTicketIdRoute
@@ -791,6 +798,7 @@ export interface FileRoutesByTo {
   '/admin/statistics/salons': typeof AdminStatisticsSalonsRoute
   '/admin/statistics/subscriptions': typeof AdminStatisticsSubscriptionsRoute
   '/admin/statistics/users': typeof AdminStatisticsUsersRoute
+  '/admin/statistics/visitors': typeof AdminStatisticsVisitorsRoute
   '/admin/statistics/wallet': typeof AdminStatisticsWalletRoute
   '/admin/subscriptions/$subId': typeof AdminSubscriptionsSubIdRoute
   '/admin/support/$ticketId': typeof AdminSupportTicketIdRoute
@@ -892,6 +900,7 @@ export interface FileRoutesById {
   '/admin/statistics/salons': typeof AdminStatisticsSalonsRoute
   '/admin/statistics/subscriptions': typeof AdminStatisticsSubscriptionsRoute
   '/admin/statistics/users': typeof AdminStatisticsUsersRoute
+  '/admin/statistics/visitors': typeof AdminStatisticsVisitorsRoute
   '/admin/statistics/wallet': typeof AdminStatisticsWalletRoute
   '/admin/subscriptions/$subId': typeof AdminSubscriptionsSubIdRoute
   '/admin/support/$ticketId': typeof AdminSupportTicketIdRoute
@@ -996,6 +1005,7 @@ export interface FileRouteTypes {
     | '/admin/statistics/salons'
     | '/admin/statistics/subscriptions'
     | '/admin/statistics/users'
+    | '/admin/statistics/visitors'
     | '/admin/statistics/wallet'
     | '/admin/subscriptions/$subId'
     | '/admin/support/$ticketId'
@@ -1087,6 +1097,7 @@ export interface FileRouteTypes {
     | '/admin/statistics/salons'
     | '/admin/statistics/subscriptions'
     | '/admin/statistics/users'
+    | '/admin/statistics/visitors'
     | '/admin/statistics/wallet'
     | '/admin/subscriptions/$subId'
     | '/admin/support/$ticketId'
@@ -1187,6 +1198,7 @@ export interface FileRouteTypes {
     | '/admin/statistics/salons'
     | '/admin/statistics/subscriptions'
     | '/admin/statistics/users'
+    | '/admin/statistics/visitors'
     | '/admin/statistics/wallet'
     | '/admin/subscriptions/$subId'
     | '/admin/support/$ticketId'
@@ -1797,6 +1809,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminStatisticsUsersRouteImport
       parentRoute: typeof AdminStatisticsRoute
     }
+    '/admin/statistics/visitors': {
+      id: '/admin/statistics/visitors'
+      path: '/visitors'
+      fullPath: '/admin/statistics/visitors'
+      preLoaderRoute: typeof AdminStatisticsVisitorsRouteImport
+      parentRoute: typeof AdminStatisticsRoute
+    }
     '/admin/statistics/wallet': {
       id: '/admin/statistics/wallet'
       path: '/wallet'
@@ -2202,6 +2221,7 @@ interface AdminStatisticsRouteChildren {
   AdminStatisticsSalonsRoute: typeof AdminStatisticsSalonsRoute
   AdminStatisticsSubscriptionsRoute: typeof AdminStatisticsSubscriptionsRoute
   AdminStatisticsUsersRoute: typeof AdminStatisticsUsersRoute
+  AdminStatisticsVisitorsRoute: typeof AdminStatisticsVisitorsRoute
   AdminStatisticsWalletRoute: typeof AdminStatisticsWalletRoute
   AdminStatisticsIndexRoute: typeof AdminStatisticsIndexRoute
 }
@@ -2216,6 +2236,7 @@ const AdminStatisticsRouteChildren: AdminStatisticsRouteChildren = {
   AdminStatisticsSalonsRoute: AdminStatisticsSalonsRoute,
   AdminStatisticsSubscriptionsRoute: AdminStatisticsSubscriptionsRoute,
   AdminStatisticsUsersRoute: AdminStatisticsUsersRoute,
+  AdminStatisticsVisitorsRoute: AdminStatisticsVisitorsRoute,
   AdminStatisticsWalletRoute: AdminStatisticsWalletRoute,
   AdminStatisticsIndexRoute: AdminStatisticsIndexRoute,
 }

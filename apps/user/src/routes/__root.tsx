@@ -25,6 +25,7 @@ import { CurrencyProvider } from "../hooks/use-currency";
 import { AuthSessionGuard } from "../components/AuthSessionGuard";
 import { OnboardingGuard } from "../components/OnboardingGuard";
 import { GoogleAnalytics } from "../components/GoogleAnalytics";
+import { SiteTelemetry } from "../components/SiteTelemetry";
 import { FirebaseInit } from "../components/FirebaseInit";
 import { GA_ENABLED, GA_MEASUREMENT_ID } from "../lib/ga";
 
@@ -211,6 +212,7 @@ function AppShell() {
           <ClientOnly>
             <FirebaseInit />
             <GoogleAnalytics />
+            <SiteTelemetry />
             <DeployRecovery />
             <Toaster position="top-center" />
           </ClientOnly>

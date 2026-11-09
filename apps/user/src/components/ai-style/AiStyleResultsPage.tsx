@@ -3,6 +3,7 @@ import { ChevronLeft, ChevronRight, Loader2, MessageCircle, Share2, Sparkles } f
 import { useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { FaceAnalysisRings } from "@/components/ai-style/FaceAnalysisRings";
+import { AiStyleGeneratedLookPage } from "@/components/ai-style/AiStyleGeneratedLookPage";
 import { AiStyleMoreStyles } from "@/components/ai-style/AiStyleMoreStyles";
 import { AiStyleShareSheet } from "@/components/ai-style/AiStyleShareSheet";
 import {
@@ -50,9 +51,15 @@ export function AiStyleResultsPage({
   const scrollerRef = useRef<HTMLDivElement>(null);
   const [index, setIndex] = useState(0);
   const [shareOpen, setShareOpen] = useState(false);
+  const [look, setLook] = useState<{ styleId: string; title: string; image: string } | null>(null);
 
-  const featured = useMemo(() => result.suggestions.slice(0, 3), [result.suggestions]);
-  const others = useMemo(() => shuffle(result.suggestions.slice(3)), [result.suggestions]);
+  const suggestionKey = result.suggestions.map((item) => item.id).join("|");
+  const { featured, others } = useMemo(() => {
+    const all = shuffle(result.suggestions);
+    return { featured: all.slice(0, 3), others: all.slice(3) };
+    // suggestionKey ushlab turadi: bir tahlil davomida 3 ta tavsiya o'zgarmaydi.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [suggestionKey]);
 
   const active = featured[index] ?? featured[0] ?? null;
   const activePreview = active
@@ -259,9 +266,7 @@ export function AiStyleResultsPage({
                     disabled={Boolean(tryOnLoadingId) && !preview}
                     onClick={() => {
                       if (preview) {
-                        const featuredIndex = featured.findIndex((s) => s.id === item.id);
-                        if (featuredIndex >= 0) goTo(featuredIndex);
-                        else onGenerateTryOn(item.id, undefined, item.title);
+                        setLook({ styleId: item.id, title: item.title, image: preview });
                         return;
                       }
                       onGenerateTryOn(item.id, undefined, item.title);
@@ -297,14 +302,32 @@ export function AiStyleResultsPage({
           <section className="bg-white px-4 pb-6 pt-2">
             <AiStyleMoreStyles
               audience={audience}
-              excludeIds={result.suggestions.map((s) => s.id)}
+              excludeIds={featured.map((s) => s.id)}
               result={result}
               tryOnByStyle={tryOnByStyle}
               tryOnLoadingId={tryOnLoadingId}
               onGenerateTryOn={onGenerateTryOn}
+              onOpenPreview={(item) => {
+                const preview = resolveTryOnPreview(tryOnByStyle, item.entry.id, item.personaId);
+                if (!preview) return;
+                setLook({
+                  styleId: item.entry.id,
+                  title: item.entry.titleUz || item.entry.title,
+                  image: preview,
+                });
+              }}
             />
           </section>
         ) : null}
+
+      {look ? (
+        <AiStyleGeneratedLookPage
+          title={look.title}
+          styleId={look.styleId}
+          image={look.image}
+          onBack={() => setLook(null)}
+        />
+      ) : null}
 
       {shareOpen && activePreview && active ? (
         <AiStyleShareSheet
