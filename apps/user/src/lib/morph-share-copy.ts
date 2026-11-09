@@ -12,6 +12,17 @@ export function buildTelegramShareUrl(url: string, text: string): string {
   return `https://t.me/share/url?${params.toString()}`;
 }
 
+/** Instagram veb-ilovasi — story intent yo‘q, shu sahifa haqiqiy kirish. */
+export const INSTAGRAM_WEB_URL = "https://www.instagram.com/";
+
+/** TikTok veb-ilovasi. */
+export const TIKTOK_WEB_URL = "https://www.tiktok.com/";
+
+/** Facebook ulashish oynasi — berilgan sahifa havolasi bilan. */
+export function buildFacebookShareUrl(url: string): string {
+  return `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`;
+}
+
 /** Ism o‘rniga qo‘yiladigan generik qiymatlar — sarlavhaga tushmasin. */
 const GENERIC_NAMES = new Set(["foydalanuvchi", "user", "пользователь", "do‘stingiz", "dostingiz"]);
 

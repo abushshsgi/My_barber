@@ -105,14 +105,14 @@ export function AiStyleResultsPage({
                   const loading = tryOnLoadingId === tryOnCacheKey(item.id, menPersonaId);
                   return (
                     <article key={item.id} className="relative w-full shrink-0 snap-center bg-black">
-                      <div className="relative min-h-[min(82dvh,760px)] w-full">
+                      <div className="relative h-[calc(100dvh-var(--mobile-dock,0px))] w-full lg:h-[min(78dvh,760px)]">
                         <img
                           key={preview || item.imageUrl}
                           src={preview || item.imageUrl}
                           alt=""
                           fetchPriority="high"
                           decoding="sync"
-                          className="absolute inset-0 h-full w-full bg-neutral-100 object-contain object-center"
+                          className="absolute inset-0 h-full w-full bg-neutral-100 object-cover object-[center_18%] lg:object-contain lg:object-center"
                         />
                         {loading ? (
                           <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-black/50">
@@ -122,7 +122,7 @@ export function AiStyleResultsPage({
                             </p>
                           </div>
                         ) : null}
-                        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black via-black/70 to-transparent px-4 pb-5 pt-24">
+                        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black via-black/70 to-transparent px-[clamp(12px,4vw,20px)] pb-[max(14px,env(safe-area-inset-bottom))] pt-24">
                           <div className="mb-3 flex items-end justify-between gap-3">
                             <div className="min-w-0">
                               <p className="text-[11px] font-bold uppercase tracking-wider text-white/80">
@@ -277,7 +277,7 @@ export function AiStyleResultsPage({
                       <img
                         src={preview || item.imageUrl}
                         alt=""
-                        className="h-full w-full object-contain object-center"
+                        className="h-full w-full object-cover object-[center_18%]"
                       />
                       {loading ? (
                         <div className="absolute inset-0 grid place-items-center bg-black/50">
