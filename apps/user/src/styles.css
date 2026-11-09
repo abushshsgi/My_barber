@@ -132,6 +132,10 @@
     -webkit-overflow-scrolling: touch;
   }
 
+  body {
+    padding-top: var(--maint-banner-offset, 0px);
+  }
+
   #root {
     min-height: 100%;
     min-width: 0;
@@ -615,28 +619,11 @@
     transform: scale(0.985);
   }
 
-  .auth-google-card {
-    transition:
-      border-color 0.25s ease,
-      box-shadow 0.25s ease,
-      transform 0.25s cubic-bezier(0.22, 1, 0.36, 1);
-  }
-
-  .auth-google-card:hover {
-    border-color: color-mix(in oklab, #1a73e8 22%, var(--border));
-    box-shadow: 0 28px 64px -36px rgba(26, 115, 232, 0.28);
-  }
-
-  .auth-google-cta {
-    transition:
-      transform 0.18s cubic-bezier(0.22, 1, 0.36, 1),
-      box-shadow 0.18s ease,
-      filter 0.18s ease;
-  }
-
-  .auth-google-card:hover .auth-google-cta {
-    filter: brightness(1.04);
-    box-shadow: 0 16px 32px -12px rgba(26, 115, 232, 0.62);
+  .auth-google-hit [role="button"] {
+    width: 100% !important;
+    height: 48px !important;
+    min-height: 48px !important;
+    max-width: none !important;
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -652,8 +639,7 @@
       transform: none;
     }
 
-    .auth-google-card,
-    .auth-google-cta {
+    .auth-google-hit {
       transition: none;
     }
   }
@@ -748,4 +734,9 @@
 
 .ig-card-drop[data-state="open"] {
   animation: ig-card-drop 0.46s cubic-bezier(0.16, 1, 0.3, 1) both !important;
+}
+
+/* Texnik ishlar banneri ochiq bo'lsa, yopishib turadigan sarlavhalar uning ostida qoladi. */
+html[data-maint-banner] .sticky.top-0 {
+  top: var(--maint-banner-offset, 0px);
 }

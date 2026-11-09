@@ -2280,10 +2280,10 @@
     "multiviewRetry": "360° again"
   },
   "inAppBrowser": {
-    "title": "Continue in your browser",
-    "description": "Open MySaloon in an external browser to sign in with Google.",
-    "openChrome": "Chrome",
-    "openSafari": "Safari",
+    "title": "Sign in with Google",
+    "description": "Google sign-in does not work inside Instagram. Android opens Google Chrome. iPhone opens Safari.",
+    "openChrome": "Open in Google Chrome",
+    "openSafari": "Open in Safari",
     "copyLink": "Copy",
     "continue": "Continue",
     "copied": "Link copied",

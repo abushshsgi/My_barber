@@ -4,14 +4,39 @@ import { toast } from "sonner";
 import { GeolocationError, getAccuratePosition } from "@/lib/native-geolocation";
 import { useMe, useUpdateMe } from "@/hooks/use-me";
 import { roundCoord } from "@/lib/api/list-utils";
+import { getAuthUserId } from "@/lib/auth-user";
 import { isProfileLocationRequired, userHasProfileCoords } from "@/lib/recommendations";
+import {
+  notifyAudienceReset,
+  readScopedPrefsRaw,
+  writeScopedAudience,
+  writeScopedPrefsRaw,
+} from "@/lib/user-prefs";
 import {
   sanitizeDisplayNameInput,
   validateDisplayName,
   type DisplayNameErrorKey,
 } from "@/lib/validate-display-name";
 
-export const ONBOARDING_STEPS = ["Ism", "Yosh"] as const;
+export const ONBOARDING_STEPS = ["Ism va yosh", "Jins"] as const;
+
+export type ProfileGender = "male" | "female";
+
+function rememberProfileAudience(gender: ProfileGender) {
+  const audience = gender === "male" ? "men" : "women";
+  const userId = getAuthUserId();
+  if (userId == null) return;
+  writeScopedAudience(userId, audience);
+  let prefs: Record<string, unknown> = {};
+  try {
+    const raw = readScopedPrefsRaw(userId);
+    if (raw) prefs = JSON.parse(raw) as Record<string, unknown>;
+  } catch {
+    prefs = {};
+  }
+  writeScopedPrefsRaw(userId, JSON.stringify({ ...prefs, preferredAudience: audience }));
+  notifyAudienceReset(userId);
+}
 
 const NAME_ERROR_DEFAULTS: Record<DisplayNameErrorKey, string> = {
   nameRequired: "Ism va familiyani kiriting",
@@ -28,12 +53,15 @@ export function useOnboardingFlow() {
   const updateMe = useUpdateMe();
   const locationRequired = isProfileLocationRequired(me);
   const lastStep = locationRequired ? 3 : 2;
-  const steps = locationRequired ? (["Ism", "Yosh", "Joylashuv"] as const) : ONBOARDING_STEPS;
+  const steps = locationRequired
+    ? (["Ism va yosh", "Jins", "Joylashuv"] as const)
+    : ONBOARDING_STEPS;
 
   const [step, setStep] = useState(1);
   const [firstName, setFirstNameRaw] = useState("");
   const [lastName, setLastNameRaw] = useState("");
   const [age, setAge] = useState("");
+  const [gender, setGender] = useState<ProfileGender | "">("");
   const [lat, setLat] = useState<number | null>(null);
   const [lng, setLng] = useState<number | null>(null);
   const [locating, setLocating] = useState(false);
@@ -42,8 +70,13 @@ export function useOnboardingFlow() {
   const [prefilled, setPrefilled] = useState(false);
 
   const hasBirth = me?.birth_year != null && Number(me.birth_year) > 1900;
+  const hasGender = me?.gender === "male" || me?.gender === "female";
   const locationOnly =
-    locationRequired && me?.onboarding_completed === true && hasBirth && !userHasProfileCoords(me);
+    locationRequired &&
+    me?.onboarding_completed === true &&
+    hasBirth &&
+    hasGender &&
+    !userHasProfileCoords(me);
 
   useEffect(() => {
     if (!me || prefilled) return;
@@ -54,12 +87,18 @@ export function useOnboardingFlow() {
     if (hasBirth) {
       setAge(String(new Date().getFullYear() - Number(me.birth_year)));
     }
+    if (me.gender === "male" || me.gender === "female") setGender(me.gender);
     setPrefilled(true);
   }, [me, prefilled, hasBirth]);
 
   useEffect(() => {
-    if (locationOnly) setStep(3);
-  }, [locationOnly]);
+    if (!prefilled) return;
+    if (locationOnly) {
+      setStep(3);
+      return;
+    }
+    if (me?.onboarding_completed === true && hasBirth && !hasGender) setStep(2);
+  }, [locationOnly, prefilled, me?.onboarding_completed, hasBirth, hasGender]);
 
   const setFirstName = useCallback((value: string) => {
     setNameTouched(true);
@@ -111,9 +150,10 @@ export function useOnboardingFlow() {
   }, [step, gpsAttempted, detectLocation, locationRequired]);
 
   const ageOk = parseInt(age, 10) >= 10 && parseInt(age, 10) <= 100;
+  const genderOk = gender === "male" || gender === "female";
   const canNext =
-    (step === 1 && nameValidation.ok) ||
-    (step === 2 && ageOk) ||
+    (step === 1 && nameValidation.ok && ageOk) ||
+    (step === 2 && genderOk) ||
     (step === 3 && locationRequired && lat != null && lng != null && !locating);
 
   const finish = async () => {
@@ -149,6 +189,11 @@ export function useOnboardingFlow() {
       toast.error(NAME_ERROR_DEFAULTS[checked.errorKey]);
       return;
     }
+    if (!genderOk) {
+      setStep(2);
+      toast.error("Jinsni tanlang");
+      return;
+    }
     const ageNum = parseInt(age, 10);
     const birthYear = new Date().getFullYear() - ageNum;
     const [first, ...rest] = checked.value.split(" ");
@@ -157,6 +202,7 @@ export function useOnboardingFlow() {
         first_name: first ?? "",
         last_name: rest.join(" "),
         birth_year: birthYear,
+        gender,
         onboarding_completed: true,
         ...(locationRequired && lat != null && lng != null
           ? { latitude: roundCoord(lat), longitude: roundCoord(lng) }
@@ -170,6 +216,7 @@ export function useOnboardingFlow() {
           /* */
         }
       }
+      rememberProfileAudience(gender);
       toast.success("Profil tayyor!");
       void navigate({ to: "/", replace: true });
     } catch (e) {
@@ -181,6 +228,14 @@ export function useOnboardingFlow() {
     if (step === 1 && !nameValidation.ok) {
       setNameTouched(true);
       toast.error(NAME_ERROR_DEFAULTS[nameValidation.errorKey]);
+      return;
+    }
+    if (step === 1 && !ageOk) {
+      toast.error("Yoshni 10 dan 100 gacha kiriting");
+      return;
+    }
+    if (step === 2 && !genderOk) {
+      toast.error("Jinsni tanlang");
       return;
     }
     if (step < lastStep) {
@@ -201,6 +256,8 @@ export function useOnboardingFlow() {
     setLastName,
     age,
     setAge,
+    gender,
+    setGender,
     lat,
     setLat,
     lng,

@@ -14,6 +14,7 @@ export type UpdateMePayload = Partial<
     | "phone"
     | "region"
     | "birth_year"
+    | "gender"
     | "latitude"
     | "longitude"
     | "onboarding_completed"

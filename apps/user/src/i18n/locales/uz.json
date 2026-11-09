@@ -2280,10 +2280,10 @@
     "multiviewRetry": "360° qayta"
   },
   "inAppBrowser": {
-    "title": "Brauzerda davom eting",
-    "description": "Google orqali kirish uchun MySaloon saytini tashqi brauzerda oching.",
-    "openChrome": "Chrome",
-    "openSafari": "Safari",
+    "title": "Google orqali kirish",
+    "description": "Instagram brauzerida Google bilan kirib bo‘lmaydi. Androidda Google Chrome, iPhone’da Safari ochiladi.",
+    "openChrome": "Google Chrome’da ochish",
+    "openSafari": "Safari’da ochish",
     "copyLink": "Nusxalash",
     "continue": "Davom etish",
     "copied": "Havola nusxalandi",

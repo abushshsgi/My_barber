@@ -61,6 +61,8 @@ export function OnboardingSteps({ state, variant = "mobile" }: Props) {
     setLastName,
     age,
     setAge,
+    gender,
+    setGender,
     lat,
     setLat,
     lng,
@@ -108,13 +110,6 @@ export function OnboardingSteps({ state, variant = "mobile" }: Props) {
             Faqat harflar, bo&apos;sh joy, defis (-) va apostrof (&apos;).
           </p>
         )}
-      </div>
-    );
-  }
-
-  if (step === 2) {
-    return (
-      <div className={cn("space-y-4", isDesktop && "mx-auto w-full max-w-sm space-y-4")}>
         <div className={sectionLabel}>
           <Calendar className={isDesktop ? "h-[18px] w-[18px]" : "h-4 w-4"} />
           Yoshingiz
@@ -129,13 +124,43 @@ export function OnboardingSteps({ state, variant = "mobile" }: Props) {
           placeholder="Masalan: 25"
           className={cn(inputClass, isDesktop && "text-center text-2xl tracking-wide tabular-nums")}
         />
-        <p
-          className={cn(
-            "text-muted-foreground",
-            isDesktop ? "text-center text-sm leading-relaxed" : "text-xs",
-          )}
-        >
-          Xizmatlar va tavsiyalar yoshga mos tanlanadi.
+      </div>
+    );
+  }
+
+  if (step === 2) {
+    const choices = [
+      { value: "male" as const, label: "Erkak" },
+      { value: "female" as const, label: "Ayol" },
+    ];
+    return (
+      <div className={cn("space-y-4", isDesktop && "mx-auto w-full max-w-sm space-y-4")}>
+        <div className={sectionLabel}>
+          <User className={isDesktop ? "h-[18px] w-[18px]" : "h-4 w-4"} />
+          Jinsingiz
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          {choices.map((choice) => {
+            const selected = gender === choice.value;
+            return (
+              <button
+                key={choice.value}
+                type="button"
+                onClick={() => setGender(choice.value)}
+                className={cn(
+                  "rounded-2xl border-2 px-4 py-5 text-sm font-bold transition-colors",
+                  selected
+                    ? "border-foreground bg-foreground text-background"
+                    : "border-border bg-background text-foreground",
+                )}
+              >
+                {choice.label}
+              </button>
+            );
+          })}
+        </div>
+        <p className={cn("text-muted-foreground", isDesktop ? "text-sm" : "text-xs")}>
+          Explore, try-on va chatbot shu jinsga mos natija beradi.
         </p>
       </div>
     );

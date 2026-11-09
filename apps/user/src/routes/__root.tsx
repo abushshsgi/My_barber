@@ -26,6 +26,8 @@ import { OnboardingGuard } from "../components/OnboardingGuard";
 import { GoogleAnalytics } from "../components/GoogleAnalytics";
 import { SiteTelemetry } from "../components/SiteTelemetry";
 import { ExternalBrowserPrompt } from "../components/ExternalBrowserPrompt";
+import { FirstVisitOnboarding } from "../components/first-visit/FirstVisitOnboarding";
+import { MaintenanceBanner } from "../components/MaintenanceBanner";
 import { FirebaseInit } from "../components/FirebaseInit";
 import { GA_ENABLED, GA_MEASUREMENT_ID } from "../lib/ga";
 
@@ -194,6 +196,7 @@ function RootShell({ children }: { children: React.ReactNode }) {
         ) : null}
       </head>
       <body>
+        <MaintenanceBanner />
         {children}
         <Scripts />
       </body>
@@ -216,6 +219,7 @@ function AppShell() {
             </OnboardingGuard>
           </AuthSessionGuard>
           <ClientOnly>
+            <FirstVisitOnboarding />
             <ExternalBrowserPrompt />
             <FirebaseInit />
             <GoogleAnalytics />

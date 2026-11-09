@@ -10,6 +10,7 @@ export type ApiUser = {
   role: string;
   region: string;
   birth_year: number | null;
+  gender?: "male" | "female" | "";
   age: number | null;
   latitude: string | number | null;
   longitude: string | number | null;

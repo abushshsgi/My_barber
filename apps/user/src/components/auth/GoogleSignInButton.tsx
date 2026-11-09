@@ -39,9 +39,19 @@ function GoogleGlyph({ className }: { className?: string }) {
   );
 }
 
+function GoogleContinueFace({ label }: { label: string }) {
+  return (
+    <span className="pointer-events-none absolute inset-0 flex items-center justify-center gap-3 rounded-2xl border border-black/10 bg-white px-4 text-sm font-semibold text-[#1f1f1f] shadow-[0_10px_28px_-18px_rgba(15,23,42,0.55)] transition-[border-color,box-shadow,transform] duration-200 group-hover:border-[#1a73e8]/35 group-hover:shadow-[0_16px_36px_-20px_rgba(26,115,232,0.45)] group-active:scale-[0.985]">
+      <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-white ring-1 ring-black/5">
+        <GoogleGlyph className="size-4" />
+      </span>
+      {label}
+    </span>
+  );
+}
+
 function GoogleSignInButtonInner({
   busy = false,
-  emphasized = false,
   onBusyChange,
   onSuccess,
 }: Props) {
@@ -83,9 +93,9 @@ function GoogleSignInButtonInner({
       <GoogleLogin
         onSuccess={(response) => void handleSuccess(response.credential)}
         onError={() => toast.error(t("auth.googleErrGeneric"))}
-        theme={emphasized ? "filled_blue" : "outline"}
+        theme="outline"
         size="large"
-        shape="rectangular"
+        shape="pill"
         text="continue_with"
         width={buttonWidth}
         locale="uz"
@@ -96,17 +106,19 @@ function GoogleSignInButtonInner({
     <div
       ref={containerRef}
       className={cn(
-        "w-full overflow-hidden rounded-xl",
-        emphasized && "shadow-[0_10px_24px_-18px_rgba(15,23,42,0.45)]",
+        "group relative h-12 w-full overflow-hidden rounded-2xl",
         busy && "pointer-events-none opacity-60",
       )}
     >
-      {button}
+      <GoogleContinueFace label={t("auth.googleContinue")} />
+      <div className="auth-google-hit absolute inset-0 z-10 overflow-hidden rounded-2xl opacity-0">
+        {button}
+      </div>
     </div>
   );
 }
 
-function InAppGoogleHandoff({ emphasized, busy }: { emphasized?: boolean; busy?: boolean }) {
+function InAppGoogleHandoff({ busy }: { busy?: boolean }) {
   const { t } = useTranslation();
   const openExternal = () => requestExternalBrowserPrompt();
 
@@ -115,13 +127,9 @@ function InAppGoogleHandoff({ emphasized, busy }: { emphasized?: boolean; busy?:
       type="button"
       disabled={busy}
       onClick={openExternal}
-      className={cn(
-        "flex h-12 w-full cursor-pointer items-center justify-center gap-3 rounded-xl border border-border bg-background px-4 text-sm font-semibold disabled:opacity-60",
-        emphasized && "shadow-[0_10px_24px_-18px_rgba(15,23,42,0.45)]",
-      )}
+      className="group relative h-12 w-full cursor-pointer overflow-hidden rounded-2xl disabled:opacity-60"
     >
-      <GoogleGlyph className="size-5" />
-      {t("auth.googleContinue")}
+      <GoogleContinueFace label={t("auth.googleContinue")} />
     </button>
   );
 }
@@ -129,7 +137,7 @@ function InAppGoogleHandoff({ emphasized, busy }: { emphasized?: boolean; busy?:
 export function GoogleSignInButton(props: Props) {
   const inApp = useInAppBrowserDetection().isInAppBrowser;
   if (inApp) {
-    return <InAppGoogleHandoff emphasized={props.emphasized} busy={props.busy} />;
+    return <InAppGoogleHandoff busy={props.busy} />;
   }
   return (
     <GoogleOAuthProvider clientId={props.clientId}>

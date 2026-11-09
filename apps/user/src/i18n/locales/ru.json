@@ -2282,10 +2282,10 @@
     "multiviewRetry": "360° снова"
   },
   "inAppBrowser": {
-    "title": "Продолжите в браузере",
-    "description": "Чтобы войти через Google, откройте MySaloon во внешнем браузере.",
-    "openChrome": "Chrome",
-    "openSafari": "Safari",
+    "title": "Вход через Google",
+    "description": "Во встроенном браузере Instagram войти через Google нельзя. На Android откроется Google Chrome, на iPhone — Safari.",
+    "openChrome": "Открыть в Google Chrome",
+    "openSafari": "Открыть в Safari",
     "copyLink": "Копировать",
     "continue": "Продолжить",
     "copied": "Ссылка скопирована",

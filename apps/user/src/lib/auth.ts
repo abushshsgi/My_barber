@@ -45,6 +45,7 @@ export type AuthUser = {
   id?: number;
   onboarding_completed?: boolean;
   birth_year?: number | null;
+  gender?: "male" | "female" | "";
   latitude?: string | number | null;
   longitude?: string | number | null;
 };
@@ -56,6 +57,7 @@ function userFromApi(user: ApiUser): AuthUser {
     name: user.full_name || undefined,
     onboarding_completed: user.onboarding_completed,
     birth_year: user.birth_year ?? null,
+    gender: user.gender ?? "",
     latitude: user.latitude ?? null,
     longitude: user.longitude ?? null,
   };

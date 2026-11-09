@@ -406,7 +406,7 @@ function Auth() {
     <div className="flex min-h-[100dvh] flex-col bg-background lg:grid lg:grid-cols-2">
       <AuthMarketingSlot />
 
-      <div className="relative flex min-h-[100dvh] flex-col overflow-hidden bg-background px-6 pb-8 pt-[max(5.5rem,env(safe-area-inset-top))] lg:justify-center lg:px-12 lg:py-10 lg:pt-10 xl:px-16">
+      <div className="relative flex min-h-[100dvh] flex-col justify-center overflow-hidden bg-background px-6 py-8 pt-[max(5.5rem,env(safe-area-inset-top))] lg:px-12 lg:py-10 lg:pt-10 xl:px-16">
         <div
           className="pointer-events-none absolute -left-20 top-0 h-64 w-64 rounded-full bg-[#ff5c5c]/12 blur-3xl"
           aria-hidden
@@ -436,7 +436,7 @@ function Auth() {
               {!phoneAuthEnabled ? (
                 <div className="space-y-5">
                   {googleClientId ? (
-                    <div className="auth-google-card rounded-2xl border border-border/80 bg-background p-1.5">
+                    <div className="space-y-3">
                       <GoogleSignInButton
                         clientId={googleClientId}
                         emphasized
@@ -450,6 +450,9 @@ function Auth() {
                           finishLogin(data, "google");
                         }}
                       />
+                      <p className="text-center text-xs leading-relaxed text-muted-foreground">
+                        {t("auth.googleContinueHint")}
+                      </p>
                     </div>
                   ) : (
                     <div className="rounded-2xl border border-border bg-surface/80 px-4 py-4 text-sm text-muted-foreground">

@@ -22,6 +22,10 @@ import {
   tryBuildAndroidChromeIntent,
   tryBuildIosExternalUrl,
 } from "@/lib/external-browser";
+import {
+  FIRST_VISIT_VISIBILITY_EVENT,
+  shouldShowFirstVisitFromBrowser,
+} from "@/lib/first-visit-onboarding";
 
 const HANDOFF_WAIT_MS = 1600;
 
@@ -36,20 +40,42 @@ export function ExternalBrowserPrompt() {
   );
   const [forced, setForced] = useState(false);
   const [failedBrowser, setFailedBrowser] = useState<"safari" | "chrome" | null>(null);
+  const [onboardingOpen, setOnboardingOpen] = useState(() => {
+    try {
+      return shouldShowFirstVisitFromBrowser(hasValidUserSession());
+    } catch {
+      return false;
+    }
+  });
   const failTimer = useRef<number | null>(null);
   const watchCleanup = useRef<(() => void) | null>(null);
 
   useEffect(() => {
     const open = () => setForced(true);
+    const syncOnboarding = () => {
+      try {
+        setOnboardingOpen(shouldShowFirstVisitFromBrowser(hasValidUserSession()));
+      } catch {
+        setOnboardingOpen(false);
+      }
+    };
     window.addEventListener(EXTERNAL_BROWSER_PROMPT_EVENT, open);
+    window.addEventListener(FIRST_VISIT_VISIBILITY_EVENT, syncOnboarding);
     return () => {
       window.removeEventListener(EXTERNAL_BROWSER_PROMPT_EVENT, open);
+      window.removeEventListener(FIRST_VISIT_VISIBILITY_EVENT, syncOnboarding);
       if (failTimer.current !== null) window.clearTimeout(failTimer.current);
       watchCleanup.current?.();
     };
   }, []);
 
-  const loggedIn = hasValidUserSession();
+  let loggedIn = false;
+  try {
+    loggedIn = hasValidUserSession();
+  } catch {
+    loggedIn = false;
+  }
+  if (onboardingOpen) return null;
   if (!detection.isInAppBrowser || (!forced && (dismissed || loggedIn))) return null;
 
   const pageUrl = resolveExternalPageTarget({
@@ -121,28 +147,33 @@ export function ExternalBrowserPrompt() {
         </DialogHeader>
 
         <div className="flex gap-1.5">
-          {safariUrl ? (
-            <Button asChild size="sm" className={buttonClass}>
-              <a href={safariUrl} onClick={() => armWatch("safari")}>
+          {detection.os === "ios" ? (
+            safariUrl ? (
+              <Button asChild size="sm" className={buttonClass}>
+                <a href={safariUrl} onClick={() => armWatch("safari")}>
+                  <ExternalLink />
+                  {t("inAppBrowser.openSafari")}
+                </a>
+              </Button>
+            ) : (
+              <Button
+                type="button"
+                size="sm"
+                className={buttonClass}
+                onClick={() => setFailedBrowser("safari")}
+              >
                 <ExternalLink />
                 {t("inAppBrowser.openSafari")}
-              </a>
-            </Button>
-          ) : null}
-          {chromeUrl ? (
-            <Button
-              asChild
-              size="sm"
-              variant={safariUrl ? "outline" : "default"}
-              className={buttonClass}
-            >
+              </Button>
+            )
+          ) : chromeUrl ? (
+            <Button asChild size="sm" className={buttonClass}>
               <a href={chromeUrl} onClick={() => armWatch("chrome")}>
                 <ExternalLink />
                 {t("inAppBrowser.openChrome")}
               </a>
             </Button>
-          ) : null}
-          {detection.os === "android" && !chromeUrl ? (
+          ) : (
             <Button
               type="button"
               size="sm"
@@ -152,7 +183,7 @@ export function ExternalBrowserPrompt() {
               <ExternalLink />
               {t("inAppBrowser.openChrome")}
             </Button>
-          ) : null}
+          )}
         </div>
 
         {failedBrowser ? (

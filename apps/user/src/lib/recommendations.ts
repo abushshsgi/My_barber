@@ -183,6 +183,7 @@ export function needsOnboarding(
   user?: {
     onboarding_completed?: boolean;
     birth_year?: number | null;
+    gender?: string | null;
     latitude?: string | number | null;
     longitude?: string | number | null;
     require_profile_location?: boolean;
@@ -193,6 +194,8 @@ export function needsOnboarding(
   const hasBirth = user.birth_year != null && Number(user.birth_year) > 1900;
   if (user.onboarding_completed !== true) return true;
   if (!hasBirth) return true;
+  // Missing field means the cached session predates gender. Wait for /me.
+  if (user.gender != null && user.gender !== "male" && user.gender !== "female") return true;
   if (isProfileLocationRequired(user) && !userHasProfileCoords(user)) return true;
   return false;
 }

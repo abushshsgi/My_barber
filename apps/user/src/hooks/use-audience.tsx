@@ -1,4 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
+import { useMe } from "@/hooks/use-me";
 import { type Audience, type Category } from "@/lib/mock-data";
 import { getAuthUserId } from "@/lib/auth-user";
 import {
@@ -87,13 +88,17 @@ function readInitialAudience(userId: number | null): AudienceFilter {
 }
 
 export function AudienceProvider({ children }: { children: ReactNode }) {
+  const { data: me } = useMe();
   const [userId, setUserId] = useState<number | null>(() => getAuthUserId());
   const [audience, setAudienceState] = useState<AudienceFilter>(() => readInitialAudience(userId));
-  const profileDefault = readPrefsPreferredAudience(userId) ?? "all";
+  const [profileDefault, setProfileDefault] = useState<AudienceFilter>(
+    () => readPrefsPreferredAudience(userId) ?? "all",
+  );
 
   const reloadAudience = useCallback((uid: number | null) => {
     setUserId(uid);
     setAudienceState(readInitialAudience(uid));
+    setProfileDefault(readPrefsPreferredAudience(uid) ?? "all");
   }, []);
 
   useEffect(() => {
@@ -124,9 +129,25 @@ export function AudienceProvider({ children }: { children: ReactNode }) {
     return () => window.removeEventListener("storage", onStorage);
   }, []);
 
+  useEffect(() => {
+    const next = me?.gender === "male" ? "men" : me?.gender === "female" ? "women" : null;
+    if (!next) return;
+    setProfileDefault(next);
+    setAudienceState((current) => (current === next ? current : next));
+    const uid = getAuthUserId();
+    try {
+      if (uid != null) writeScopedAudience(uid, next);
+      else localStorage.setItem("mysaloon.audience", next);
+      writePrefsPreferredAudience(uid, next);
+    } catch {
+      /* noop */
+    }
+  }, [me?.gender]);
+
   const setAudience = useCallback((v: AudienceFilter) => {
     const uid = getAuthUserId();
     setAudienceState(v);
+    setProfileDefault(v);
     try {
       if (uid != null) {
         writeScopedAudience(uid, v);
