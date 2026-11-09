@@ -33,13 +33,6 @@ export const FALLBACK_SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
         label_en: "Morf AI chat — 50,000 tokens / month",
       },
       {
-        key: "studio",
-        label_uz: "Morf AI Studio — yo'q",
-        label_ru: "Morf AI Studio — нет",
-        label_en: "Morf AI Studio — not included",
-        included: false,
-      },
-      {
         key: "care",
         label_uz: "Parvarish, Tarkib, ob-havo — yo'q",
         label_ru: "Уход, состав, погода — нет",
@@ -84,12 +77,6 @@ export const FALLBACK_SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
         label_uz: "Morf AI chat — 150 000 token / oy",
         label_ru: "Morf AI чат — 150 000 токенов / мес",
         label_en: "Morf AI chat — 150,000 tokens / month",
-      },
-      {
-        key: "studio",
-        label_uz: "Morf AI Studio — sochni AI tahriri (30 marta)",
-        label_ru: "Morf AI Studio — ИИ-редактор (30 раз)",
-        label_en: "Morf AI Studio — AI edits (30 times)",
       },
       {
         key: "care",
@@ -160,12 +147,6 @@ export const FALLBACK_SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
         label_uz: "Morf AI chat — 500 000 token / oy",
         label_ru: "Morf AI чат — 500 000 токенов / мес",
         label_en: "Morf AI chat — 500,000 tokens / month",
-      },
-      {
-        key: "studio",
-        label_uz: "Morf AI Studio — 150 ta tahrir",
-        label_ru: "Morf AI Studio — 150 правок",
-        label_en: "Morf AI Studio — 150 edits",
       },
       {
         key: "care",

@@ -1,4 +1,4 @@
-const MAX_SELFIE_SIDE = 1024;
+const MAX_SELFIE_SIDE = 1408;
 const MAX_SELFIE_BYTES = 5 * 1024 * 1024;
 const ALLOWED_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 

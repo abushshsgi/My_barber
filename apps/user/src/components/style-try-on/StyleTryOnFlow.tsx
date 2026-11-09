@@ -1,4 +1,4 @@
-import { Link, useNavigate } from "@tanstack/react-router";
+import { Link } from "@tanstack/react-router";
 import { motion } from "framer-motion";
 import {
   CalendarPlus,
@@ -6,7 +6,6 @@ import {
   Check,
   ImagePlus,
   Loader2,
-  Palette,
   RotateCcw,
 } from "lucide-react";
 import { Fragment, useEffect } from "react";
@@ -21,7 +20,6 @@ import {
 import type { useStyleTryOnFlow } from "@/components/style-try-on/useStyleTryOnFlow";
 import type { HairstyleEntry } from "@/lib/hairstyles/catalog";
 import { getHairstyleImageUrl } from "@/lib/hairstyles/catalog";
-import { stashMorphStudioDraft } from "@/lib/morf-ai-studio-session";
 import { cn } from "@/lib/utils";
 
 type Flow = ReturnType<typeof useStyleTryOnFlow>;
@@ -203,18 +201,6 @@ function ResultView({
   onReset: () => void;
 }) {
   const { t } = useTranslation();
-  const navigate = useNavigate();
-
-  const openStudio = () => {
-    stashMorphStudioDraft({
-      image: preview,
-      baseImage: preview,
-      styleId: entry.id,
-      styleTitle: entry.titleUz,
-      source: "tryon",
-    });
-    void navigate({ to: "/ai-style/studio" });
-  };
 
   return (
     <div className="relative h-[100dvh] overflow-hidden bg-black">
@@ -235,14 +221,6 @@ function ResultView({
           </p>
           <h2 className="mt-1 text-xl font-bold text-[#111111]">{entry.titleUz}</h2>
         </div>
-        <button
-          type="button"
-          onClick={openStudio}
-          className="flex w-full items-center justify-center gap-2 rounded-2xl bg-white py-3.5 text-sm font-bold text-black touch-manipulation active:scale-[0.98]"
-        >
-          <Palette className="h-4 w-4" />
-          {t("aiStylePage.studio.openCta", { defaultValue: "AI Studio" })}
-        </button>
         <div className="grid grid-cols-2 gap-2">
           <button
             type="button"

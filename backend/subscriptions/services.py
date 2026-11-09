@@ -622,7 +622,10 @@ def build_me_payload(user: User) -> dict[str, Any]:
 
     allowed = bool(sub) or credits > 0 or bool(free_left)
     live_ents = entitlements if sub else free_ents
-    studio_feature = bool(sub) and _quota_int(live_ents, "morph_studio_monthly") > 0
+    studio_paused = bool(getattr(settings, "MORPH_STUDIO_TEMPORARILY_DISABLED", True))
+    studio_feature = (
+        (not studio_paused) and bool(sub) and _quota_int(live_ents, "morph_studio_monthly") > 0
+    )
     chat = usage
     chat_remaining = int(chat.get("morph_chat_tokens_remaining") or 0)
     last = None
@@ -1063,6 +1066,8 @@ def check_morph_entitlement(*, user: User, kind: str) -> str | None:
         return None
 
     if kind == "studio":
+        if getattr(settings, "MORPH_STUDIO_TEMPORARILY_DISABLED", True):
+            return "Morf AI Studio hozircha o'chirilgan."
         if not sub:
             return _no_subscription_message()
         usage = align_usage_to_plan(user, sub)

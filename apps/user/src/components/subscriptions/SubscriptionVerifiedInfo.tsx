@@ -53,7 +53,7 @@ function VerifiedInfoBody({ badge, onClose }: { badge: BadgeLevel; onClose: () =
     {
       icon: Sparkles,
       text: t("subscriptionVerified.perkStudio", {
-        defaultValue: "Studio, oila va premium imkoniyatlar.",
+        defaultValue: "Oila va premium imkoniyatlar.",
       }),
     },
   ];

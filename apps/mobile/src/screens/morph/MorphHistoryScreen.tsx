@@ -27,7 +27,6 @@ import { BeforeAfterSlider } from "../../components/morph/BeforeAfterSlider";
 import { NativeBackButton, NativeBackSpacer } from "../../components/ui/NativeBackButton";
 import { useHideTabBar } from "../../hooks/useHideTabBar";
 import { shareMorphLook } from "../../lib/morph-share";
-import { useMorphSession } from "../../lib/morph-session";
 import type { MorphStackParamList } from "../../navigation/MorphStack";
 import { scaleFont } from "../../theme/layout";
 import {
@@ -75,7 +74,6 @@ export function MorphHistoryScreen({ navigation, route }: Props) {
   const insets = useSafeAreaInsets();
   const { width } = useWindowDimensions();
   const fs = (n: number) => scaleFont(n, width);
-  const session = useMorphSession();
   const focusId = route.params?.generationId;
 
   const [items, setItems] = useState<MorphAiGeneration[]>([]);
@@ -140,18 +138,6 @@ export function MorphHistoryScreen({ navigation, route }: Props) {
       setBusyAction(null);
     }
   }, [selected]);
-
-  const openStudio = useCallback(() => {
-    if (!selected) return;
-    if (selected.after_url) {
-      session.setTryOn(selected.after_url, selected.style_id, selected.title);
-    }
-    if (selected.before_url) {
-      session.setSelfie(selected.before_url);
-    }
-    closeDetail();
-    navigation.navigate("MorphStudio");
-  }, [closeDetail, navigation, selected, session]);
 
   const colW = (width - scale(20) * 2 - scale(12)) / 2;
   const compareW = width - scale(32);
@@ -238,10 +224,6 @@ export function MorphHistoryScreen({ navigation, route }: Props) {
                   <Text style={styles.secondaryActionText}>Ulashish</Text>
                 </>
               )}
-            </Pressable>
-            <Pressable style={styles.secondaryAction} onPress={openStudio}>
-              <Ionicons name="color-palette-outline" size={16} color="#111111" />
-              <Text style={styles.secondaryActionText}>{t("morph.studioLabel")}</Text>
             </Pressable>
           </View>
         </View>

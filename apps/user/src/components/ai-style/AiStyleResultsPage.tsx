@@ -1,5 +1,5 @@
 import { useNavigate } from "@tanstack/react-router";
-import { ChevronLeft, ChevronRight, Loader2, MessageCircle, Palette, Share2, Sparkles } from "lucide-react";
+import { ChevronLeft, ChevronRight, Loader2, MessageCircle, Share2, Sparkles } from "lucide-react";
 import { useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { FaceAnalysisRings } from "@/components/ai-style/FaceAnalysisRings";
@@ -14,7 +14,6 @@ import {
 } from "@/components/ai-style/ai-style-shared";
 import type { ExplorePersonaId } from "@/lib/explore-personas";
 import type { Audience } from "@/lib/mock-data";
-import { stashMorphStudioDraft } from "@/lib/morf-ai-studio-session";
 import { cn } from "@/lib/utils";
 
 function shuffle<T>(items: T[]): T[] {
@@ -39,7 +38,6 @@ type Props = {
 
 export function AiStyleResultsPage({
   result,
-  photo,
   tryOnByStyle,
   tryOnLoadingId,
   menPersonaId,
@@ -71,19 +69,6 @@ export function AiStyleResultsPage({
     root.scrollTo({ left: clamped * root.clientWidth, behavior: "smooth" });
   };
 
-  const openStudio = () => {
-    if (!activePreview || !active) return;
-    stashMorphStudioDraft({
-      image: activePreview,
-      baseImage: activePreview,
-      beforeImage: photo || undefined,
-      styleId: active.id,
-      styleTitle: active.title,
-      source: "tryon",
-    });
-    void navigate({ to: "/ai-style/studio" });
-  };
-
   const onCardAction = (item: AiSuggestion) => {
     const preview = resolveTryOnPreview(tryOnByStyle, item.id, menPersonaId);
     if (preview) {
@@ -113,7 +98,7 @@ export function AiStyleResultsPage({
                   const loading = tryOnLoadingId === tryOnCacheKey(item.id, menPersonaId);
                   return (
                     <article key={item.id} className="relative w-full shrink-0 snap-center bg-black">
-                      <div className="relative min-h-[min(72dvh,640px)] w-full">
+                      <div className="relative min-h-[min(82dvh,760px)] w-full">
                         <img
                           key={preview || item.imageUrl}
                           src={preview || item.imageUrl}
@@ -230,16 +215,6 @@ export function AiStyleResultsPage({
               <p className="mt-3 px-4 text-[14px] leading-relaxed text-[#111]">{active.reason}</p>
             ) : null}
 
-            {activePreview ? (
-              <button
-                type="button"
-                onClick={openStudio}
-                className="mx-4 mt-3 flex min-h-12 w-[calc(100%-2rem)] items-center justify-center gap-2 rounded-2xl bg-[#F5F5F5] text-sm font-bold text-[#0A0A0A]"
-              >
-                <Palette className="h-[18px] w-[18px]" />
-                {t("aiStylePage.studio.openCta")}
-              </button>
-            ) : null}
           </section>
         ) : null}
 

@@ -14,6 +14,7 @@ import { hasValidUserSession } from "@/lib/api/client";
 import { type SubscriptionPlan } from "@/lib/api/subscriptions";
 import { getPublicSiteOrigin } from "@/lib/public-origin";
 import { pickFeatureLabel, pickPlanName } from "@/lib/plan-labels";
+import { withoutStudioFeatures } from "@/lib/morph-studio";
 import { FALLBACK_SUBSCRIPTION_PLANS } from "@/lib/subscription-fallback-plans";
 import { isPlanUpgrade, nextUpgradePlan } from "@/lib/subscription-upgrade";
 import { cn } from "@/lib/utils";
@@ -40,8 +41,8 @@ function formatDate(iso: string | null | undefined, lang: string) {
 }
 
 function tagline(code: string, t: (key: string, opts?: { defaultValue?: string }) => string) {
-  if (code === "plus") return t("morph.paywall.taglinePlus", { defaultValue: "Studio, Parvarish va Tarkib ochiladi" });
-  if (code === "pro") return t("morph.paywall.taglinePro", { defaultValue: "100 try-on, Studio va eng yuqori limitlar" });
+  if (code === "plus") return t("morph.paywall.taglinePlus", { defaultValue: "Parvarish va Tarkib ochiladi" });
+  if (code === "pro") return t("morph.paywall.taglinePro", { defaultValue: "100 try-on va eng yuqori limitlar" });
   return t("morph.paywall.taglineStarter", { defaultValue: "Faqat try-on va chat" });
 }
 
@@ -323,7 +324,7 @@ function Offer({ plan, lang }: { plan: SubscriptionPlan; lang: string }) {
         {t("morph.paywall.includes", { defaultValue: "Nima kiradi" })}
       </p>
       <ul className="space-y-0.5">
-        {plan.features.map((feature) => {
+        {withoutStudioFeatures(plan.features).map((feature) => {
           const included = feature.included !== false;
           return (
             <li key={feature.key} className="flex items-center gap-2">

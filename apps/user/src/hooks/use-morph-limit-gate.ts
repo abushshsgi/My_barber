@@ -1,6 +1,7 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useCallback, useState } from "react";
 import { fetchSubscriptionMe, type SubscriptionMe } from "@/lib/api/subscriptions";
+import { MORPH_STUDIO_ENABLED } from "@/lib/morph-studio";
 import {
   morphAccessBlocked,
   morphCareBlocked,
@@ -69,6 +70,7 @@ export function useMorphLimitGate() {
 
   const ensureStudio = useCallback(
     async (opts?: EnsureOpts): Promise<boolean> => {
+      if (!MORPH_STUDIO_ENABLED) return false;
       try {
         const data = await refreshMe();
         if (!data.has_active || morphStudioFeatureBlocked(data)) {

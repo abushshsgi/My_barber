@@ -53,6 +53,7 @@ def _user(email: str, phone: str, name: str = "Sub User") -> User:
     MORPH_ENTITLEMENT_BYPASS=False,
     MORPH_CARE_ACCESS_DEBUG=False,
     MORPH_VOICE_TEMPORARILY_DISABLED=False,
+    MORPH_STUDIO_TEMPORARILY_DISABLED=False,
 )
 class SubscriptionServiceTests(TestCase):
     def setUp(self):
@@ -309,6 +310,24 @@ class SubscriptionServiceTests(TestCase):
         self.assertFalse(can_use_morph_voice(self.user))
         self.assertIsNotNone(check_morph_entitlement(user=self.user, kind="voice"))
 
+    @override_settings(MORPH_STUDIO_TEMPORARILY_DISABLED=True)
+    def test_studio_temporarily_disabled_even_with_plan(self):
+        from subscriptions.plans import serialize_plan, get_plan
+        from subscriptions.services import build_me_payload
+
+        activate_subscription(
+            user=self.user,
+            plan_code=PLAN_PLUS,
+            source=UserSubscription.Source.ADMIN,
+            price_uzs=Decimal("0"),
+        )
+        self.assertFalse(build_me_payload(self.user)["access"]["morph_studio_allowed"])
+        msg = check_morph_entitlement(user=self.user, kind="studio") or ""
+        self.assertIn("hozircha", msg.lower())
+        plus = serialize_plan(get_plan(PLAN_PLUS) or {})
+        self.assertEqual(plus["morph_studio_monthly"], 0)
+        self.assertFalse(any(row.get("key") == "studio" for row in plus["features"]))
+
     def test_usage_from_before_current_plan_does_not_block(self):
         from subscriptions.models import SubscriptionUsagePeriod
 
@@ -441,6 +460,7 @@ class SubscriptionServiceTests(TestCase):
     MORPH_ENTITLEMENT_BYPASS=False,
     MORPH_CARE_ACCESS_DEBUG=False,
     MORPH_VOICE_TEMPORARILY_DISABLED=False,
+    MORPH_STUDIO_TEMPORARILY_DISABLED=False,
     CACHES={
         "default": {
             "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
@@ -725,7 +745,11 @@ class AdminFreeTrialUsersApiTests(TestCase):
         self.assertIn(res.status_code, (401, 403))
 
 
-@override_settings(MORPH_ENTITLEMENT_BYPASS=False, MORPH_CARE_ACCESS_DEBUG=False)
+@override_settings(
+    MORPH_ENTITLEMENT_BYPASS=False,
+    MORPH_CARE_ACCESS_DEBUG=False,
+    MORPH_STUDIO_TEMPORARILY_DISABLED=False,
+)
 class SubscriptionCancelTests(TestCase):
     def setUp(self):
         from subscriptions.views import SubscriptionCancelView

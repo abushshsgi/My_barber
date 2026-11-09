@@ -5,7 +5,6 @@ import { AiStyleCamera } from "@/components/ai-style/AiStyleCamera";
 import { AiStyleDesktopLayout } from "@/components/ai-style/AiStyleDesktopLayout";
 import { AiStyleSplitLayout } from "@/components/ai-style/AiStyleSplitLayout";
 import { AiStylePhotoInput } from "@/components/ai-style/AiStyleUi";
-import { MorphAiHome } from "@/components/ai-style/MorphAiHome";
 import { MorphLimitUpsell } from "@/components/ai-style/MorphLimitUpsell";
 import type { AiAnalysisResult, AiSuggestion } from "@/components/ai-style/ai-style-shared";
 import { useAiStyleFlow } from "@/components/ai-style/useAiStyleFlow";
@@ -98,8 +97,6 @@ export function AiStyleFlow({ audience, menPersonaId: menPersonaIdProp, focusSty
   } = flow;
   const { data: focusHairstyle } = useHairstyle(focusStyleId ?? "", menPersonaId);
   const [saved, setSaved] = useState<string[]>(() => loadSavedAiStyleIds());
-  const [onboarded, setOnboarded] = useState(true);
-  const [showCapture, setShowCapture] = useState(false);
 
 
   const displayResult = useMemo(() => {
@@ -113,19 +110,9 @@ export function AiStyleFlow({ audience, menPersonaId: menPersonaIdProp, focusSty
     );
   }, [result, focusStyleId, focusHairstyle]);
 
-  const goHome = useCallback(() => {
-    reset();
-    setShowCapture(false);
-  }, [reset]);
-
   const startNewLook = useCallback(() => {
     reset();
-    setShowCapture(true);
   }, [reset]);
-
-  const gatedStartNew = useCallback(async () => {
-    startNewLook();
-  }, [startNewLook]);
 
   const gatedOpenCamera = useCallback(async () => {
     openCamera();
@@ -136,19 +123,14 @@ export function AiStyleFlow({ audience, menPersonaId: menPersonaIdProp, focusSty
   }, [openFile]);
 
   const step: 1 | 2 | 3 = !photo ? 1 : done ? 3 : 2;
-  const showHome = onboarded && !showCapture && !photo && !done;
 
   useEffect(() => {
-    if (showHome) {
-      document.documentElement.removeAttribute("data-ai-style-flow");
-      return;
-    }
     document.documentElement.setAttribute("data-ai-style-flow", "open");
     return () => document.documentElement.removeAttribute("data-ai-style-flow");
-  }, [showHome]);
+  }, []);
 
   useEffect(() => {
-    if (showHome || done) return;
+    if (done) return;
     const prevHtml = document.documentElement.style.overflow;
     const prevBody = document.body.style.overflow;
     document.documentElement.style.overflow = "hidden";
@@ -157,7 +139,7 @@ export function AiStyleFlow({ audience, menPersonaId: menPersonaIdProp, focusSty
       document.documentElement.style.overflow = prevHtml === "hidden" ? "" : prevHtml;
       document.body.style.overflow = prevBody === "hidden" ? "" : prevBody;
     };
-  }, [showHome, done]);
+  }, [done]);
 
   const lastErrorToastRef = useRef<string | null>(null);
   useEffect(() => {
@@ -178,13 +160,8 @@ export function AiStyleFlow({ audience, menPersonaId: menPersonaIdProp, focusSty
     if (done) {
       setSaved(loadSavedAiStyleIds());
       markMorphAiOnboarded();
-      setOnboarded(true);
     }
   }, [done]);
-
-  useEffect(() => {
-    if (photo) setShowCapture(true);
-  }, [photo]);
 
   const toggleSave = useCallback(
     (id: string, meta?: { title: string; previewImage?: string }) => {
@@ -226,7 +203,6 @@ export function AiStyleFlow({ audience, menPersonaId: menPersonaIdProp, focusSty
     saved,
     onToggleSave: toggleSave,
     onReset: startNewLook,
-    onGoHome: onboarded ? goHome : undefined,
     openFile: () => void gatedOpenGallery(),
     openCamera: () => void gatedOpenCamera(),
     onAnalyze: () => void analyze(audience),
@@ -245,22 +221,10 @@ export function AiStyleFlow({ audience, menPersonaId: menPersonaIdProp, focusSty
   return (
     <>
       <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
-        {showHome ? (
-          <MorphAiHome
-            audience={audience}
-            onStartNew={() => void gatedStartNew()}
-            onOpenCamera={() => void gatedOpenCamera()}
-            onOpenGallery={() => void gatedOpenGallery()}
-            ensureMorphAccess={limitGate.ensureTryOn}
-            ensureMorphStudio={limitGate.ensureStudio}
-            ensureMorphCare={limitGate.ensureCare}
-          />
-        ) : (
-          <DesktopPageSplit
-            mobile={<AiStyleSplitLayout {...layoutProps} />}
-            desktop={<AiStyleDesktopLayout {...layoutProps} />}
-          />
-        )}
+        <DesktopPageSplit
+          mobile={<AiStyleSplitLayout {...layoutProps} />}
+          desktop={<AiStyleDesktopLayout {...layoutProps} />}
+        />
       </div>
 
       <AiStylePhotoInput fileRef={fileRef} onFile={onFile} />

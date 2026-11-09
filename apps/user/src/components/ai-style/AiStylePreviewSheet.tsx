@@ -1,4 +1,4 @@
-import { Link, useNavigate } from "@tanstack/react-router";
+import { Link } from "@tanstack/react-router";
 import {
   Bookmark,
   CalendarPlus,
@@ -6,7 +6,6 @@ import {
   Download,
   LayoutGrid,
   Loader2,
-  Palette,
   Share2,
   Sparkles,
 } from "lucide-react";
@@ -26,7 +25,6 @@ import { trackMorphShare } from "@/lib/ga";
 import { publicAppUrl } from "@/lib/public-origin";
 import { toShareImageSource } from "@/lib/media-url";
 import { buildTelegramShareUrl, pickMorphShareText } from "@/lib/morph-share-copy";
-import { stashMorphStudioDraft } from "@/lib/morf-ai-studio-session";
 import { cn } from "@/lib/utils";
 
 type Suggestion = AiAnalysisResult["suggestions"][number];
@@ -90,7 +88,6 @@ export function AiStylePreviewSheet({
   onTryMoreStyles,
 }: Props) {
   const { t } = useTranslation();
-  const navigate = useNavigate();
   const [sharing, setSharing] = useState(false);
   const [downloading, setDownloading] = useState(false);
   const { sharing: storySharing, shareToStory, storyModal } = useMorfAiStoryShare("preview");
@@ -104,20 +101,6 @@ export function AiStylePreviewSheet({
     : undefined;
 
   const goBack = () => onOpenChange(false);
-
-  const openStudio = () => {
-    if (!previewImage) return;
-    stashMorphStudioDraft({
-      image: previewImage,
-      baseImage: previewImage,
-      beforeImage: selfiePhoto || undefined,
-      styleId: suggestion.id,
-      styleTitle: suggestion.title,
-      source: "tryon",
-    });
-    onOpenChange(false);
-    void navigate({ to: "/ai-style/studio" });
-  };
 
   const handleDownload = async () => {
     if (!imageSrc) {
@@ -287,17 +270,6 @@ export function AiStylePreviewSheet({
 
             {previewImage ? (
               <MorphNearbySalons preferredSalonId={suggestion.salonId || undefined} />
-            ) : null}
-
-            {previewImage ? (
-              <button
-                type="button"
-                onClick={openStudio}
-                className="flex w-full items-center justify-center gap-2 rounded-2xl bg-black py-3.5 text-sm font-bold text-white touch-manipulation active:opacity-90"
-              >
-                <Palette className="h-4 w-4" />
-                {t("aiStylePage.studio.openCta", { defaultValue: "AI Studio" })}
-              </button>
             ) : null}
 
             <button

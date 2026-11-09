@@ -224,11 +224,11 @@ export function MorphProfileScreen({ navigation }: Props) {
           <QuickTile
             pal={pal}
             styles={styles}
-            icon="color-wand-outline"
+            icon="sparkles-outline"
             accent="#0F766E"
             soft={pal.theme === "dark" ? "rgba(15,118,110,0.22)" : "rgba(15,118,110,0.12)"}
-            label={t("morph.studioLabel")}
-            onPress={() => openMorphStack(navigation, "MorphStudio")}
+            label={t("morph.home.newTryOn")}
+            onPress={() => openMorphStack(navigation, "MorphCapture")}
           />
         </View>
 

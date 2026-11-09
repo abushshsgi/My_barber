@@ -14,6 +14,7 @@ import { useTranslation } from "react-i18next";
 import type { SubscriptionPlan } from "@/lib/api/subscriptions";
 import { MorphPromoUrgencyBanner } from "@/components/subscriptions/MorphPromoUrgencyBanner";
 import { pickFeatureLabel, pickPlanName } from "@/lib/plan-labels";
+import { withoutStudioFeatures } from "@/lib/morph-studio";
 import { filterPlansForSubscriber } from "@/lib/subscription-upgrade";
 import { cn } from "@/lib/utils";
 
@@ -148,7 +149,9 @@ export function SubscriptionPlanAds({
     <div className={cn("grid gap-2.5", className)}>
       {sorted.map((plan) => {
         const isActive = activeCode === plan.code;
-        const highlights = plan.features.filter((f) => f.included !== false).slice(0, 3);
+        const highlights = withoutStudioFeatures(plan.features)
+          .filter((f) => f.included !== false)
+          .slice(0, 3);
         const ctaHint = activeCode ? t("aiStylePage.limitSheet.plansUpgrade") : null;
         return (
           <Link

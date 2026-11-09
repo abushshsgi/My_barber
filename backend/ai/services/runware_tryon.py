@@ -60,9 +60,10 @@ VERIFIED_EDIT_MODELS: dict[str, dict[str, int]] = {
     },
 }
 
-INPUT_MAX_EDGE = 1024
-INPUT_JPEG_QUALITY = 85
-RESULT_JPEG_QUALITY = 90
+INPUT_MAX_EDGE = 1536
+INPUT_JPEG_QUALITY = 88
+RESULT_JPEG_QUALITY = 92
+PORTRAIT_RATIO = 4 / 3  # height / width — soch toji qirqilmasin
 
 
 @dataclass(frozen=True)
@@ -134,7 +135,7 @@ def resolved_tryon_size(model: str | None = None) -> tuple[int, int]:
         hi=spec["max_edge"],
     )
     height = snap_dimension(
-        int(getattr(settings, "RUNWARE_TRYON_HEIGHT", 1024) or 1024),
+        int(getattr(settings, "RUNWARE_TRYON_HEIGHT", 1536) or 1536),
         step=spec["step"],
         lo=spec["min_edge"],
         hi=spec["max_edge"],
@@ -142,8 +143,36 @@ def resolved_tryon_size(model: str | None = None) -> tuple[int, int]:
     return width, height
 
 
+def _pad_selfie_for_hair(raw: bytes) -> bytes:
+    """Add top headroom and enforce a 3:4 portrait so generated hair is not cropped."""
+    try:
+        image = Image.open(BytesIO(raw))
+        image = ImageOps.exif_transpose(image)
+        if image.mode != "RGB":
+            image = image.convert("RGB")
+    except Exception:
+        return raw
+    src_w, src_h = image.size
+    if src_w < 1 or src_h < 1:
+        return raw
+    min_h = int(src_w * PORTRAIT_RATIO)
+    extra_top = max(int(src_h * 0.1), max(0, min_h - src_h))
+    if extra_top <= 0:
+        return raw
+    canvas = Image.new("RGB", (src_w, src_h + extra_top))
+    strip_h = max(1, min(24, src_h))
+    top_fill = image.crop((0, 0, src_w, strip_h)).resize(
+        (src_w, extra_top), Image.Resampling.LANCZOS
+    )
+    canvas.paste(top_fill, (0, 0))
+    canvas.paste(image, (0, extra_top))
+    buffer = BytesIO()
+    canvas.save(buffer, format="JPEG", quality=INPUT_JPEG_QUALITY, optimize=True)
+    return buffer.getvalue() or raw
+
+
 def _output_size_for_bytes(raw: bytes, model: str) -> tuple[int, int]:
-    """Keep the selfie aspect ratio so the model edits in place instead of inventing a new face."""
+    """Portrait-first output. Height is the long edge so the hairstyle silhouette fits."""
     fallback = resolved_tryon_size(model)
     spec = _model_spec(model)
     try:
@@ -154,23 +183,15 @@ def _output_size_for_bytes(raw: bytes, model: str) -> tuple[int, int]:
         return fallback
     if src_w < 1 or src_h < 1:
         return fallback
-    max_w, max_h = fallback
-    if src_w >= src_h:
-        width = snap_dimension(max_w, step=spec["step"], lo=spec["min_edge"], hi=spec["max_edge"])
-        height = snap_dimension(
-            int(width * src_h / src_w),
-            step=spec["step"],
-            lo=spec["min_edge"],
-            hi=spec["max_edge"],
-        )
-    else:
-        height = snap_dimension(max_h, step=spec["step"], lo=spec["min_edge"], hi=spec["max_edge"])
-        width = snap_dimension(
-            int(height * src_w / src_h),
-            step=spec["step"],
-            lo=spec["min_edge"],
-            hi=spec["max_edge"],
-        )
+    height = snap_dimension(max(fallback), step=spec["step"], lo=spec["min_edge"], hi=spec["max_edge"])
+    native_w = height * src_w / src_h
+    max_w = height / PORTRAIT_RATIO
+    width = snap_dimension(
+        int(min(native_w, max_w)),
+        step=spec["step"],
+        lo=spec["min_edge"],
+        hi=spec["max_edge"],
+    )
     return width, height
 
 
@@ -299,13 +320,19 @@ def _build_tryon_prompt(*, title: str, style_detail: str) -> str:
     return (
         "In-place photorealistic edit of reference image 1. "
         "Reference image 1 is the original photograph of the real client. "
-        "Keep the identical person: the same face, face shape, bone structure, eyes, "
-        "eyebrows, nose, mouth, ears, skin texture, skin tone, age, expression, pose, "
-        "head position, camera angle, framing, clothing, and background. "
-        "Do not replace, beautify, reshape, or regenerate the face. "
+        "Keep the identical person: the same face, the same face shape, jawline, "
+        "cheekbones, bone structure, eyes, eyebrows, nose, mouth, ears, skin texture, "
+        "skin tone, age, expression, pose, head position, camera angle, framing, "
+        "clothing, and background. "
+        "Do not replace, beautify, reshape, warp, or regenerate the face. "
+        "Keep the original face shape, jawline, and proportions exactly. "
+        "Edit only the hair pixels. Leave every facial pixel faithful to the selfie. "
         f'Change only the haircut on this same head to "{title}" — {style_detail}. '
         f"{color_lock}"
-        "The new hair must follow this person's real hairline and scalp. "
+        "Keep the requested hairstyle silhouette, length, volume, parting, and strand "
+        "direction intact. Do not melt, stretch, collapse, crop, or warp the hair. "
+        "Leave space above the crown so the full hair shape is visible. "
+        "The new hair must sit on this person's real scalp and follow their real hairline. "
         "No different person, no sample-model face, no text, watermark, or extra people."
     )
 
@@ -360,14 +387,16 @@ def _infer_edit(
             "positivePrompt": prompt[:10000],
             "negativePrompt": (
                 "different person, identity change, new face, swapped face, sample model face, "
-                "changed face shape, beautified face, regenerated face, changed skin tone, "
-                "changed expression, changed clothes, changed background, extra people, "
+                "changed face shape, changed jawline, warped face, beautified face, "
+                "regenerated face, changed skin tone, changed expression, changed clothes, "
+                "changed background, extra people, warped hair, melted hair, distorted hair, "
+                "collapsed hairstyle, stretched hair, misshapen haircut, "
                 "text, watermark, logo, cartoon, plastic skin, blurry"
             ),
             "width": width,
             "height": height,
-            "steps": 4,
-            "CFGScale": 3.5,
+            "steps": 6,
+            "CFGScale": 2.8,
             "inputs": {"referenceImages": references},
         }
     )
@@ -485,6 +514,7 @@ def generate_tryon_preview(
     tryon_provider_name()
     resolved_tryon_model()
     _mime, selfie = load_image_bytes(selfie_data_url)
+    selfie = _pad_selfie_for_hair(selfie)
     style_detail = style_detail_for(audience, slug)
     images = [selfie]
     # Catalog hairstyle photos are other people. FLUX.2 treats extra references as

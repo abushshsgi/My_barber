@@ -107,6 +107,9 @@ function studioLabel(
 export function MorphStudioScreen({ navigation }: Props) {
   const { t, i18n } = useTranslation();
   useHideTabBar();
+  useEffect(() => {
+    navigation.replace("MorphCapture");
+  }, [navigation]);
   const insets = useSafeAreaInsets();
   const session = useMorphSession();
   const gate = useMorphLimitGate();

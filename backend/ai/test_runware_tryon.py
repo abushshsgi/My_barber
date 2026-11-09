@@ -63,6 +63,23 @@ class RunwareTryOnTests(SimpleTestCase):
         Image.new("RGB", (768, 1024), (90, 70, 60)).save(buffer, format="JPEG", quality=80)
         self.assertEqual(_output_size_for_bytes(buffer.getvalue(), "runware:400@2"), (768, 1024))
 
+    @override_settings(RUNWARE_TRYON_WIDTH=1152, RUNWARE_TRYON_HEIGHT=1536)
+    def test_output_size_scales_portrait_taller(self):
+        from ai.services.runware_tryon import _output_size_for_bytes
+
+        buffer = BytesIO()
+        Image.new("RGB", (768, 1024), (90, 70, 60)).save(buffer, format="JPEG", quality=80)
+        self.assertEqual(_output_size_for_bytes(buffer.getvalue(), "runware:400@2"), (1152, 1536))
+
+    def test_pad_selfie_adds_top_headroom(self):
+        from ai.services.runware_tryon import _pad_selfie_for_hair
+
+        buffer = BytesIO()
+        Image.new("RGB", (900, 700), (90, 70, 60)).save(buffer, format="JPEG", quality=80)
+        padded = Image.open(BytesIO(_pad_selfie_for_hair(buffer.getvalue())))
+        self.assertEqual(padded.size[0], 900)
+        self.assertGreaterEqual(padded.size[1], int(900 * 4 / 3))
+
     def test_unverified_model_is_rejected_before_http(self):
         from ai.services.runware_tryon import generate_tryon_preview
 

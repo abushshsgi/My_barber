@@ -306,14 +306,6 @@ export function MorphResultsScreen({ navigation }: Props) {
       (session.tryOnStyleId === shareTarget.id ? session.tryOnPreview : null)
     : null;
 
-  const openStudio = useCallback(() => {
-    if (!activePreview) return;
-    if (activeSuggestion) {
-      session.setTryOn(activePreview, activeSuggestion.id, activeSuggestion.title);
-    }
-    navigation.navigate("MorphStudio");
-  }, [activePreview, activeSuggestion, navigation, session]);
-
   const openAiChat = useCallback(() => {
     navigation.getParent()?.navigate("MorphChat" as never);
   }, [navigation]);
@@ -613,17 +605,6 @@ export function MorphResultsScreen({ navigation }: Props) {
               <Text style={styles.reason} numberOfLines={3}>
                 {activeSuggestion.reason_uz}
               </Text>
-            ) : null}
-
-            {activePreview ? (
-              <Pressable
-                style={({ pressed }) => [styles.studioBtn, pressed && { opacity: 0.9 }]}
-                android_ripple={{ color: "rgba(0,0,0,0.08)" }}
-                onPress={openStudio}
-              >
-                <Ionicons name="color-palette-outline" size={18} color="#0A0A0A" />
-                <Text style={styles.studioBtnText}>{t("morph.studioLabel")}</Text>
-              </Pressable>
             ) : null}
           </View>
         ) : (

@@ -8,7 +8,7 @@ import {
   Lock,
   LogOut,
   Settings,
-  Sparkles,
+  Droplets,
   Wallet,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -79,8 +79,8 @@ export function MorphMobileProfile() {
             </p>
             <p className="mt-1 text-xs text-[var(--morph-muted,#737373)]">
               {aiLimit > 0
-                ? `${aiUsed} / ${aiLimit} AI · Studio ${usage?.morph_studio_used ?? 0}/${usage?.morph_studio_limit ?? 0}`
-                : t("profile.tryOnStudioLimit", { defaultValue: "Try-on va Studio limiti" })}
+                ? `${aiUsed} / ${aiLimit} AI`
+                : t("profile.tryOnStudioLimit", { defaultValue: "Try-on limiti" })}
             </p>
           </div>
           <UsageRing pct={pct} />
@@ -100,7 +100,7 @@ export function MorphMobileProfile() {
           icon={Images}
           label={t("morph.looks", { defaultValue: "Looklar" })}
         />
-        <Quick to="/ai-style/studio" icon={Sparkles} label={t("nav.morphStudio", { defaultValue: "Studio" })} />
+        <Quick to="/ai-style/care" icon={Droplets} label={t("aiStylePage.home.tools.care", { defaultValue: "Uhod" })} />
       </div>
 
       <div className="mt-4 overflow-hidden rounded-3xl border border-black/12 bg-[var(--morph-card,#fff)]">
@@ -219,7 +219,7 @@ function Quick({
   icon: Icon,
   label,
 }: {
-  to: "/wallet" | "/ai-style/history" | "/ai-style/studio";
+  to: "/wallet" | "/ai-style/history" | "/ai-style/care";
   icon: typeof Wallet;
   label: string;
 }) {

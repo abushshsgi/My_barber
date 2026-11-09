@@ -220,7 +220,19 @@ def serialize_plan(plan: dict[str, Any]) -> dict[str, Any]:
     fam = plan.get("family_members_max")
     out["family_members_max"] = fam  # None = unlimited
     out["family_unlimited"] = fam is None
+    if _studio_temporarily_disabled():
+        out["morph_studio_monthly"] = 0
+        out["features"] = [row for row in (out.get("features") or []) if row.get("key") != "studio"]
     return out
+
+
+def _studio_temporarily_disabled() -> bool:
+    try:
+        from django.conf import settings
+
+        return bool(getattr(settings, "MORPH_STUDIO_TEMPORARILY_DISABLED", True))
+    except Exception:
+        return True
 
 
 def official_price_uzs(code: str) -> int:

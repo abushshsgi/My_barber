@@ -23,7 +23,7 @@ import { FALLBACK_SUBSCRIPTION_PLANS } from "@/lib/subscription-fallback-plans";
 import { isPlanUpgrade } from "@/lib/subscription-upgrade";
 import { cn } from "@/lib/utils";
 
-const HIDDEN_FEATURE_KEYS = new Set(["voice", "family", "badge", "priority", "sos"]);
+const HIDDEN_FEATURE_KEYS = new Set(["voice", "family", "badge", "priority", "sos", "studio"]);
 
 type Props = {
   open: boolean;
@@ -130,7 +130,7 @@ function paywallHero(
     kicker: t("morph.paywall.kickerDay", { defaultValue: "Kunlik taklif" }),
     title: t("morph.paywall.titleMonth", { defaultValue: "Morf AI ni bir oyga oching" }),
     subtitle: t("morph.paywall.subtitleMonth", {
-      defaultValue: "Selfie, chat, Studio. To‘lov Payme — siz qaror qilasiz",
+        defaultValue: "Selfie va chat. To‘lov Payme — siz qaror qilasiz",
     }),
   };
 }

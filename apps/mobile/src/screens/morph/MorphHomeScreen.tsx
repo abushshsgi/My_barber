@@ -40,9 +40,7 @@ const TOOLS: {
   key: ToolKey;
   label: string;
   icon: keyof typeof Ionicons.glyphMap;
-}[] = [
-  { key: "studio", label: "AI Studio", icon: "sparkles-outline" },
-];
+}[] = [];
 
 /** Marquee ikki qatordan iborat — qolgan joy shu nisbatda bo'linadi. */
 const MARQUEE_ROWS = 2;

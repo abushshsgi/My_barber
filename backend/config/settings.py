@@ -265,9 +265,9 @@ try:
 except ValueError:
     _runware_width = 1024
 try:
-    _runware_height = int(os.environ.get("RUNWARE_TRYON_HEIGHT", "1024") or "1024")
+    _runware_height = int(os.environ.get("RUNWARE_TRYON_HEIGHT", "1536") or "1536")
 except ValueError:
-    _runware_height = 1024
+    _runware_height = 1536
 try:
     _runware_timeout = int(os.environ.get("RUNWARE_TRYON_TIMEOUT", "120") or "120")
 except ValueError:
@@ -291,6 +291,14 @@ MORPH_CARE_ACCESS_DEBUG = os.environ.get("MORPH_CARE_ACCESS_DEBUG", "false").low
 # Ovozli suhbat — vaqtincha yopiq. Flag o‘chirilsa yana faqat pullik obuna.
 MORPH_VOICE_TEMPORARILY_DISABLED = os.environ.get(
     "MORPH_VOICE_TEMPORARILY_DISABLED", "true"
+).lower() in (
+    "1",
+    "true",
+    "yes",
+)
+# Morf AI Studio — vaqtincha yopiq (obuna katalogidan ham olinadi).
+MORPH_STUDIO_TEMPORARILY_DISABLED = os.environ.get(
+    "MORPH_STUDIO_TEMPORARILY_DISABLED", "true"
 ).lower() in (
     "1",
     "true",
