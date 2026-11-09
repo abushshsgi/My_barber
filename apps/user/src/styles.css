@@ -38,7 +38,7 @@
   --color-audience-men: var(--audience-men);
   --color-audience-women: var(--audience-women);
 
-  --font-sans: "Space Grotesk Variable", "Inter Variable", system-ui, sans-serif;
+  --font-sans: "Space Grotesk Variable", system-ui, sans-serif;
   --font-display: "Space Grotesk Variable", system-ui, sans-serif;
   --font-morph: "Jost Variable", "Jost", system-ui, sans-serif;
 }
@@ -728,4 +728,24 @@
   html:not([data-native-app="true"]) .bottom-\[calc\(3\.5rem\+env\(safe-area-inset-bottom\,0px\)\)\] {
     bottom: var(--mobile-dock);
   }
+}
+
+@keyframes ig-card-drop {
+  from {
+    opacity: 0;
+    translate: -50% -130%;
+  }
+  to {
+    opacity: 1;
+    translate: -50% 0;
+  }
+}
+
+.ig-card-drop {
+  top: max(4.25rem, calc(env(safe-area-inset-top, 0px) + 3rem)) !important;
+  translate: -50% 0 !important;
+}
+
+.ig-card-drop[data-state="open"] {
+  animation: ig-card-drop 0.46s cubic-bezier(0.16, 1, 0.3, 1) both !important;
 }

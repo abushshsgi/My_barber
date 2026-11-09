@@ -1,8 +1,13 @@
-import { useCallback, useEffect, useRef, type ReactNode } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, type ReactNode } from "react";
 import { useNavigate, useRouterState } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { refreshAiStyleHistoryCache } from "@/lib/api/ai";
-import { bootstrapUserSession, handleAuthFailure, hasValidUserSession } from "@/lib/api/client";
+import {
+  bootstrapUserSession,
+  handleAuthFailure,
+  hasStoredUserCredential,
+  hasValidUserSession,
+} from "@/lib/api/client";
 import { guestMustLogin } from "@/lib/auth-routes";
 import { getActiveUserId, prepareFaceProfileStorageForUser } from "@/lib/face-profile";
 import { useNotificationsWebSocket } from "@/hooks/use-notifications-websocket";
@@ -47,6 +52,14 @@ export function AuthSessionGuard({ children }: { children: ReactNode }) {
       redirectStarted.current = false;
     });
   }, [navigate]);
+
+  const mustLogin = guestMustLogin(pathname, hasValidUserSession());
+  const restoringSession = mustLogin && hasStoredUserCredential();
+
+  useLayoutEffect(() => {
+    if (!mustLogin || restoringSession) return;
+    sendToLogin();
+  }, [mustLogin, restoringSession, sendToLogin]);
 
   useEffect(() => {
     if (!guestMustLogin(pathname, false)) redirectStarted.current = false;
@@ -112,7 +125,8 @@ export function AuthSessionGuard({ children }: { children: ReactNode }) {
     return () => window.removeEventListener("storage", onStorage);
   }, []);
 
-  if (guestMustLogin(pathname, hasValidUserSession())) {
+  if (mustLogin) {
+    if (!restoringSession) return null;
     return (
       <div className="flex min-h-[100dvh] items-center justify-center bg-background px-6">
         <p className="text-sm font-medium text-muted-foreground">

@@ -1,13 +1,17 @@
 import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
 import { OtpResendTimer } from "@/components/auth/OtpResendTimer";
-import { AuthMarketingPanel } from "@/components/auth/AuthMarketingPanel";
 import { MysaloonLogo } from "@/components/brand/MysaloonLogo";
 import { AuthReferralCodeField } from "@/components/auth/AuthReferralCodeField";
 import { GoogleSignInButton } from "@/components/auth/GoogleSignInButton";
-import { AuthMethodDivider, PhoneSignInComingSoon } from "@/components/auth/PhoneSignInComingSoon";
+
+const AuthMarketingPanel = lazy(() =>
+  import("@/components/auth/AuthMarketingPanel").then((mod) => ({
+    default: mod.AuthMarketingPanel,
+  })),
+);
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { useIsNativeApp } from "@/lib/native-app";
@@ -61,6 +65,28 @@ export const Route = createFileRoute("/auth")({
   head: () => ({ meta: [{ title: "Kirish — mysaloon.uz" }] }),
   component: Auth,
 });
+
+function AuthMarketingSlot() {
+  const [desktop, setDesktop] = useState(false);
+
+  useEffect(() => {
+    const query = window.matchMedia("(min-width: 1024px)");
+    const apply = () => setDesktop(query.matches);
+    apply();
+    query.addEventListener("change", apply);
+    return () => query.removeEventListener("change", apply);
+  }, []);
+
+  return (
+    <div className="hidden min-h-[100dvh] bg-surface lg:block">
+      {desktop ? (
+        <Suspense fallback={null}>
+          <AuthMarketingPanel />
+        </Suspense>
+      ) : null}
+    </div>
+  );
+}
 
 type Step = "phone" | "password" | "code" | "set-password";
 
@@ -378,40 +404,34 @@ function Auth() {
 
   return (
     <div className="flex min-h-[100dvh] flex-col bg-background lg:grid lg:grid-cols-2">
-      <AuthMarketingPanel />
+      <AuthMarketingSlot />
 
       <div className="relative flex min-h-[100dvh] flex-col justify-center overflow-hidden px-6 py-10 lg:px-12 xl:px-16">
-        <div
-          className="auth-blob-drift pointer-events-none absolute -right-24 top-8 h-64 w-64 rounded-full bg-foreground/[0.035] blur-3xl lg:hidden"
-          aria-hidden
-        />
-        <div
-          className="auth-blob-drift-slow pointer-events-none absolute -left-20 bottom-16 h-52 w-52 rounded-full bg-foreground/[0.03] blur-3xl"
-          aria-hidden
-        />
-        <div
-          className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,color-mix(in_oklab,var(--surface)_70%,transparent),transparent_55%)]"
-          aria-hidden
-        />
-
-        <div className="relative mx-auto w-full max-w-md">
-          <div className="mb-9 lg:hidden">
+        <div className="relative mx-auto w-full max-w-[22rem]">
+          <div className="mb-8">
             <MysaloonLogo size="xl" withAppMark={isNative} />
-            <div className="mt-3 h-px w-12 bg-foreground/20" aria-hidden />
           </div>
 
           <div key={step} className="auth-form-stagger">
-            <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-muted-foreground">
-              {header.kicker}
-            </p>
-            <h1 className="mt-2.5 font-display text-[2rem] font-bold leading-[1.1] tracking-tight sm:text-[2.25rem]">
-              {header.title}
-            </h1>
-            <p className="mt-2.5 max-w-sm text-[15px] leading-relaxed text-muted-foreground">
-              {header.desc}
-            </p>
+            {phoneAuthEnabled ? (
+              <>
+                <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-muted-foreground">
+                  {header.kicker}
+                </p>
+                <h1 className="mt-2.5 font-display text-[2rem] font-bold leading-[1.1] tracking-tight sm:text-[2.25rem]">
+                  {header.title}
+                </h1>
+                <p className="mt-2.5 max-w-sm text-[15px] leading-relaxed text-muted-foreground">
+                  {header.desc}
+                </p>
+              </>
+            ) : (
+              <h1 className="font-display text-[1.75rem] font-bold leading-tight tracking-tight">
+                {t("auth.login")}
+              </h1>
+            )}
 
-            <div className="mt-9">
+            <div className={phoneAuthEnabled ? "mt-9" : "mt-7"}>
               {!phoneAuthEnabled ? (
                 <div className="space-y-5">
                   {googleClientId ? (
@@ -429,13 +449,11 @@ function Auth() {
                       }}
                     />
                   ) : (
-                    <div className="rounded-2xl border-2 border-dashed border-border bg-surface/80 px-4 py-5 text-sm text-muted-foreground">
+                    <div className="rounded-2xl border border-border bg-surface/80 px-4 py-4 text-sm text-muted-foreground">
                       {t("auth.googleNotConfigured")}
                     </div>
                   )}
                   <AuthReferralCodeField disabled={busy} initialFromUrl={refFromSearch} />
-                  <AuthMethodDivider />
-                  <PhoneSignInComingSoon />
                 </div>
               ) : null}
 

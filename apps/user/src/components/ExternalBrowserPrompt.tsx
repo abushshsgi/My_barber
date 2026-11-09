@@ -107,7 +107,7 @@ export function ExternalBrowserPrompt() {
 
   return (
     <Dialog open onOpenChange={(next) => !next && dismiss()}>
-      <DialogContent className="z-[80] w-[min(18.5rem,calc(100vw-2rem))] gap-2.5 rounded-2xl border-foreground/10 p-3.5 shadow-[0_16px_40px_-28px_rgba(15,23,42,0.5)] sm:p-4">
+      <DialogContent className="ig-card-drop z-[80] w-[min(18.5rem,calc(100vw-2rem))] gap-2.5 rounded-2xl border-foreground/10 p-3.5 shadow-[0_16px_40px_-28px_rgba(15,23,42,0.5)] sm:p-4">
         <DialogHeader className="space-y-1 pr-6 text-left">
           <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-muted-foreground">
             MySaloon

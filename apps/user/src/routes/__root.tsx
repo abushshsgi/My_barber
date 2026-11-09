@@ -1,7 +1,6 @@
 import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import "@fontsource-variable/space-grotesk";
-import "@fontsource-variable/inter";
 import "@fontsource-variable/jost";
 import "../i18n/config";
 

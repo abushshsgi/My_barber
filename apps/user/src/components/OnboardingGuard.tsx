@@ -16,7 +16,7 @@ export function OnboardingGuard({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!loggedIn) return;
-    const timer = window.setTimeout(() => setWaitedTooLong(true), 4000);
+    const timer = window.setTimeout(() => setWaitedTooLong(true), 1200);
     return () => window.clearTimeout(timer);
   }, [loggedIn]);
 

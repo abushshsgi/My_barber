@@ -400,6 +400,12 @@ export function hasValidUserSession(): boolean {
   return false;
 }
 
+/** Access yoki refresh saqlangan — tiklashga urinish kerak. Bo'sh bo'lsa darhol login. */
+export function hasStoredUserCredential(): boolean {
+  if (typeof window === "undefined") return false;
+  return Boolean(readStoredUserAccess() || readStoredUserRefresh());
+}
+
 /** Ilova ochilganda access tugasa refresh orqali sessiyani tiklash (7 kun eslab qolish). */
 export async function bootstrapUserSession(): Promise<boolean> {
   if (typeof window === "undefined") return false;

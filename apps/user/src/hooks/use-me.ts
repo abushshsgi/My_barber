@@ -85,16 +85,22 @@ export function useOnboardingRequired() {
   const loggedIn = hasValidUserSession();
   const { data: me, isLoading, isFetching, isPending, isError } = useMe();
   const cached = getAuthUser();
+  const cachedRequired = cached ? needsOnboarding(cached) : null;
 
-  // Session bor, /me hali yo'q — home ga o'tkazmaslik.
-  const waitingForMe = loggedIn && !me && (isLoading || isPending || isFetching) && !isError;
+  // Tayyor foydalanuvchini /me javobigacha "Yuklanmoqda"da ushlab turmaymiz.
+  const waitingForMe =
+    loggedIn &&
+    !me &&
+    cachedRequired !== false &&
+    (isLoading || isPending || isFetching) &&
+    !isError;
 
-  const required = me ? needsOnboarding(me) : cached ? needsOnboarding(cached) : false;
+  const required = me ? needsOnboarding(me) : cachedRequired === true ? true : waitingForMe;
 
   return {
-    required: waitingForMe ? true : required,
-    isLoading: waitingForMe || isLoading,
-    isPending: waitingForMe || isPending,
+    required,
+    isLoading: waitingForMe,
+    isPending: waitingForMe,
     user: me,
   };
 }
