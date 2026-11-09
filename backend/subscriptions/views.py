@@ -179,6 +179,35 @@ class SubscriptionCheckoutView(SubscriptionErrorMixin, APIView):
         return Response(error_body("method_payme", request), status=status.HTTP_400_BAD_REQUEST)
 
 
+class FlashTryonCheckoutView(SubscriptionErrorMixin, APIView):
+    """Yangi user: 30 daqiqa, 1 rasm, 1 000 so'm. Summani klient yubora olmaydi."""
+
+    permission_classes = [IsAuthenticatedCustomer]
+    throttle_classes = [SubscriptionCheckoutThrottle, SubscriptionIPThrottle]
+    throttle_code = "checkout_throttled"
+
+    def post(self, request):
+        return_url = str(request.data.get("return_url") or _default_return_url()).strip()
+        if len(return_url) > 500 or any(ch in return_url for ch in "\r\n\t"):
+            return Response(error_body("return_url_invalid", request), status=status.HTTP_400_BAD_REQUEST)
+        if not return_url.startswith(("http://", "https://")):
+            return Response(error_body("return_url_invalid", request), status=status.HTTP_400_BAD_REQUEST)
+        from subscriptions.flash_tryon import start_flash_checkout
+
+        try:
+            payload = start_flash_checkout(
+                user=request.user,
+                return_url=return_url,
+                request=request,
+            )
+        except PaymeNotConfigured as exc:
+            return Response(localize_detail(str(exc), request), status=status.HTTP_503_SERVICE_UNAVAILABLE)
+        except (PaymeError, PaymePaymentError, ValueError) as exc:
+            return Response(localize_detail(str(exc), request), status=status.HTTP_400_BAD_REQUEST)
+        payload["ok"] = True
+        return Response(payload)
+
+
 class SubscriptionConfirmView(SubscriptionErrorMixin, APIView):
     permission_classes = [IsAuthenticatedCustomer]
     throttle_classes = [SubscriptionConfirmThrottle, SubscriptionIPThrottle]

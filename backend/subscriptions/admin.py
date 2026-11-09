@@ -1,6 +1,7 @@
 from django.contrib import admin
 
 from subscriptions.models import (
+    FlashTryonPass,
     SubscriptionEvent,
     SubscriptionPayment,
     SubscriptionUsagePeriod,
@@ -60,4 +61,20 @@ class SubscriptionEventAdmin(admin.ModelAdmin):
     list_display = ("action", "user", "actor", "created_at")
     list_filter = ("action",)
     search_fields = ("user__phone", "actor")
+
+
+@admin.register(FlashTryonPass)
+class FlashTryonPassAdmin(admin.ModelAdmin):
+    list_display = (
+        "user",
+        "status",
+        "amount_uzs",
+        "expires_at",
+        "paid_at",
+        "used_at",
+        "order_id",
+    )
+    list_filter = ("status",)
+    search_fields = ("user__phone", "user__email", "order_id", "payme_receipt_id")
+    readonly_fields = ("id", "created_at", "updated_at", "payme_receipt_id", "order_id")
 

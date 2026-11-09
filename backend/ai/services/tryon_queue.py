@@ -687,6 +687,12 @@ def cancel_tryon_job(job_id: str, *, user_id: int) -> dict[str, Any] | None:
     meta["status"] = STATUS_CANCELLED
     meta["updated_at"] = _now_iso()
     meta["detail"] = "Bekor qilindi."
+    try:
+        from subscriptions.flash_tryon import release_flash_reservation
+
+        release_flash_reservation(user_id)
+    except Exception:
+        logger.exception("Flash try-on bandi yechilmadi cancel=%s", job_id)
     if client is not None:
         _save_job(client, job_id, meta)
         try:
@@ -1065,7 +1071,7 @@ def process_next_tryon_job(*, block_seconds: int = 5) -> bool:
     if user_id:
         from ai.morph_ops import check_user_can_generate
 
-        blocked = check_user_can_generate(user_id=user_id, kind="tryon")
+        blocked = check_user_can_generate(user_id=user_id, kind="tryon", flash_inflight=True)
         if blocked:
             meta["status"] = STATUS_FAILED
             meta["detail"] = blocked
@@ -1090,6 +1096,12 @@ def process_next_tryon_job(*, block_seconds: int = 5) -> bool:
         meta["detail"] = "Navbat vaqti tugadi. Qayta urinib ko'ring."
         meta["retryable"] = True
         meta.pop("preview_image", None)
+        try:
+            from subscriptions.flash_tryon import release_flash_reservation
+
+            release_flash_reservation(user_id)
+        except Exception:
+            logger.exception("Flash try-on bandi yechilmadi job=%s", job_id)
         _metric_incr(client, "failed_total")
         meta["updated_at"] = _now_iso()
         _finish_terminal(client, job_id, meta)

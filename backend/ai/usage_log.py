@@ -66,6 +66,13 @@ def record_ai_generation(
                     record_morph_usage(user=user, kind=kind)
             except Exception:
                 logger.exception("Subscription usage yozilmadi (user=%s kind=%s)", user_id, kind)
+        elif status == "failed" and user_id and kind == "tryon":
+            try:
+                from subscriptions.flash_tryon import release_flash_reservation
+
+                release_flash_reservation(user_id)
+            except Exception:
+                logger.exception("Flash try-on bandi yechilmadi (user=%s)", user_id)
         return row
     except Exception:
         logger.exception("AiGenerationUsage yozilmadi (user=%s kind=%s)", user_id, kind)

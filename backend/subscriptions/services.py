@@ -632,7 +632,15 @@ def build_me_payload(user: User) -> dict[str, Any]:
             "label_en": "Upgrade to Pro",
         }
 
-    allowed = bool(sub) or credits > 0 or bool(free_left)
+    from subscriptions.flash_tryon import flash_snapshot
+
+    flash = flash_snapshot(user)
+    if flash.get("can_generate") and not sub:
+        usage["morph_ai_remaining"] = int(usage.get("morph_ai_remaining") or 0) + 1
+        usage["locked"] = False
+    elif flash.get("can_generate") and sub:
+        usage["morph_ai_remaining"] = int(usage.get("morph_ai_remaining") or 0) + 1
+    allowed = bool(sub) or credits > 0 or bool(free_left) or bool(flash.get("can_generate"))
     live_ents = entitlements if sub else free_ents
     studio_paused = bool(getattr(settings, "MORPH_STUDIO_TEMPORARILY_DISABLED", True))
     studio_feature = (
@@ -670,6 +678,7 @@ def build_me_payload(user: User) -> dict[str, Any]:
         "referral_credits": credits,
         "referral_generation_enabled": ref_on,
         "free_tryon": free_tryon,
+        "flash_tryon": flash,
         "access": {
             "morph_ai_allowed": allowed,
             "morph_chat_allowed": chat_remaining >= CHAT_TOKEN_MIN_TURN,
@@ -679,7 +688,13 @@ def build_me_payload(user: User) -> dict[str, Any]:
             "morph_care_allowed": bool(live_ents.get("morph_care")) if sub else False,
             "morph_care_pro_allowed": bool(live_ents.get("morph_care_pro")) if sub else False,
             "reason": None if allowed else "subscription_required",
-            "message": None if allowed else _no_subscription_message(),
+            "message": None
+            if allowed
+            else (
+                "1 000 so'm — 1 ta rasm. 30 daqiqa ichida Payme orqali to'lang."
+                if flash.get("can_buy")
+                else _no_subscription_message()
+            ),
             "referral_credits": credits,
             "referral_generation_enabled": ref_on,
             "free_tryon_available": free_tryon["available"],
@@ -1025,14 +1040,14 @@ def _had_prior_paid_tryon(user: User) -> bool:
     return SubscriptionUsagePeriod.objects.filter(user=user, morph_ai_used__gt=0).exists()
 
 
-def check_morph_entitlement(*, user: User, kind: str) -> str | None:
+def check_morph_entitlement(*, user: User, kind: str, flash_inflight: bool = False) -> str | None:
     """
     Morf AI:
     - analyze / face_check — obunasiz ochiq (tahlil → keyin generatsiya paywall).
     - chat — obunasiz bir martalik 10k token; tugagach obuna majburiy.
     - voice — faqat faol pullik obuna.
-    - tryon — faol obuna kvotasi YOKI referal krediti (bepul 1× yo'q).
-    - studio — faol obuna majburiy.
+    - tryon — faol obuna kvotasi, referal krediti, yoki to'langan 30 daqiqalik 1 rasm.
+    - studio — faol obuna majburiy. 1 000 so'mlik rasm studio ochmaydi.
     """
     if kind not in ("tryon", "studio", "analyze", "face_check", "chat", "voice"):
         return None
@@ -1105,6 +1120,10 @@ def check_morph_entitlement(*, user: User, kind: str) -> str | None:
             return None
         if credits > 0:
             return None
+        from subscriptions.flash_tryon import flash_tryon_block
+
+        if flash_tryon_block(user, allow_reserved=flash_inflight) == "":
+            return None
         if limit <= 0:
             return "Bu reja Morf AI generatsiyasini qo'llab-quvvatlamaydi. Tarifni yangilang."
         log_event(
@@ -1124,6 +1143,13 @@ def check_morph_entitlement(*, user: User, kind: str) -> str | None:
 
     if credits > 0:
         return None
+    from subscriptions.flash_tryon import flash_tryon_block
+
+    blocked = flash_tryon_block(user, allow_reserved=flash_inflight)
+    if blocked == "":
+        return None
+    if blocked:
+        return blocked
     return _no_subscription_message()
 
 
@@ -1131,6 +1157,18 @@ def check_morph_entitlement(*, user: User, kind: str) -> str | None:
 def record_morph_usage(*, user: User, kind: str) -> None:
     if kind not in ("tryon", "studio"):
         return
+
+    if kind == "tryon":
+        from subscriptions.flash_tryon import commit_flash_tryon
+
+        if commit_flash_tryon(user):
+            log_event(
+                action=SubscriptionEvent.Action.USAGE,
+                user=user,
+                actor="system",
+                detail={"kind": "tryon", "source": "flash_1000"},
+            )
+            return
 
     sub = get_active_subscription(user)
     free_used = False

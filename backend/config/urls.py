@@ -111,6 +111,7 @@ from accounts.email_views import (
 from accounts.family_views import FamilyMemberDetailView, FamilyMemberListCreateView
 from accounts.referral_views import MyReferralView
 from subscriptions.views import (
+    FlashTryonCheckoutView,
     SubscriptionCancelView,
     SubscriptionCareAccessView,
     SubscriptionCheckoutView,
@@ -678,6 +679,7 @@ api_routes = [
     path("subscriptions/me/", SubscriptionMeView.as_view()),
     path("subscriptions/cancel/", SubscriptionCancelView.as_view()),
     path("subscriptions/checkout/", SubscriptionCheckoutView.as_view()),
+    path("subscriptions/flash-tryon/checkout/", FlashTryonCheckoutView.as_view()),
     path("subscriptions/confirm/", SubscriptionConfirmView.as_view()),
     path("subscriptions/payments/<str:order_id>/", SubscriptionPaymentStatusView.as_view()),
     path("subscriptions/care-access/", SubscriptionCareAccessView.as_view()),

@@ -582,7 +582,7 @@ def build_export_csv(start_raw: str | None, end_raw: str | None) -> HttpResponse
     return resp
 
 
-def check_user_can_generate(*, user_id: int | None, kind: str) -> str | None:
+def check_user_can_generate(*, user_id: int | None, kind: str, flash_inflight: bool = False) -> str | None:
     """Bloklash faqat: feature o'chirilgan yoki obuna/tarif limiiti.
 
     Soatlik throttle, kunlik soft-cap va byudjet — userlar uchun yo'q.
@@ -593,8 +593,27 @@ def check_user_can_generate(*, user_id: int | None, kind: str) -> str | None:
     if kind in ("analyze", "face_check", "chat") and not s.analyze_enabled:
         return "Morf AI hozir ishlamayapti."
 
-    # Try-on: oylik tarif kvotasi bloklamaydi. 10k+ foydalanuvchi navbatga tushadi.
+    # Try-on: to'lovsiz generatsiya yo'q. Obuna, referal yoki 1 000 so'mlik rasm.
     if kind == "tryon":
+        if not user_id:
+            return "Try-on uchun hisob kerak."
+        from accounts.models import User
+        from subscriptions.flash_tryon import flash_needs_reserve, reserve_flash_tryon, MSG_BUSY
+        from subscriptions.services import check_morph_entitlement
+
+        user = User.objects.filter(pk=user_id).first()
+        if not user:
+            return "Foydalanuvchi topilmadi."
+        blocked = check_morph_entitlement(
+            user=user,
+            kind="tryon",
+            flash_inflight=flash_inflight,
+        )
+        if blocked:
+            return blocked
+        if not flash_inflight and not getattr(settings, "MORPH_ENTITLEMENT_BYPASS", False):
+            if flash_needs_reserve(user) and not reserve_flash_tryon(user):
+                return MSG_BUSY
         return None
 
     if not user_id:
@@ -635,6 +654,10 @@ def is_morph_plan_limit_message(message: str) -> bool:
         "do'stingizni taklif",
         "Tarifni yangilang",
         "Oylik Morf",
+        "kuyadi",
+        "1 000",
+        "yaratilmoqda",
+        "faqat 1 marta",
     )
     return any(m in msg for m in markers)
 

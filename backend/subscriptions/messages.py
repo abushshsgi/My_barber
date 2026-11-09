@@ -261,6 +261,31 @@ MESSAGES: dict[str, dict[str, str]] = {
         "ru": "Лимит запросов исчерпан. Подождите и попробуйте снова.",
         "en": "Request limit reached. Wait and try again.",
     },
+    "flash_not_new": {
+        "uz": "Bu taklif faqat yangi foydalanuvchilar uchun.",
+        "ru": "Это предложение только для новых пользователей.",
+        "en": "This offer is only for new users.",
+    },
+    "flash_once": {
+        "uz": "1 000 so'mlik rasm faqat 1 marta.",
+        "ru": "Снимок за 1 000 сум можно купить только один раз.",
+        "en": "The 1,000 som image can be bought only once.",
+    },
+    "flash_burned": {
+        "uz": "30 daqiqa tugadi. 1 000 so'mlik rasm kuyadi.",
+        "ru": "30 минут прошли. Снимок за 1 000 сум сгорел.",
+        "en": "The 30 minutes are over. The 1,000 som image has expired.",
+    },
+    "flash_unpaid": {
+        "uz": "Try-on uchun avval 1 000 so'm to'lov yoki obuna kerak.",
+        "ru": "Для try-on сначала нужна оплата 1 000 сум или подписка.",
+        "en": "Try-on needs a 1,000 som payment or a subscription first.",
+    },
+    "flash_amount": {
+        "uz": "Payme summasi 1 000 so'm emas.",
+        "ru": "Сумма Payme не равна 1 000 сум.",
+        "en": "The Payme amount is not 1,000 som.",
+    },
 }
 
 _WAIT_MIN = {

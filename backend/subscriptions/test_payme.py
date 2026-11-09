@@ -53,6 +53,7 @@ _TEST_THROTTLE_RATES = {
 
 
 @override_settings(
+    DEBUG=True,
     MORPH_ENTITLEMENT_BYPASS=False,
     PAYME_MERCHANT_ID="test-kassa-id",
     PAYME_SECRET_KEY="test-kassa-secret",
@@ -131,7 +132,7 @@ class PaymeSubscriptionTests(TestCase):
         self.assertEqual(res.data["status"], "pending")
         checkout_url = res.data["checkout_url"]
         self.assertTrue(checkout_url.startswith("https://checkout.test.paycom.uz/abc123payme?"))
-        self.assertIn("order_id=", checkout_url)
+        self.assertIn("order_id%3D", checkout_url)
         self.assertIn("localhost%3A3000", checkout_url)
         self.assertNotIn("evil.", checkout_url)
         self.assertGreater(res.data["amount_tiyin"], 0)
@@ -152,7 +153,7 @@ class PaymeSubscriptionTests(TestCase):
         expected = {"starter": 999_000, "plus": 2_999_000, "pro": 6_999_000}
         for plan_code, tiyin in expected.items():
             create.reset_mock()
-            create.return_value = _receipt(rid=f"r-{plan_code}", state=0)
+            create.return_value = _receipt(rid=f"{plan_code}rcpt01", state=0)
             res = self.client.post(
                 "/api/v1/subscriptions/checkout/",
                 {
@@ -190,7 +191,7 @@ class PaymeSubscriptionTests(TestCase):
     @patch("subscriptions.payme_service.receipts_get")
     @patch("subscriptions.payme_service.receipts_create")
     def test_pending_confirm_does_not_activate(self, create, get):
-        create.return_value = _receipt(rid="r1", state=0)
+        create.return_value = _receipt(rid="receipt001", state=0)
         checkout = self.client.post(
             "/api/v1/subscriptions/checkout/",
             {"plan_code": "starter", "method": "payme", "return_url": "https://mysaloon.uz/subscriptions/payme"},
@@ -198,7 +199,7 @@ class PaymeSubscriptionTests(TestCase):
         )
         order_id = checkout.data["order_id"]
         amount_tiyin = checkout.data["amount_tiyin"]
-        get.return_value = _receipt(rid="r1", state=0, order_id=order_id, amount_tiyin=amount_tiyin)
+        get.return_value = _receipt(rid="receipt001", state=0, order_id=order_id, amount_tiyin=amount_tiyin)
         confirm = self.client.post(
             "/api/v1/subscriptions/confirm/",
             {"provider": "payme", "order_id": order_id},
@@ -210,7 +211,7 @@ class PaymeSubscriptionTests(TestCase):
     @patch("subscriptions.payme_service.receipts_get")
     @patch("subscriptions.payme_service.receipts_create")
     def test_paid_receipt_activates_once(self, create, get):
-        create.return_value = _receipt(rid="r-paid", state=0)
+        create.return_value = _receipt(rid="receiptpaid", state=0)
         checkout = self.client.post(
             "/api/v1/subscriptions/checkout/",
             {"plan_code": "starter", "method": "payme", "return_url": "https://mysaloon.uz/subscriptions/payme"},
@@ -218,7 +219,7 @@ class PaymeSubscriptionTests(TestCase):
         )
         order_id = checkout.data["order_id"]
         amount_tiyin = checkout.data["amount_tiyin"]
-        get.return_value = _receipt(rid="r-paid", state=4, order_id=order_id, amount_tiyin=amount_tiyin)
+        get.return_value = _receipt(rid="receiptpaid", state=4, order_id=order_id, amount_tiyin=amount_tiyin)
         self._payme_check_state = 4
 
         with self.captureOnCommitCallbacks(execute=True):
@@ -243,7 +244,7 @@ class PaymeSubscriptionTests(TestCase):
     @patch("subscriptions.payme_service.receipts_get")
     @patch("subscriptions.payme_service.receipts_create")
     def test_cancelled_and_refunded(self, create, get):
-        create.return_value = _receipt(rid="r-c", state=0)
+        create.return_value = _receipt(rid="receiptcan1", state=0)
         checkout = self.client.post(
             "/api/v1/subscriptions/checkout/",
             {"plan_code": "starter", "method": "payme", "return_url": "https://mysaloon.uz/x"},
@@ -251,7 +252,7 @@ class PaymeSubscriptionTests(TestCase):
         )
         order_id = checkout.data["order_id"]
         amount_tiyin = checkout.data["amount_tiyin"]
-        get.return_value = _receipt(rid="r-c", state=-1, order_id=order_id, amount_tiyin=amount_tiyin)
+        get.return_value = _receipt(rid="receiptcan1", state=-1, order_id=order_id, amount_tiyin=amount_tiyin)
         self._payme_check_state = -1
         res = self.client.post(
             "/api/v1/subscriptions/confirm/",
@@ -265,14 +266,14 @@ class PaymeSubscriptionTests(TestCase):
     @patch("subscriptions.payme_service.receipts_get")
     @patch("subscriptions.payme_service.receipts_create")
     def test_amount_mismatch_rejected(self, create, get):
-        create.return_value = _receipt(rid="r-m", state=0)
+        create.return_value = _receipt(rid="receiptmis1", state=0)
         checkout = self.client.post(
             "/api/v1/subscriptions/checkout/",
             {"plan_code": "starter", "method": "payme", "return_url": "https://mysaloon.uz/x"},
             format="json",
         )
         order_id = checkout.data["order_id"]
-        get.return_value = _receipt(rid="r-m", state=4, order_id=order_id, amount_tiyin=1)
+        get.return_value = _receipt(rid="receiptmis1", state=4, order_id=order_id, amount_tiyin=1)
         res = self.client.post(
             "/api/v1/subscriptions/confirm/",
             {"provider": "payme", "order_id": order_id},
@@ -284,7 +285,7 @@ class PaymeSubscriptionTests(TestCase):
     @patch("subscriptions.payme_service.receipts_get")
     @patch("subscriptions.payme_service.receipts_create")
     def test_delayed_then_paid_via_status(self, create, get):
-        create.return_value = _receipt(rid="r-d", state=0)
+        create.return_value = _receipt(rid="receiptdel1", state=0)
         checkout = self.client.post(
             "/api/v1/subscriptions/checkout/",
             {"plan_code": "starter", "method": "payme", "return_url": "https://mysaloon.uz/x"},
@@ -292,12 +293,12 @@ class PaymeSubscriptionTests(TestCase):
         )
         order_id = checkout.data["order_id"]
         amount_tiyin = checkout.data["amount_tiyin"]
-        get.return_value = _receipt(rid="r-d", state=0, order_id=order_id, amount_tiyin=amount_tiyin)
+        get.return_value = _receipt(rid="receiptdel1", state=0, order_id=order_id, amount_tiyin=amount_tiyin)
         pending = self.client.get(f"/api/v1/subscriptions/payments/{order_id}/")
         self.assertEqual(pending.status_code, 200)
         self.assertEqual(pending.data["status"], "pending")
 
-        get.return_value = _receipt(rid="r-d", state=4, order_id=order_id, amount_tiyin=amount_tiyin)
+        get.return_value = _receipt(rid="receiptdel1", state=4, order_id=order_id, amount_tiyin=amount_tiyin)
         self._payme_check_state = 4
         paid = self.client.get(f"/api/v1/subscriptions/payments/{order_id}/")
         self.assertEqual(paid.status_code, 200, paid.data)
@@ -309,7 +310,7 @@ class PaymeSubscriptionTests(TestCase):
     def test_missing_receipt_does_not_activate(self, create, get):
         from subscriptions.payme_client import PaymeError
 
-        create.return_value = _receipt(rid="r-miss", state=0)
+        create.return_value = _receipt(rid="receiptmiss", state=0)
         checkout = self.client.post(
             "/api/v1/subscriptions/checkout/",
             {"plan_code": "starter", "method": "payme", "return_url": "https://mysaloon.uz/x"},
@@ -327,7 +328,7 @@ class PaymeSubscriptionTests(TestCase):
     @patch("subscriptions.payme_service.receipts_get")
     @patch("subscriptions.payme_service.receipts_create")
     def test_unpaid_receipt_stays_unpaid_even_if_check_says_paid(self, create, get):
-        create.return_value = _receipt(rid="r-unpaid", state=0)
+        create.return_value = _receipt(rid="receiptunpd", state=0)
         checkout = self.client.post(
             "/api/v1/subscriptions/checkout/",
             {"plan_code": "starter", "method": "payme", "return_url": "https://mysaloon.uz/x"},
@@ -335,7 +336,7 @@ class PaymeSubscriptionTests(TestCase):
         )
         order_id = checkout.data["order_id"]
         amount_tiyin = checkout.data["amount_tiyin"]
-        get.return_value = _receipt(rid="r-unpaid", state=0, order_id=order_id, amount_tiyin=amount_tiyin)
+        get.return_value = _receipt(rid="receiptunpd", state=0, order_id=order_id, amount_tiyin=amount_tiyin)
         self._payme_check_state = 4
         row = self.client.get(f"/api/v1/subscriptions/payments/{order_id}/")
         self.assertEqual(row.status_code, 200, row.data)
@@ -345,7 +346,7 @@ class PaymeSubscriptionTests(TestCase):
 
     @patch("subscriptions.payme_service.receipts_create")
     def test_android_client_can_use_payme(self, create):
-        create.return_value = _receipt(rid="r-and", state=0)
+        create.return_value = _receipt(rid="receiptand1", state=0)
         res = self.client.post(
             "/api/v1/subscriptions/checkout/",
             {"plan_code": "starter", "method": "payme", "return_url": "https://mysaloon.uz/x"},
@@ -368,7 +369,7 @@ class PaymeSubscriptionTests(TestCase):
     @patch("subscriptions.payme_service.receipts_get")
     @patch("subscriptions.payme_service.receipts_create")
     def test_refunded_does_not_activate(self, create, get):
-        create.return_value = _receipt(rid="r-ref", state=0)
+        create.return_value = _receipt(rid="receiptref1", state=0)
         checkout = self.client.post(
             "/api/v1/subscriptions/checkout/",
             {"plan_code": "starter", "method": "payme", "return_url": "https://mysaloon.uz/x"},
@@ -376,7 +377,7 @@ class PaymeSubscriptionTests(TestCase):
         )
         order_id = checkout.data["order_id"]
         amount_tiyin = checkout.data["amount_tiyin"]
-        get.return_value = _receipt(rid="r-ref", state=-2, order_id=order_id, amount_tiyin=amount_tiyin)
+        get.return_value = _receipt(rid="receiptref1", state=-2, order_id=order_id, amount_tiyin=amount_tiyin)
         self._payme_check_state = -2
         res = self.client.post(
             "/api/v1/subscriptions/confirm/",
@@ -391,7 +392,7 @@ class PaymeSubscriptionTests(TestCase):
     @patch("subscriptions.payme_service.receipts_get")
     @patch("subscriptions.payme_service.receipts_create")
     def test_failed_and_expired_states(self, create, get):
-        create.return_value = _receipt(rid="r-f", state=0)
+        create.return_value = _receipt(rid="receiptfail", state=0)
         checkout = self.client.post(
             "/api/v1/subscriptions/checkout/",
             {"plan_code": "starter", "method": "payme", "return_url": "https://mysaloon.uz/x"},
@@ -399,13 +400,13 @@ class PaymeSubscriptionTests(TestCase):
         )
         order_id = checkout.data["order_id"]
         amount_tiyin = checkout.data["amount_tiyin"]
-        get.return_value = _receipt(rid="r-f", state=99, order_id=order_id, amount_tiyin=amount_tiyin)
+        get.return_value = _receipt(rid="receiptfail", state=99, order_id=order_id, amount_tiyin=amount_tiyin)
         self._payme_check_state = 99
         failed = self.client.get(f"/api/v1/subscriptions/payments/{order_id}/")
         self.assertEqual(failed.data["status"], "failed")
         self.assertFalse(UserSubscription.objects.filter(user=self.user, status="active").exists())
 
-        create.return_value = _receipt(rid="r-e", state=0)
+        create.return_value = _receipt(rid="receiptexp1", state=0)
         checkout2 = self.client.post(
             "/api/v1/subscriptions/checkout/",
             {"plan_code": "starter", "method": "payme", "return_url": "https://mysaloon.uz/x"},
@@ -413,7 +414,7 @@ class PaymeSubscriptionTests(TestCase):
         )
         order2 = checkout2.data["order_id"]
         amt2 = checkout2.data["amount_tiyin"]
-        get.return_value = _receipt(rid="r-e", state=1, order_id=order2, amount_tiyin=amt2)
+        get.return_value = _receipt(rid="receiptexp1", state=1, order_id=order2, amount_tiyin=amt2)
         self._payme_check_state = 1
         expired = self.client.get(f"/api/v1/subscriptions/payments/{order2}/")
         self.assertEqual(expired.data["status"], "expired")

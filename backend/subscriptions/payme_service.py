@@ -296,6 +296,12 @@ def sync_payme_payment(*, user: User, order_id: str, request=None) -> Subscripti
     if not payment:
         raise PaymePaymentError("Payme to'lovi topilmadi.")
 
+    if (payment.plan_code or "") == "flash" and payment.status == SubscriptionPayment.Status.PAID:
+        from subscriptions.flash_tryon import flash_payment_settled
+
+        if flash_payment_settled(payment):
+            return payment
+
     if payment.status == SubscriptionPayment.Status.PAID and payment.subscription_id:
         return payment
 
@@ -362,6 +368,11 @@ def sync_payme_payment(*, user: User, order_id: str, request=None) -> Subscripti
                 "updated_at",
             ]
         )
+        if (payment.plan_code or "") == "flash":
+            from subscriptions.flash_tryon import grant_flash_after_payme
+
+            grant_flash_after_payme(payment, request=request)
+            return payment
         sub = activate_subscription(
             user=user,
             plan_code=payment.plan_code,
@@ -436,6 +447,10 @@ def serialize_payme_payment(payment: SubscriptionPayment) -> dict:
         SubscriptionPayment.Status.EXPIRED: "Payme cheki muddati o'tgan.",
         SubscriptionPayment.Status.REFUNDED: "Payme to'lovi qaytarilgan.",
     }.get(payment.status, "")
+    if (payment.plan_code or "") == "flash" and (payment.metadata or {}).get("flash_expired"):
+        message = "To'lov qabul qilindi, lekin 30 daqiqa tugagan. Rasm ochilmadi."
+    elif (payment.plan_code or "") == "flash" and payment.status == SubscriptionPayment.Status.PAID:
+        message = "1 000 so'm tasdiqlandi. 1 ta rasm ochildi."
     me = None
     if payment.status == SubscriptionPayment.Status.PAID:
         from subscriptions.services import build_me_payload

@@ -248,3 +248,57 @@ class SubscriptionEvent(models.Model):
     def __str__(self) -> str:
         return f"{self.action}:{self.user_id}"
 
+
+class FlashTryonPass(models.Model):
+    """Yangi user: ro'yxatdan keyin 30 daqiqa, 1 marta, 1 rasm, 1 000 so'm.
+
+    Narx va muddat serverda. Karta raqami saqlanmaydi — faqat Payme chek ID.
+    Try-on faqat Payme state=4 tasdiqlangandan keyin ochiladi.
+    """
+
+    class Status(models.TextChoices):
+        PENDING = "pending", "To'lov kutilmoqda"
+        PAID = "paid", "To'langan"
+        USED = "used", "Rasm ishlatilgan"
+        EXPIRED = "expired", "Muddati tugagan"
+        CANCELLED = "cancelled", "Bekor qilingan"
+        FAILED = "failed", "Muvaffaqiyatsiz"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="flash_tryon_pass",
+    )
+    status = models.CharField(
+        max_length=16,
+        choices=Status.choices,
+        default=Status.PENDING,
+        db_index=True,
+    )
+    amount_uzs = models.DecimalField(max_digits=12, decimal_places=2, default=1000)
+    amount_tiyin = models.PositiveIntegerField(default=100_000)
+    expires_at = models.DateTimeField(db_index=True)
+    order_id = models.CharField(max_length=128, blank=True, default="", db_index=True)
+    payme_receipt_id = models.CharField(max_length=64, blank=True, default="", db_index=True)
+    payment = models.ForeignKey(
+        "subscriptions.SubscriptionPayment",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="flash_passes",
+    )
+    paid_at = models.DateTimeField(null=True, blank=True)
+    used_at = models.DateTimeField(null=True, blank=True, db_index=True)
+    reserved_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["status", "expires_at"]),
+        ]
+
+    def __str__(self) -> str:
+        return f"flash:{self.user_id}:{self.status}"
+
