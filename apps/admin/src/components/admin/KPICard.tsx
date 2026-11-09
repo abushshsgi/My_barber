@@ -1,5 +1,6 @@
 import { cn } from "@/lib/utils";
 import { ArrowDownRight, ArrowUpRight, Minus, type LucideIcon } from "lucide-react";
+import { SlideNumber } from "@/components/admin/SlideNumber";
 
 export function KPICard({
   label,
@@ -50,7 +51,7 @@ export function KPICard({
             isHero ? "text-5xl sm:text-6xl lg:text-7xl" : "text-3xl",
           )}
         >
-          {value}
+          <SlideNumber value={value} />
         </div>
         <div className="mt-2 flex items-center gap-2">
           {typeof delta === "number" && (

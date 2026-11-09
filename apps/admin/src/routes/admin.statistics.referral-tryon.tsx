@@ -21,6 +21,7 @@ import {
   type AdminReferralTryonRow,
   type ReferralTryonUsage,
 } from "@/lib/admin-api";
+import { SlideNumber } from "@/components/admin/SlideNumber";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/admin/statistics/referral-tryon")({
@@ -86,7 +87,7 @@ function ReferralTryonPage() {
   return (
     <div className="space-y-6">
       <StatsPageHeader
-        title="Do'st try-on"
+        title="Do'stlar"
         description="Kim nechta do'st chaqirgan, nechta try-on berilgan va u trydan foydalanganmi."
       />
 
@@ -246,10 +247,10 @@ function ReferrerRows({
             </div>
           </div>
         </TableCell>
-        <TableCell className="text-right tabular-nums">{row.friends_count}</TableCell>
-        <TableCell className="text-right tabular-nums">{row.tries_granted}</TableCell>
-        <TableCell className="text-right tabular-nums">{row.tries_used}</TableCell>
-        <TableCell className="text-right tabular-nums">{row.tries_left}</TableCell>
+        <TableCell className="text-right tabular-nums"><SlideNumber value={row.friends_count} /></TableCell>
+        <TableCell className="text-right tabular-nums"><SlideNumber value={row.tries_granted} /></TableCell>
+        <TableCell className="text-right tabular-nums"><SlideNumber value={row.tries_used} /></TableCell>
+        <TableCell className="text-right tabular-nums"><SlideNumber value={row.tries_left} /></TableCell>
         <TableCell>{usageBadge(row.usage)}</TableCell>
       </TableRow>
       {open ? (

@@ -59,6 +59,12 @@ function DashboardPage() {
             >
               Live statistika →
             </Link>
+            <Link
+              to="/admin/statistics/referral-tryon"
+              className="inline-flex items-center rounded-lg border border-border bg-card px-3 py-2 text-sm font-medium shadow-card hover:bg-muted"
+            >
+              Do'stlar →
+            </Link>
             <Button onClick={() => reportMut.mutate()} disabled={reportMut.isPending} className="shrink-0">
               <Download className="size-4 mr-2" />
               Hisobot olish

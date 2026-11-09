@@ -1,7 +1,15 @@
 import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 
-/** Raqam o'zgarganda eski qiymat pastga tushadi, yangisi yuqoridan tushib keladi. */
+let slot = 0;
+
+function nextEnterDelay() {
+  const delay = (slot % 8) * 55;
+  slot += 1;
+  return delay;
+}
+
+/** Sahifaga kirganda va raqam o'zgaganda yangi qiymat yuqoridan tushib keladi. */
 export function SlideNumber({
   value,
   className,
@@ -13,9 +21,21 @@ export function SlideNumber({
   const [shown, setShown] = useState(text);
   const [leaving, setLeaving] = useState<string | null>(null);
   const [tick, setTick] = useState(0);
+  const [intro, setIntro] = useState(true);
+  const [delay] = useState(nextEnterDelay);
   const shownRef = useRef(text);
+  const mounted = useRef(false);
 
   useEffect(() => {
+    const timer = window.setTimeout(() => setIntro(false), 700 + delay);
+    return () => window.clearTimeout(timer);
+  }, [delay]);
+
+  useEffect(() => {
+    if (!mounted.current) {
+      mounted.current = true;
+      return;
+    }
     if (text === shownRef.current) return;
     const previous = shownRef.current;
     shownRef.current = text;
@@ -26,6 +46,8 @@ export function SlideNumber({
     return () => window.clearTimeout(timer);
   }, [text]);
 
+  const entering = intro || leaving != null;
+
   return (
     <span
       className={cn(
@@ -35,7 +57,8 @@ export function SlideNumber({
     >
       <span
         key={`in-${tick}`}
-        className={cn("col-start-1 row-start-1", leaving != null && "admin-slot-enter")}
+        className={cn("col-start-1 row-start-1", entering && "admin-slot-enter")}
+        style={entering ? { animationDelay: leaving != null ? "0ms" : `${delay}ms` } : undefined}
       >
         {shown}
       </span>

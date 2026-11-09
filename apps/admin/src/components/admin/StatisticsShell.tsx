@@ -9,6 +9,7 @@ import type { StatDateRange } from "@/lib/admin-api";
 
 const TABS = [
   { to: "/admin/statistics/live" as const, label: "Real vaqt" },
+  { to: "/admin/statistics/referral-tryon" as const, label: "Do'stlar" },
   { to: "/admin/statistics" as const, label: "Umumiy", exact: true },
   { to: "/admin/statistics/revenue" as const, label: "Daromad" },
   { to: "/admin/statistics/barbers" as const, label: "Sartaroshlar" },
@@ -16,7 +17,6 @@ const TABS = [
   { to: "/admin/statistics/visitors" as const, label: "Tashrif buyuruvchilar" },
   { to: "/admin/statistics/subscriptions" as const, label: "Obunalar" },
   { to: "/admin/statistics/customer-invites" as const, label: "Chaqirishlar" },
-  { to: "/admin/statistics/referral-tryon" as const, label: "Do'st try-on" },
   { to: "/admin/statistics/salons" as const, label: "Salonlar" },
   { to: "/admin/statistics/bookings" as const, label: "Bronlar" },
 ];
