@@ -62,7 +62,7 @@ export function morphChatTokensBlocked(usage: SubscriptionUsage): boolean {
   return (usage.morph_chat_tokens_remaining ?? 0) < 200;
 }
 
-/** Try-on: obuna kvotasi, bepul 1× yoki referal krediti. */
+/** Try-on: obuna kvotasi yoki referal krediti. */
 export function morphAccessBlocked(me: SubscriptionMe | null | undefined): boolean {
   if (!me) return true;
   if (me.access && typeof me.access.morph_ai_allowed === "boolean") {

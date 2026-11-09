@@ -789,7 +789,7 @@
     "inactive": "Inactive",
     "lockedTitle": "None — Morf AI is locked",
     "lockedBody": "Morf AI is locked on a new account. Subscribe to open it.",
-    "freePlanBody": "Free turns on automatically after signup: 1 generation and 10,000 chat tokens. You do not buy it.",
+    "freePlanBody": "Free turns on automatically after signup: 10,000 chat tokens. Try-on requires a subscription.",
     "usageChat": "Chat tokens",
     "lockedBodyReferral": "Morf AI is locked on a new account. Subscribe or invite 1 friend for 1 generation.",
     "referralOne": "1 friend = 1 generation",

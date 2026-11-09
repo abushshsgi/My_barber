@@ -46,7 +46,7 @@ _PLANS: dict[str, dict[str, Any]] = {
         "name_en": "Free",
         "price_uzs": Decimal(0),
         "period_days": 0,
-        "morph_ai_monthly": 1,
+        "morph_ai_monthly": 0,
         "morph_studio_monthly": 0,
         "morph_chat_tokens_monthly": 10_000,
         "family_members_max": 0,
@@ -60,9 +60,10 @@ _PLANS: dict[str, dict[str, Any]] = {
         "features": [
             _feat(
                 "morph_ai",
-                "Morf AI try-on — 1 ta generatsiya bepul",
-                "Morf AI try-on — 1 бесплатная генерация",
-                "Morf AI try-on — 1 free generation",
+                "Morf AI try-on — obuna kerak",
+                "Morf AI try-on — нужна подписка",
+                "Morf AI try-on — subscription required",
+                included=False,
             ),
             _feat(
                 "chat",
@@ -157,14 +158,14 @@ _PLANS: dict[str, dict[str, Any]] = {
     },
 }
 
-# Yangi user — 1 marta bepul try-on (umrbod); chat uchun bir martalik 10k token.
-# Shu sanadan oldin ro‘yxatdan o‘tgan hisoblar bepul 1× olmaydi.
+# Chat uchun bir martalik 10k token. Try-on bepul emas — obuna yoki referal.
+# FREE_TRYON_LAUNCH_AT tarixiy: bepul 1× o'chirilgan.
 from datetime import datetime, timezone as dt_timezone
 
 FREE_TRYON_LAUNCH_AT = datetime(2026, 10, 21, tzinfo=dt_timezone.utc)
 FREE_MORPH_AI_MONTHLY = 0
 FREE_MORPH_STUDIO_MONTHLY = 0
-FREE_MORPH_TRYON = 1
+FREE_MORPH_TRYON = 0
 FREE_MORPH_CHAT_TOKENS = 10_000
 # Bitta chat javobi uchun minimal qoldiq (system prompt + javob).
 CHAT_TOKEN_MIN_TURN = 200

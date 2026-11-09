@@ -64,6 +64,10 @@ INPUT_MAX_EDGE = 1536
 INPUT_JPEG_QUALITY = 88
 RESULT_JPEG_QUALITY = 92
 PORTRAIT_RATIO = 4 / 3  # height / width — soch toji qirqilmasin
+# seedImage strength: past = yuz saqlanadi, yuqori = soch erkin o'zgaradi.
+TRYON_STRENGTH = 0.34
+TRYON_STEPS = 8
+TRYON_CFG = 2.2
 
 
 @dataclass(frozen=True)
@@ -144,7 +148,7 @@ def resolved_tryon_size(model: str | None = None) -> tuple[int, int]:
 
 
 def _pad_selfie_for_hair(raw: bytes) -> bytes:
-    """Add top headroom and enforce a 3:4 portrait so generated hair is not cropped."""
+    """Add top headroom so hair is not cropped. Do not stretch face pixels."""
     try:
         image = Image.open(BytesIO(raw))
         image = ImageOps.exif_transpose(image)
@@ -159,12 +163,8 @@ def _pad_selfie_for_hair(raw: bytes) -> bytes:
     extra_top = max(int(src_h * 0.1), max(0, min_h - src_h))
     if extra_top <= 0:
         return raw
-    canvas = Image.new("RGB", (src_w, src_h + extra_top))
-    strip_h = max(1, min(24, src_h))
-    top_fill = image.crop((0, 0, src_w, strip_h)).resize(
-        (src_w, extra_top), Image.Resampling.LANCZOS
-    )
-    canvas.paste(top_fill, (0, 0))
+    fill = image.getpixel((src_w // 2, 0))
+    canvas = Image.new("RGB", (src_w, src_h + extra_top), fill)
     canvas.paste(image, (0, extra_top))
     buffer = BytesIO()
     canvas.save(buffer, format="JPEG", quality=INPUT_JPEG_QUALITY, optimize=True)
@@ -172,7 +172,7 @@ def _pad_selfie_for_hair(raw: bytes) -> bytes:
 
 
 def _output_size_for_bytes(raw: bytes, model: str) -> tuple[int, int]:
-    """Portrait-first output. Height is the long edge so the hairstyle silhouette fits."""
+    """Keep the selfie aspect ratio so the face is not stretched."""
     fallback = resolved_tryon_size(model)
     spec = _model_spec(model)
     try:
@@ -183,15 +183,28 @@ def _output_size_for_bytes(raw: bytes, model: str) -> tuple[int, int]:
         return fallback
     if src_w < 1 or src_h < 1:
         return fallback
-    height = snap_dimension(max(fallback), step=spec["step"], lo=spec["min_edge"], hi=spec["max_edge"])
-    native_w = height * src_w / src_h
-    max_w = height / PORTRAIT_RATIO
-    width = snap_dimension(
-        int(min(native_w, max_w)),
+    target_long = snap_dimension(
+        max(fallback),
         step=spec["step"],
         lo=spec["min_edge"],
         hi=spec["max_edge"],
     )
+    if src_h >= src_w:
+        height = target_long
+        width = snap_dimension(
+            int(round(height * src_w / src_h)),
+            step=spec["step"],
+            lo=spec["min_edge"],
+            hi=spec["max_edge"],
+        )
+    else:
+        width = target_long
+        height = snap_dimension(
+            int(round(width * src_h / src_w)),
+            step=spec["step"],
+            lo=spec["min_edge"],
+            hi=spec["max_edge"],
+        )
     return width, height
 
 
@@ -318,15 +331,15 @@ def _build_tryon_prompt(*, title: str, style_detail: str) -> str:
         )
     )
     return (
-        "In-place photorealistic edit of reference image 1. "
-        "Reference image 1 is the original photograph of the real client. "
-        "Keep the identical person: the same face, the same face shape, jawline, "
-        "cheekbones, bone structure, eyes, eyebrows, nose, mouth, ears, skin texture, "
-        "skin tone, age, expression, pose, head position, camera angle, framing, "
-        "clothing, and background. "
-        "Do not replace, beautify, reshape, warp, or regenerate the face. "
-        "Keep the original face shape, jawline, and proportions exactly. "
-        "Edit only the hair pixels. Leave every facial pixel faithful to the selfie. "
+        "Photorealistic img2img edit of the seed photograph. "
+        "The seed image and reference image 1 are the same unaltered selfie of the real client. "
+        "Copy the face from the seed pixels: same person, same face, same face shape, "
+        "jawline, cheekbones, bone structure, eyes, eyebrows, nose, mouth, ears, "
+        "skin texture, skin tone, age, expression, pose, head position, camera angle, "
+        "framing, clothing, and background. "
+        "Do not generate a new face, do not beautify, slim, reshape, warp, or replace "
+        "the identity. The result must look like this exact person after a barber visit. "
+        "Edit only the hair on the scalp and around the ears. "
         f'Change only the haircut on this same head to "{title}" — {style_detail}. '
         f"{color_lock}"
         "Keep the requested hairstyle silhouette, length, volume, parting, and strand "
@@ -388,15 +401,17 @@ def _infer_edit(
             "negativePrompt": (
                 "different person, identity change, new face, swapped face, sample model face, "
                 "changed face shape, changed jawline, warped face, beautified face, "
-                "regenerated face, changed skin tone, changed expression, changed clothes, "
-                "changed background, extra people, warped hair, melted hair, distorted hair, "
-                "collapsed hairstyle, stretched hair, misshapen haircut, "
-                "text, watermark, logo, cartoon, plastic skin, blurry"
+                "regenerated face, slimmed face, morphed identity, changed skin tone, "
+                "changed expression, changed clothes, changed background, extra people, "
+                "warped hair, melted hair, distorted hair, collapsed hairstyle, stretched hair, "
+                "misshapen haircut, text, watermark, logo, cartoon, plastic skin, blurry"
             ),
             "width": width,
             "height": height,
-            "steps": 6,
-            "CFGScale": 2.8,
+            "steps": TRYON_STEPS,
+            "CFGScale": TRYON_CFG,
+            "seedImage": references[0],
+            "strength": TRYON_STRENGTH,
             "inputs": {"referenceImages": references},
         }
     )

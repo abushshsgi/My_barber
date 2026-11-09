@@ -71,6 +71,14 @@ class RunwareTryOnTests(SimpleTestCase):
         Image.new("RGB", (768, 1024), (90, 70, 60)).save(buffer, format="JPEG", quality=80)
         self.assertEqual(_output_size_for_bytes(buffer.getvalue(), "runware:400@2"), (1152, 1536))
 
+    def test_output_size_keeps_square_selfie(self):
+        from ai.services.runware_tryon import _output_size_for_bytes
+
+        buffer = BytesIO()
+        Image.new("RGB", (1024, 1024), (90, 70, 60)).save(buffer, format="JPEG", quality=80)
+        with override_settings(RUNWARE_TRYON_WIDTH=1152, RUNWARE_TRYON_HEIGHT=1536):
+            self.assertEqual(_output_size_for_bytes(buffer.getvalue(), "runware:400@2"), (1536, 1536))
+
     def test_pad_selfie_adds_top_headroom(self):
         from ai.services.runware_tryon import _pad_selfie_for_hair
 
@@ -147,11 +155,13 @@ class RunwareTryOnTests(SimpleTestCase):
         self.assertEqual(task["model"], "runware:400@2")
         self.assertEqual(len(refs), 1)
         self.assertTrue(all(item.startswith("data:image/jpeg;base64,") for item in refs))
-        self.assertNotIn("seedImage", task)
+        self.assertEqual(task["seedImage"], refs[0])
+        self.assertLessEqual(task["strength"], 0.45)
+        self.assertGreaterEqual(task["strength"], 0.2)
         prompt = task["positivePrompt"].lower()
         self.assertIn("reference image 1", prompt)
         self.assertNotIn("reference image 2", prompt)
-        self.assertIn("identical person", prompt)
+        self.assertIn("same unaltered selfie", prompt)
         self.assertIn("change only the haircut", prompt)
         self.assertTrue(result.preview_image.startswith("/media/ai-style/tryon-results/"))
         self.assertNotIn("runware.ai", result.preview_image)

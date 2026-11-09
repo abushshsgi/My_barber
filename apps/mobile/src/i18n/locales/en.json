@@ -799,7 +799,7 @@
     "subEnds": "Ends: {{date}}",
     "subDaysLeft": "{{count}} days left",
     "subEmpty": "None — Morf AI is locked. Choose a plan to subscribe.",
-    "freePlanBody": "Free turns on automatically after signup: 1 generation and 10,000 chat tokens.",
+    "freePlanBody": "Free turns on automatically after signup: 10,000 chat tokens. Try-on requires a subscription.",
     "subPlans": "Plans",
     "subStillPremium": "Premium is still active. You can buy again after it ends.",
     "cancelCta": "Cancel subscription",

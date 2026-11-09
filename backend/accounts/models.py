@@ -74,8 +74,8 @@ class User(AbstractUser):
     morph_referral_credits = models.PositiveIntegerField(default=0)
     # Morf AI chat — obunasiz bir martalik 10k token (oylik/kunlik emas).
     morph_chat_free_tokens_used = models.PositiveIntegerField(default=0)
-    # Faqat yangi userlar: bir martalik bepul Morf AI try-on generatsiyasi.
-    morph_free_tryon_eligible = models.BooleanField(default=True)
+    # Tarixiy: bir martalik bepul try-on. Yangi userlar eligible emas.
+    morph_free_tryon_eligible = models.BooleanField(default=False)
     morph_free_tryon_used_at = models.DateTimeField(null=True, blank=True, db_index=True)
 
     @property

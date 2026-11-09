@@ -800,7 +800,7 @@
     "subEnds": "Tugash: {{date}}",
     "subDaysLeft": "{{count}} kun qoldi",
     "subEmpty": "Yo‘q — Morf AI yopiq. Tarif tanlab obuna bo‘ling.",
-    "freePlanBody": "Ro‘yxatdan o‘tganingizda Free tarif avtomatik yoqiladi: 1 ta generatsiya va 10 000 chat token bepul.",
+    "freePlanBody": "Ro‘yxatdan o‘tganingizda Free tarif avtomatik yoqiladi: 10 000 chat token. Try-on uchun obuna kerak.",
     "subPlans": "Tariflar",
     "subStillPremium": "Premium hali faol. Yangi xarid muddat tugagach ochiladi.",
     "cancelCta": "Obunani bekor qilish",
