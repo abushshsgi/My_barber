@@ -99,12 +99,23 @@ class ChatCatalogUnitTests(SimpleTestCase):
     def test_unknown_preference_asks_without_styles(self):
         message = "Qanday soch turmagi tavsiya qilasiz?"
         self.assertTrue(wants_hairstyle_recommendation(message))
-        slots = extract_slots(message, context={"advice_gender": "male"})
+        slots = extract_slots(message)
         self.assertEqual(slots["audience"], "")
         found = search_catalog(slots)
         self.assertFalse(found["ok"])
         self.assertEqual(found["reason"], "need_audience")
         self.assertEqual(found["styles"], [])
+
+    def test_profile_gender_selects_catalog_when_message_omits_it(self):
+        message = "Qanday soch turmagi tavsiya qilasiz?"
+        slots = extract_slots(message, context={"advice_gender": "male"})
+        self.assertEqual(slots["audience"], "men")
+        with patch("ai.services.chat_catalog._published_rows", side_effect=_rows):
+            found = search_catalog(slots)
+        self.assertTrue(found["ok"])
+        self.assertTrue(all(item["id"].startswith("men-") for item in found["styles"]))
+        women = extract_slots(message, context={"advice_gender": "female"})
+        self.assertEqual(women["audience"], "women")
 
     def test_missing_image_is_not_returned(self):
         with patch("ai.services.chat_catalog._published_rows", side_effect=_rows):

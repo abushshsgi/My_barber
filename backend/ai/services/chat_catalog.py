@@ -262,7 +262,7 @@ def extract_slots(
     history: list[Any] | None = None,
     context: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    """Auditoriya faqat foydalanuvchi matnidan. Profil jinsi ishlatilmaydi."""
+    """Matnda jins bo'lsa u ustuvor. Bo'lmasa profil jinsi (advice_gender) ishlatiladi."""
     texts = _user_texts(message, history)
     audience = ""
     for text in texts:
@@ -270,6 +270,12 @@ def extract_slots(
         if hit:
             audience = hit
     ctx = context or {}
+    if not audience:
+        profile_gender = str(ctx.get("advice_gender") or ctx.get("user_gender") or "").strip().lower()
+        if profile_gender == "male":
+            audience = "men"
+        elif profile_gender == "female":
+            audience = "women"
     face = _last_vocab(texts, _FACE) or _clean_choice(
         ctx.get("face_shape"),
         {"oval", "round", "square", "heart", "oblong"},

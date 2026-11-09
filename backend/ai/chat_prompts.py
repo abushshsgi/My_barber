@@ -103,12 +103,12 @@ def _format_prefs_block(context: dict[str, Any] | None) -> str:
         )
     gender = str(context.get("advice_gender") or context.get("user_gender") or "").strip().lower()
     if gender in ("male", "female"):
+        who = "erkak" if gender == "male" else "ayol"
+        catalog = "erkaklar" if gender == "male" else "ayollar"
         lines.append(
-            "- Maslahat ohangi: "
-            + ("erkak" if gender == "male" else "ayol")
-            + " parvarishi. Bu katalog jinsi emas. "
-            "Hairstyle rasmi uchun faqat foydalanuvchi aniq aytgan erkak/ayol ustuvor. "
-            "Aytilmagan bo'lsa taxmin qilma."
+            f"- Profil jinsi: {who}. Javob, maslahat va soch uslubi kartochkalari "
+            f"shu jinsga mos bo'lsin — {catalog} katalogi. "
+            "Foydalanuvchi aniq boshqa jinsni so'rasa, o'sha so'rov ustuvor."
         )
     care_label = str(context.get("care_profile_label") or "").strip()
     care_cond = str(context.get("care_condition") or "").strip()
