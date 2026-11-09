@@ -1,4 +1,4 @@
-import { Check, Copy, Gift, Share2, Users } from "lucide-react";
+import { Check, Copy, Share2 } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
@@ -118,121 +118,94 @@ export function SettingsReferralPanel() {
     );
   }
 
+  const usedCredits = refGenOn ? Math.max(0, data.invite_count - credits) : 0;
+
   return (
-    <div className="space-y-4">
-      <ProfileSubpageCard className="space-y-1">
-        <p className="text-sm text-muted-foreground">
-          {t("referral.intro", {
-            defaultValue:
-              "8 belgilik kodingizni yoki havolani ulashing. Do'stingiz ro'yxatdan o'tishda shu kodni kiritadi (yoki havola avtomatik qo'llaydi).",
+    <div className="space-y-3">
+      <ProfileSubpageCard className="space-y-3">
+        <p className="text-sm font-semibold leading-snug">
+          {t("referral.offer", {
+            defaultValue: "1 ta do'st taklif qiling — 1 ta try-on generatsiya bepul.",
           })}
         </p>
+        <div className="grid grid-cols-3 gap-2">
+          <Stat
+            value={String(data.invite_count)}
+            label={t("referral.statFriends", { defaultValue: "Do'stlar" })}
+          />
+          <Stat
+            value={refGenOn ? String(credits) : "0"}
+            label={t("referral.statCredits", { defaultValue: "Bepul" })}
+          />
+          <Stat
+            value={String(usedCredits)}
+            label={t("referral.statUsed", { defaultValue: "Ishlatilgan" })}
+          />
+        </div>
+        <button
+          type="button"
+          onClick={handleShare}
+          className="flex h-11 w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-foreground text-sm font-bold text-background"
+        >
+          <Share2 className="h-4 w-4" />
+          {t("referral.share", { defaultValue: "Havolani ulashish" })}
+        </button>
       </ProfileSubpageCard>
 
-      <ProfileSubpageCard className="space-y-4">
-        <div>
-          <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-muted-foreground">
-            {t("referral.yourCode", { defaultValue: "Sizning kodingiz" })}
-          </p>
-          <div className="mt-2 flex items-center gap-2">
-            <span className="flex-1 rounded-xl border border-border bg-background px-3 py-3 text-center font-mono text-2xl font-bold tracking-[0.22em]">
-              {data.code}
-            </span>
-            <button
-              type="button"
-              onClick={() => handleCopy(data.code, "code")}
-              aria-label={t("referral.copyCode", { defaultValue: "Kodni nusxalash" })}
-              className="grid h-12 w-12 shrink-0 cursor-pointer place-items-center rounded-xl border border-border transition-colors duration-200 hover:bg-muted/50"
-            >
-              {copied === "code" ? (
-                <Check className="h-5 w-5 text-emerald-600" />
-              ) : (
-                <Copy className="h-5 w-5" />
-              )}
-            </button>
-          </div>
-        </div>
-
-        <div>
-          <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-muted-foreground">
-            {t("referral.yourLink", { defaultValue: "Taklif havolasi" })}
-          </p>
-          <p className="mt-2 break-all rounded-xl border border-border bg-background px-3 py-3 text-xs text-muted-foreground">
-            {inviteUrl}
-          </p>
-        </div>
-
-        <div className="flex flex-col gap-2 sm:flex-row">
+      <ProfileSubpageCard className="space-y-2.5">
+        <div className="flex items-center gap-2">
+          <span className="min-w-0 flex-1 truncate rounded-xl bg-muted/60 px-3 py-2.5 text-center font-mono text-lg font-bold tracking-[0.18em]">
+            {data.code}
+          </span>
           <button
             type="button"
-            onClick={handleShare}
-            className="flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl bg-foreground py-3 text-sm font-bold text-background"
+            onClick={() => handleCopy(data.code, "code")}
+            aria-label={t("referral.copyCode", { defaultValue: "Kodni nusxalash" })}
+            className="grid size-11 shrink-0 cursor-pointer place-items-center rounded-xl border border-border"
           >
-            <Share2 className="h-4 w-4" />
-            {t("referral.share", { defaultValue: "Havolani ulashish" })}
+            {copied === "code" ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
           </button>
           <button
             type="button"
             onClick={() => handleCopy(inviteUrl, "link")}
-            className="flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl border border-border py-3 text-sm font-bold transition-colors duration-200 hover:bg-muted/50"
+            aria-label={t("referral.copyLink", { defaultValue: "Havoladan nusxa" })}
+            className="grid size-11 shrink-0 cursor-pointer place-items-center rounded-xl border border-border"
           >
-            {copied === "link" ? (
-              <Check className="h-4 w-4 text-emerald-600" />
-            ) : (
-              <Copy className="h-4 w-4" />
-            )}
-            {t("referral.copyLink", { defaultValue: "Havoladan nusxa" })}
+            {copied === "link" ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
           </button>
         </div>
+        <p className="truncate text-[11px] text-muted-foreground">{inviteUrl}</p>
       </ProfileSubpageCard>
 
-      <ProfileSubpageCard>
-        <div className="flex items-center gap-3">
-          <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-muted">
-            <Users className="h-4 w-4" />
-          </div>
-          <div className="min-w-0 flex-1">
-            <p className="text-sm font-bold">
-              {t("referral.invitedCount", {
-                count: data.invite_count,
-                defaultValue: "{{count}} kishi taklif qilingan",
-              })}
-            </p>
-            <p className="mt-0.5 text-xs text-muted-foreground">
-              {t("referral.invitedHint", { defaultValue: "Kodingiz orqali qo'shilganlar soni." })}
-            </p>
-          </div>
-        </div>
-      </ProfileSubpageCard>
-
-      {refGenOn ? (
-        <ProfileSubpageCard className="space-y-1">
-          <div className="flex items-center gap-3">
-            <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-muted">
-              <Gift className="h-4 w-4" />
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="text-sm font-bold">1 do'st = 1 Morf AI generatsiya</p>
-              <p className="mt-0.5 text-xs text-muted-foreground">
-                Mavjud kreditlar: <span className="font-semibold text-foreground">{credits}</span>
-              </p>
-            </div>
-          </div>
-        </ProfileSubpageCard>
-      ) : null}
-
-      {invites.length > 0 ? (
-        <ProfileSubpageCard className="space-y-1">
-          <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-muted-foreground">
-            {t("referral.invitedList", { defaultValue: "Taklif qilganlaringiz" })}
-          </p>
+      <ProfileSubpageCard className="space-y-1">
+        <p className="text-[11px] font-bold uppercase tracking-[0.14em] text-muted-foreground">
+          {invites.length > 0
+            ? t("referral.invitedList", { defaultValue: "Taklif qilganlaringiz" })
+            : t("referral.emptyTitle", { defaultValue: "Hali do'st yo'q" })}
+        </p>
+        {invites.length > 0 ? (
           <ul className="divide-y divide-border">
             {invites.map((invitee) => (
               <InviteeRow key={invitee.id} invitee={invitee} />
             ))}
           </ul>
-        </ProfileSubpageCard>
-      ) : null}
+        ) : (
+          <p className="py-2 text-sm text-muted-foreground">
+            {t("referral.emptyHint", {
+              defaultValue: "Havolani yuboring. Do'st ro'yxatdan o'tsa, 1 ta generatsiya qo'shiladi.",
+            })}
+          </p>
+        )}
+      </ProfileSubpageCard>
+    </div>
+  );
+}
+
+function Stat({ value, label }: { value: string; label: string }) {
+  return (
+    <div className="rounded-xl bg-muted/50 px-2 py-2.5 text-center">
+      <p className="text-xl font-bold leading-none tabular-nums">{value}</p>
+      <p className="mt-1 text-[11px] font-medium text-muted-foreground">{label}</p>
     </div>
   );
 }

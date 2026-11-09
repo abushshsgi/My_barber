@@ -1,7 +1,8 @@
-"""Mijoz referal servisi — bonussiz attribution + xavfsiz kod generatsiyasi."""
+"""Mijoz referal servisi — 1 do'st = 1 try-on generatsiyasi."""
 
 from __future__ import annotations
 
+import logging
 import os
 import secrets
 
@@ -14,6 +15,7 @@ from .models import ReferralAttribution, User
 _CODE_ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789"
 _CODE_LENGTH = 8
 _MAX_ATTEMPTS = 8
+logger = logging.getLogger(__name__)
 
 
 def generate_referral_code() -> str:
@@ -86,6 +88,35 @@ def build_invite_url(code: str) -> str:
     return f"{user_app_public_base()}/auth?ref={quote(code, safe='')}"
 
 
+def _referee_display_name(user: User) -> str:
+    name = (getattr(user, "full_name", None) or "").strip()
+    if name:
+        return name
+    first = (getattr(user, "first_name", None) or "").strip()
+    return first or "Do'stingiz"
+
+
+def _notify_referrer_of_credit(referrer: User, referee: User) -> None:
+    name = _referee_display_name(referee)
+    try:
+        from notifications.utils import notify_user
+
+        notify_user(
+            referrer,
+            "referral_credit",
+            "1 ta bepul generatsiya",
+            f"Siz {name} ni taklif qilganingiz uchun 1 ta generatsiya bepul.",
+            payload={
+                "referee_id": referee.pk,
+                "referee_name": name,
+                "credits": 1,
+                "kind": "tryon",
+            },
+        )
+    except Exception:
+        logger.exception("Referral credit notification failed for user %s", referrer.pk)
+
+
 def apply_referral(*, new_user: User, code: object) -> ReferralAttribution | None:
     """Yangi user yaratilgandan so'ng referal kodni biriktirish.
 
@@ -114,20 +145,22 @@ def apply_referral(*, new_user: User, code: object) -> ReferralAttribution | Non
             User.objects.filter(pk=new_user.pk, referred_by__isnull=True).update(
                 referred_by=referrer
             )
-            # 1 do'st = 1 Morf AI generatsiya krediti (admin yoqgan bo'lsa)
+            granted_credit = False
             try:
                 from subscriptions.services import referral_generation_enabled
 
-                if referral_generation_enabled():
-                    User.objects.filter(pk=referrer.pk).update(
-                        morph_referral_credits=F("morph_referral_credits") + 1
-                    )
+                granted_credit = referral_generation_enabled()
             except Exception:
+                granted_credit = True
+            if granted_credit:
                 User.objects.filter(pk=referrer.pk).update(
                     morph_referral_credits=F("morph_referral_credits") + 1
                 )
             new_user.referred_by = referrer
-            return attribution
     except IntegrityError:
         # Referee allaqachon biriktirilgan — jim o'tkazamiz.
         return None
+
+    if granted_credit:
+        _notify_referrer_of_credit(referrer, new_user)
+    return attribution

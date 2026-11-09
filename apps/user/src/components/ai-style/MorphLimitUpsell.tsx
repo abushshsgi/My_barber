@@ -1,5 +1,5 @@
 import { useNavigate } from "@tanstack/react-router";
-import { ArrowRight, CheckCircle2, Loader2, ShieldCheck, Star, X } from "lucide-react";
+import { ArrowRight, CheckCircle2, Gift, Loader2, ShieldCheck, Star, X } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
@@ -306,6 +306,26 @@ function MorphPaywallBody({
               {t("morph.paywall.cancelAnytimeShort", { defaultValue: "Istalgan vaqtda bekor" })}
             </span>
           </div>
+          <button
+            type="button"
+            onClick={() => {
+              onClose();
+              void navigate({ to: "/referrals", search: { backTo: "/ai-style" } });
+            }}
+            className="flex w-full items-center gap-3 rounded-2xl bg-[#111111]/[0.04] px-3 py-2.5 text-left"
+          >
+            <span className="grid size-9 shrink-0 place-items-center rounded-full bg-white">
+              <Gift className="size-4" />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-[13px] font-extrabold leading-4">
+                {t("morph.paywall.inviteTitle", {
+                  defaultValue: "1 ta do'st taklif qiling — 1 ta generatsiya bepul",
+                })}
+              </span>
+            </span>
+            <ArrowRight className="size-4 shrink-0 text-[#737373]" />
+          </button>
           <button
             type="button"
             onClick={onCta}

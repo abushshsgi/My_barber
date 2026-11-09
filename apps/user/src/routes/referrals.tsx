@@ -21,7 +21,7 @@ function ReferralsPage() {
     <ProfileSubpageLayout
       title={t("referral.title", { defaultValue: "Do'stlarni taklif" })}
       subtitle={t("referral.subtitle", {
-        defaultValue: "Do'st va oilangizni MySaloon'ga taklif qiling.",
+        defaultValue: "1 do'st = 1 ta bepul try-on.",
       })}
       backTo={backTo}
     >

@@ -77,11 +77,18 @@ class ReferralServiceTests(TestCase):
 
         self.assertIsNotNone(attribution)
         referee.refresh_from_db()
+        referrer.refresh_from_db()
         self.assertEqual(referee.referred_by_id, referrer.pk)
+        self.assertEqual(referrer.morph_referral_credits, 1)
         self.assertEqual(
             ReferralAttribution.objects.filter(referrer=referrer, referee=referee).count(),
             1,
         )
+        from notifications.models import Notification
+
+        note = Notification.objects.filter(user=referrer, type="referral_credit").first()
+        self.assertIsNotNone(note)
+        self.assertIn("1 ta generatsiya bepul", note.body)
 
     def test_self_referral_blocked(self):
         user = _make_user("1112203")
@@ -131,10 +138,10 @@ class ReferralApiTests(TestCase):
         self.assertIn(f"ref={body['code']}", body["invite_url"])
         self.assertEqual(body["invite_count"], 0)
         self.assertEqual(body["invites"], [])
-        self.assertFalse(body["trial"]["eligible"])
-        self.assertFalse(body["trial"]["granted"])
+        self.assertEqual(body["referral_credits"], 0)
+        self.assertEqual(body["credit_per_invite"], 1)
 
-    def test_claim_trial_after_3_invites(self):
+    def test_each_invite_grants_one_generation_credit(self):
         referrer = _make_user("1112220")
         code = ensure_referral_code(referrer)
         for i in range(3):
@@ -146,28 +153,14 @@ class ReferralApiTests(TestCase):
         self.client.force_authenticate(user=referrer)
         before = self.client.get("/api/v1/users/me/referral/")
         self.assertEqual(before.status_code, 200)
-        self.assertTrue(before.json()["trial"]["eligible"])
-        self.assertFalse(before.json()["trial"]["granted"])
-        self.assertEqual(len(before.json()["invites"]), 3)
-
-        claim = self.client.post("/api/v1/users/me/referral/")
-        self.assertEqual(claim.status_code, 200, claim.json())
-        body = claim.json()
-        self.assertTrue(body["claimed"])
-        self.assertTrue(body["trial"]["granted"])
-        self.assertEqual(body["trial"]["plan"], "starter")
+        body = before.json()
+        self.assertEqual(body["invite_count"], 3)
+        self.assertEqual(body["referral_credits"], 3)
         self.assertEqual(len(body["invites"]), 3)
+        self.assertEqual(body["invites"][0]["full_name"], "Do'st 2")
 
-        again = self.client.post("/api/v1/users/me/referral/")
-        self.assertEqual(again.status_code, 200)
-        self.assertTrue(again.json()["already_granted"])
-        self.assertFalse(again.json()["claimed"])
-
-    def test_claim_trial_rejects_when_not_eligible(self):
-        user = _make_user("1112240")
-        self.client.force_authenticate(user=user)
-        res = self.client.post("/api/v1/users/me/referral/")
-        self.assertEqual(res.status_code, 400)
+        referrer.refresh_from_db()
+        self.assertEqual(referrer.morph_referral_credits, 3)
 
     def test_me_referral_requires_auth(self):
         res = self.client.get("/api/v1/users/me/referral/")

@@ -24,7 +24,7 @@ import type { Audience } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
 
 const TRY_ON_HERO = "/ai-style/try-on-selfie-hero.png";
-const UPLOAD_PANEL_HEIGHT = 292;
+const UPLOAD_PANEL_HEIGHT = 236;
 const UPLOAD_HISTORY_REVEAL_RATIO = 0.48;
 
 function getHistoryRevealHeight() {
@@ -178,7 +178,7 @@ function UploadActions({
         disabled={validating}
         onClick={onOpenCamera}
         onPointerDown={(event) => event.stopPropagation()}
-        className="inline-flex min-h-[68px] min-w-0 flex-1 flex-col items-center justify-center gap-1.5 rounded-[24px] bg-foreground px-2 py-2.5 text-[12px] font-bold leading-tight text-white active:scale-[0.98] disabled:opacity-60"
+        className="inline-flex min-h-[56px] min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-[20px] bg-foreground px-2 py-2 text-[12px] font-bold leading-tight text-white active:scale-[0.98] disabled:opacity-60"
       >
         <FaceScanMark className="h-7 w-7" />
         {t("aiStylePage.openCamera")}
@@ -188,7 +188,7 @@ function UploadActions({
         disabled={validating}
         onClick={onOpenGallery}
         onPointerDown={(event) => event.stopPropagation()}
-        className="inline-flex min-h-[68px] min-w-0 flex-1 flex-col items-center justify-center gap-1.5 rounded-[24px] border-[1.5px] border-dashed border-foreground/25 bg-transparent px-2 py-2.5 text-[12px] font-bold leading-tight text-foreground active:scale-[0.98] disabled:opacity-60"
+        className="inline-flex min-h-[56px] min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-[20px] border-[1.5px] border-dashed border-foreground/25 bg-transparent px-2 py-2 text-[12px] font-bold leading-tight text-foreground active:scale-[0.98] disabled:opacity-60"
       >
         <GalleryStackMark className="h-7 w-7 text-foreground" />
         {t("aiStylePage.pickFromGallery")}
@@ -480,7 +480,7 @@ export function AiStyleSplitLayout(props: AiStyleSplitLayoutProps) {
               onPanEnd={!historyOpen ? onPanelPanEnd : undefined}
               style={{ height: panelHeight }}
               className={cn(
-                "flex flex-col overflow-hidden rounded-t-[28px] bg-white px-4 pb-5 pt-3 text-left text-foreground",
+                "flex flex-col overflow-hidden rounded-t-[28px] bg-white px-4 pb-3 pt-2 text-left text-foreground",
                 !historyOpen && "cursor-grab touch-none active:cursor-grabbing",
               )}
             >
@@ -552,7 +552,7 @@ export function AiStyleSplitLayout(props: AiStyleSplitLayoutProps) {
                       initial={{ opacity: 0, y: 16 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.28, duration: 0.5, ease: "easeOut" }}
-                      className="mt-4"
+                      className="mt-2"
                     >
                       <UploadActions
                         onOpenCamera={props.openCamera}

@@ -81,6 +81,20 @@ def _referral_credits(user: User) -> int:
     return _raw_referral_credits(user)
 
 
+def _spend_referral_credit(user: User) -> bool:
+    if not referral_generation_enabled():
+        return False
+    from django.db.models import F
+
+    updated = User.objects.filter(pk=user.pk, morph_referral_credits__gt=0).update(
+        morph_referral_credits=F("morph_referral_credits") - 1
+    )
+    if not updated:
+        return False
+    user.refresh_from_db(fields=["morph_referral_credits"])
+    return True
+
+
 def free_tryon_available(user: User) -> bool:
     """Bir martalik bepul try-on o'chirilgan — faqat obuna yoki referal."""
     return False
@@ -1082,30 +1096,33 @@ def check_morph_entitlement(*, user: User, kind: str) -> str | None:
             return f"Oylik Morf AI Studio limiti tugadi ({limit}/{limit}). Tarifni yangilang."
         return None
 
-    # tryon
+    # tryon — tarif kvotasi tugasa ham 1 referal krediti bitta generatsiyani ochadi.
+    credits = _referral_credits(user)
     if sub:
         usage = align_usage_to_plan(user, sub)
         limit = _quota_int(quota_for_subscription(sub), "morph_ai_monthly")
+        if limit > 0 and usage.morph_ai_used < limit:
+            return None
+        if credits > 0:
+            return None
         if limit <= 0:
             return "Bu reja Morf AI generatsiyasini qo'llab-quvvatlamaydi. Tarifni yangilang."
-        if usage.morph_ai_used >= limit:
-            log_event(
-                action=SubscriptionEvent.Action.LIMIT_HIT,
-                user=user,
-                subscription=sub,
-                detail={"kind": "morph_ai", "used": usage.morph_ai_used, "limit": limit},
+        log_event(
+            action=SubscriptionEvent.Action.LIMIT_HIT,
+            user=user,
+            subscription=sub,
+            detail={"kind": "morph_ai", "used": usage.morph_ai_used, "limit": limit},
+        )
+        return (
+            f"Oylik Morf AI limiti tugadi ({limit}/{limit}). "
+            + (
+                "Tarifni yangilang yoki do'st taklif qilib kredit oling."
+                if referral_generation_enabled()
+                else "Tarifni yangilang."
             )
-            return (
-                f"Oylik Morf AI limiti tugadi ({limit}/{limit}). "
-                + (
-                    "Tarifni yangilang yoki do'st taklif qilib kredit oling."
-                    if referral_generation_enabled()
-                    else "Tarifni yangilang."
-                )
-            )
-        return None
+        )
 
-    if _referral_credits(user) > 0:
+    if credits > 0:
         return None
     return _no_subscription_message()
 
@@ -1114,14 +1131,17 @@ def check_morph_entitlement(*, user: User, kind: str) -> str | None:
 def record_morph_usage(*, user: User, kind: str) -> None:
     if kind not in ("tryon", "studio"):
         return
-    from django.db.models import F
 
     sub = get_active_subscription(user)
     free_used = False
     if kind == "tryon" and sub:
         usage = align_usage_to_plan(user, sub)
-        usage.morph_ai_used = int(usage.morph_ai_used or 0) + 1
-        usage.save(update_fields=["morph_ai_used", "updated_at"])
+        limit = _quota_int(quota_for_subscription(sub), "morph_ai_monthly")
+        if limit > 0 and int(usage.morph_ai_used or 0) < limit:
+            usage.morph_ai_used = int(usage.morph_ai_used or 0) + 1
+            usage.save(update_fields=["morph_ai_used", "updated_at"])
+        elif not _spend_referral_credit(user):
+            return
     elif kind == "tryon":
         start, end = current_period_bounds()
         usage, _ = SubscriptionUsagePeriod.objects.select_for_update().get_or_create(
@@ -1129,14 +1149,7 @@ def record_morph_usage(*, user: User, kind: str) -> None:
             period_start=start,
             defaults={"period_end": end},
         )
-        if referral_generation_enabled():
-            updated = User.objects.filter(pk=user.pk, morph_referral_credits__gt=0).update(
-                morph_referral_credits=F("morph_referral_credits") - 1
-            )
-            if not updated:
-                return
-            user.refresh_from_db(fields=["morph_referral_credits"])
-        else:
+        if not _spend_referral_credit(user):
             return
     elif sub:
         usage = align_usage_to_plan(user, sub)
