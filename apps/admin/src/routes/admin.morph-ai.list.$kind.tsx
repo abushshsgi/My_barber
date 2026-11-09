@@ -98,20 +98,22 @@ function formatUsd(raw: unknown): string {
   return `$${n.toFixed(4)}`;
 }
 
-function formatTokens(n: unknown): string {
-  const v = typeof n === "number" ? n : Number(n || 0);
-  if (v >= 1_000_000) return `${(v / 1_000_000).toFixed(2)}M`;
-  if (v >= 1_000) return `${(v / 1_000).toFixed(1)}K`;
-  return v.toLocaleString();
-}
-
 function kindLabel(kind: unknown): string {
   const k = String(kind || "");
   if (k === "tryon") return "Try-on";
   if (k === "analyze") return "Tahlil";
   if (k === "face_check") return "Yuz tekshiruv";
   if (k === "studio") return "Studio";
+  if (k === "chat") return "Chat";
   return k || "—";
+}
+
+function sourceLabel(raw: unknown): string {
+  const v = String(raw || "");
+  if (v === "runware") return "Runware";
+  if (v === "gemini") return "Gemini";
+  if (v === "none") return "Pul yo'q";
+  return v || "—";
 }
 
 function GalleryThumb({ src, alt }: { src: string | null; alt: string }) {
@@ -260,9 +262,8 @@ function MorphAiListPage() {
                       <TableHead>User</TableHead>
                       <TableHead>Tur</TableHead>
                       <TableHead>Uslub</TableHead>
-                      <TableHead className="text-right">In</TableHead>
-                      <TableHead className="text-right">Out</TableHead>
-                      <TableHead className="text-right">Token</TableHead>
+                      <TableHead>Qayerdan</TableHead>
+                      <TableHead>Hisob</TableHead>
                       <TableHead className="text-right">Narx</TableHead>
                       <TableHead>Holat</TableHead>
                     </>
@@ -272,10 +273,10 @@ function MorphAiListPage() {
                       <TableHead>Foydalanuvchi</TableHead>
                       <TableHead className="text-right">Generatsiya</TableHead>
                       <TableHead className="text-right">Try-on</TableHead>
-                      <TableHead className="text-right">Studio</TableHead>
-                      <TableHead className="text-right">Token</TableHead>
-                      <TableHead className="text-right">In / Out</TableHead>
-                      <TableHead className="text-right">Xarajat</TableHead>
+                      <TableHead className="text-right">Tahlil</TableHead>
+                      <TableHead className="text-right">Runware</TableHead>
+                      <TableHead className="text-right">Gemini</TableHead>
+                      <TableHead className="text-right">Jami</TableHead>
                       <TableHead className="text-right">Oxirgi</TableHead>
                     </>
                   ) : null}
@@ -308,7 +309,8 @@ function MorphAiListPage() {
                       <TableHead>Sana</TableHead>
                       <TableHead className="text-right">Generatsiya</TableHead>
                       <TableHead className="text-right">Try-on</TableHead>
-                      <TableHead className="text-right">Token</TableHead>
+                      <TableHead className="text-right">Runware</TableHead>
+                      <TableHead className="text-right">Gemini</TableHead>
                       <TableHead className="text-right">USD</TableHead>
                       <TableHead className="text-right">Userlar</TableHead>
                     </>
@@ -333,14 +335,11 @@ function MorphAiListPage() {
                         <TableCell className="max-w-[160px] truncate text-sm">
                           {String(row.style_title || "—")}
                         </TableCell>
-                        <TableCell className="text-right tabular-nums text-xs">
-                          {formatTokens(row.prompt_tokens)}
+                        <TableCell>
+                          <Badge variant="outline">{sourceLabel(row.charge_from)}</Badge>
                         </TableCell>
-                        <TableCell className="text-right tabular-nums text-xs">
-                          {formatTokens(row.candidates_tokens)}
-                        </TableCell>
-                        <TableCell className="text-right tabular-nums">
-                          {formatTokens(row.total_tokens)}
+                        <TableCell className="max-w-[240px] text-xs text-muted-foreground">
+                          {String(row.price_note || "—")}
                         </TableCell>
                         <TableCell className="text-right font-medium tabular-nums">
                           {formatUsd(row.cost_usd)}
@@ -375,13 +374,9 @@ function MorphAiListPage() {
                           {Number(u.generations || 0)}
                         </TableCell>
                         <TableCell className="text-right tabular-nums">{Number(u.tryon || 0)}</TableCell>
-                        <TableCell className="text-right tabular-nums">{Number(u.studio || 0)}</TableCell>
-                        <TableCell className="text-right tabular-nums">
-                          {formatTokens(u.tokens)}
-                        </TableCell>
-                        <TableCell className="text-right text-xs tabular-nums text-muted-foreground">
-                          {formatTokens(u.prompt_tokens)} / {formatTokens(u.candidates_tokens)}
-                        </TableCell>
+                        <TableCell className="text-right tabular-nums">{Number(u.analyze || 0)}</TableCell>
+                        <TableCell className="text-right tabular-nums">{formatUsd(u.runware_usd)}</TableCell>
+                        <TableCell className="text-right tabular-nums">{formatUsd(u.gemini_usd)}</TableCell>
                         <TableCell className="text-right font-medium tabular-nums">
                           {formatUsd(u.cost_usd)}
                         </TableCell>
@@ -460,9 +455,8 @@ function MorphAiListPage() {
                           {Number(row.generations || 0)}
                         </TableCell>
                         <TableCell className="text-right tabular-nums">{Number(row.tryon || 0)}</TableCell>
-                        <TableCell className="text-right tabular-nums">
-                          {formatTokens(row.tokens)}
-                        </TableCell>
+                        <TableCell className="text-right tabular-nums">{formatUsd(row.runware_usd)}</TableCell>
+                        <TableCell className="text-right tabular-nums">{formatUsd(row.gemini_usd)}</TableCell>
                         <TableCell className="text-right tabular-nums">
                           {formatUsd(row.cost_usd)}
                         </TableCell>

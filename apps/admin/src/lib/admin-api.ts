@@ -3684,12 +3684,17 @@ export type MorphAiAnalytics = {
     analyze: number;
     face_check: number;
     studio: number;
+    chat?: number;
     unique_users: number;
     total_tokens: number;
     prompt_tokens: number;
     candidates_tokens: number;
     total_cost_usd: string;
     total_cost_uzs?: number;
+    runware_cost_usd?: string;
+    runware_cost_uzs?: number;
+    gemini_cost_usd?: string;
+    gemini_cost_uzs?: number;
     usd_to_uzs_rate?: number;
     avg_cost_usd: string;
     avg_tokens: number;
@@ -3699,16 +3704,35 @@ export type MorphAiAnalytics = {
     tryon_max_cost_usd: string;
     tryon_total_cost_usd: string;
     tryon_total_tokens: number;
+    repriced_tryon?: number;
   };
+  pricing?: {
+    tryon_provider: string;
+    analyze_provider: string;
+    chat_provider: string;
+    runware_list_usd: string;
+    repriced_tryon: number;
+  };
+  billing?: Array<{
+    key: string;
+    label: string;
+    detail: string;
+    calls: number;
+    cost_usd: string;
+    cost_uzs: number;
+  }>;
   daily: Array<{
     date: string;
     generations: number;
     tryon: number;
     analyze: number;
     studio?: number;
+    chat?: number;
     tokens: number;
     cost_usd: string;
     cost_uzs?: number;
+    runware_usd?: string;
+    gemini_usd?: string;
     users: number;
   }>;
   top_users: Array<{
@@ -3720,11 +3744,14 @@ export type MorphAiAnalytics = {
     tryon: number;
     analyze: number;
     studio: number;
+    chat?: number;
     tokens: number;
     prompt_tokens: number;
     candidates_tokens: number;
     cost_usd: string;
     cost_uzs?: number;
+    runware_usd?: string;
+    gemini_usd?: string;
     last_at: string | null;
   }>;
   recent: Array<{
@@ -3742,6 +3769,14 @@ export type MorphAiAnalytics = {
     candidates_tokens: number;
     total_tokens: number;
     cost_usd: string;
+    cost_uzs?: number;
+    legacy_cost_usd?: string;
+    charge_from?: string;
+    activity?: string;
+    price_basis?: string;
+    price_note?: string;
+    repriced?: boolean;
+    bucket?: string;
     tokens_estimated: boolean;
     latency_ms: number;
     error_detail: string;
@@ -3799,6 +3834,8 @@ export type MorphAiSettings = {
   gallery_public: boolean;
   referral_generation_enabled: boolean;
   runtime_model: string;
+  tryon_model?: string;
+  tryon_provider?: string;
   updated_at: string | null;
 };
 

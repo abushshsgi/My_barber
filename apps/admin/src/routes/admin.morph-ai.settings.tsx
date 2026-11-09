@@ -63,7 +63,9 @@ function MorphSettingsPage() {
       <div>
         <h1 className="font-heading text-2xl font-semibold">Sozlamalar / A/B</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Prompt variantlari, model preferensiya va success-rate alert. Runtime model:{" "}
+          Try-on: Runware{" "}
+          <span className="font-medium text-foreground">{q.data.tryon_model || "runware:400@2"}</span>
+          . Tahlil modeli:{" "}
           <span className="font-medium text-foreground">{q.data.runtime_model || "—"}</span>
         </p>
       </div>
@@ -87,7 +89,7 @@ function MorphSettingsPage() {
         </label>
         <label className="space-y-2 text-sm">
           <span className="font-medium">Preferred model (ixtiyoriy)</span>
-          <Input value={model} onChange={(e) => setModel(e.target.value)} placeholder={q.data.runtime_model} />
+          <Input value={model} onChange={(e) => setModel(e.target.value)} placeholder={q.data.tryon_model || "runware:400@2"} />
         </label>
         <label className="space-y-2 text-sm">
           <span className="font-medium">Success rate alert (foizdan past)</span>

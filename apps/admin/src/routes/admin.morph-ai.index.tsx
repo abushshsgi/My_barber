@@ -97,10 +97,18 @@ function dayLabel(date: string): string {
 }
 
 const chartConfig = {
-  cost: { label: "Xarajat ($)", color: "hsl(142 55% 38%)" },
+  cost: { label: "Jami ($)", color: "hsl(142 55% 38%)" },
+  runware: { label: "Runware ($)", color: "hsl(142 55% 38%)" },
+  gemini: { label: "Gemini ($)", color: "hsl(38 92% 50%)" },
   generations: { label: "Generatsiya", color: "hsl(221 70% 50%)" },
   tokens: { label: "Token", color: "hsl(38 92% 50%)" },
 };
+
+function sourceLabel(chargeFrom?: string): string {
+  if (chargeFrom === "runware") return "Runware";
+  if (chargeFrom === "gemini") return "Gemini";
+  return "Pul yo'q";
+}
 
 function MorphAiPage() {
   const { rangeKey, setRangeKey, range } = useStatsRange("30d");
@@ -112,6 +120,11 @@ function MorphAiPage() {
     cost_usd: string;
     total_tokens: number;
     created_at: string;
+    price_note: string;
+    provider: string;
+    model: string;
+    legacy_cost_usd: string;
+    error_detail: string;
   } | null>(null);
 
   const q = useQuery({
@@ -134,6 +147,8 @@ function MorphAiPage() {
         ...row,
         label: dayLabel(row.date),
         cost: Number(row.cost_usd || 0),
+        runware: Number(row.runware_usd || 0),
+        gemini: Number(row.gemini_usd || 0),
       })),
     [d?.daily],
   );
@@ -142,7 +157,7 @@ function MorphAiPage() {
     <div className="space-y-6">
       <StatsPageHeader
         title="Morf AI"
-        description="Try-on, studio va chat — kim qancha token sarflayapti, USD va so'm xarajat."
+        description="Try-on narxi Runware hisobidan. Tahlil va chat Gemini tokenidan. Har bir qatorda pul qayerdan olingani ko'rinadi."
         rangeKey={rangeKey}
         onRangeChange={setRangeKey}
         onExport={async () => {
@@ -216,7 +231,7 @@ function MorphAiPage() {
           <KPICard
             label="Muvaffaqiyat"
             value={`${d.summary.success_rate}%`}
-            hint={`${d.summary.success} / ${d.summary.failed} xato`}
+            hint={`${d.summary.success} muvaffaqiyat · ${d.summary.failed} xato`}
           />
           <KPICard label="Unique user" value={d.summary.unique_users.toLocaleString()} icon={Users} />
           <KPICard
@@ -229,16 +244,34 @@ function MorphAiPage() {
             label="Jami xarajat"
             value={formatUsd(d.summary.total_cost_usd)}
             icon={Coins}
-            hint={`${formatUzs(d.summary.total_cost_uzs)} · o'rtacha ${formatUsd(d.summary.avg_cost_usd)}`}
+            hint={`${formatUzs(d.summary.total_cost_uzs)} · Runware ${formatUsd(d.summary.runware_cost_usd)} · Gemini ${formatUsd(d.summary.gemini_cost_usd)}`}
           />
           <KPICard
             label="Studio + Try-on"
             value={(d.summary.tryon + (d.summary.studio ?? 0)).toLocaleString()}
-            hint={`Try-on ${d.summary.tryon} · Studio ${d.summary.studio ?? 0} · Tahlil ${d.summary.analyze}`}
+            hint={`Try-on ${d.summary.tryon} · Tahlil ${d.summary.analyze} · Chat ${d.summary.chat ?? 0} · Studio ${d.summary.studio ?? 0}`}
             icon={Zap}
           />
         </div>
       )}
+
+      {d?.billing && d.billing.length > 0 ? (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          {d.billing.map((row) => (
+            <KPICard
+              key={row.key}
+              label={row.label}
+              value={row.key === "unbilled" ? row.calls.toLocaleString() : formatUsd(row.cost_usd)}
+              hint={
+                row.key === "unbilled"
+                  ? row.detail
+                  : `${row.calls.toLocaleString()} chaqiruv · ${formatUzs(row.cost_uzs)} · ${row.detail}`
+              }
+              icon={row.key === "runware" ? Sparkles : row.key.startsWith("gemini") ? Cpu : Activity}
+            />
+          ))}
+        </div>
+      ) : null}
 
       {/* Charts */}
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
@@ -246,7 +279,12 @@ function MorphAiPage() {
           <div className="flex flex-wrap items-end justify-between gap-3">
             <div>
               <h2 className="font-heading text-lg font-semibold">Kunlik xarajat</h2>
-              <p className="mt-1 text-sm text-muted-foreground">USD — Gemini / Morf AI chaqiruvlari</p>
+              <p className="mt-1 text-sm text-muted-foreground">
+                USD — yashil Runware generatsiya, sariq Gemini tahlil va chat
+                {d?.pricing?.repriced_tryon
+                  ? ` · ${d.pricing.repriced_tryon} ta eski try-on Gemini token o'rniga Runware narxnomasida (${formatUsd(d.pricing.runware_list_usd)})`
+                  : ""}
+              </p>
             </div>
           </div>
           {q.isError ? null : q.isLoading || !d ? (
@@ -257,21 +295,26 @@ function MorphAiPage() {
             <>
               <ChartContainer config={chartConfig} className="mt-4 aspect-auto h-[260px] w-full">
                 <AreaChart data={dailyChart} margin={{ top: 12, right: 12, left: -8, bottom: 0 }}>
-                  <defs>
-                    <linearGradient id="fillMorphCost" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="var(--color-cost)" stopOpacity={0.35} />
-                      <stop offset="100%" stopColor="var(--color-cost)" stopOpacity={0.02} />
-                    </linearGradient>
-                  </defs>
                   <CartesianGrid vertical={false} strokeDasharray="3 3" />
                   <XAxis dataKey="label" tickLine={false} axisLine={false} fontSize={12} />
                   <YAxis tickLine={false} axisLine={false} fontSize={12} width={48} />
                   <ChartTooltip content={<ChartTooltipContent />} />
                   <Area
                     type="monotone"
-                    dataKey="cost"
-                    stroke="var(--color-cost)"
-                    fill="url(#fillMorphCost)"
+                    dataKey="runware"
+                    stackId="cost"
+                    stroke="var(--color-runware)"
+                    fill="var(--color-runware)"
+                    fillOpacity={0.35}
+                    strokeWidth={2}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="gemini"
+                    stackId="cost"
+                    stroke="var(--color-gemini)"
+                    fill="var(--color-gemini)"
+                    fillOpacity={0.28}
                     strokeWidth={2}
                   />
                 </AreaChart>
@@ -282,7 +325,9 @@ function MorphAiPage() {
                     <TableRow>
                       <TableHead>Sana</TableHead>
                       <TableHead className="text-right">Generatsiya</TableHead>
-                      <TableHead className="text-right">USD</TableHead>
+                      <TableHead className="text-right">Runware</TableHead>
+                      <TableHead className="text-right">Gemini</TableHead>
+                      <TableHead className="text-right">Jami</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -290,6 +335,8 @@ function MorphAiPage() {
                       <TableRow key={row.date}>
                         <TableCell>{row.date}</TableCell>
                         <TableCell className="text-right tabular-nums">{row.generations}</TableCell>
+                        <TableCell className="text-right tabular-nums">{formatUsd(row.runware_usd)}</TableCell>
+                        <TableCell className="text-right tabular-nums">{formatUsd(row.gemini_usd)}</TableCell>
                         <TableCell className="text-right tabular-nums">
                           {formatUsd(row.cost_usd)}
                         </TableCell>
@@ -330,7 +377,7 @@ function MorphAiPage() {
           <div>
             <h2 className="font-heading text-lg font-semibold">Kim qancha xarajat qilmoqda</h2>
             <p className="mt-1 text-sm text-muted-foreground">
-              Token va USD bo'yicha eng ko'p ishlatgan foydalanuvchilar
+              Runware generatsiya va Gemini tahlil/chat alohida
             </p>
           </div>
         </div>
@@ -350,10 +397,10 @@ function MorphAiPage() {
                   <TableHead>Foydalanuvchi</TableHead>
                   <TableHead className="text-right">Generatsiya</TableHead>
                   <TableHead className="text-right">Try-on</TableHead>
-                  <TableHead className="text-right">Studio</TableHead>
-                  <TableHead className="text-right">Token</TableHead>
-                  <TableHead className="text-right">In / Out</TableHead>
-                  <TableHead className="text-right">Xarajat</TableHead>
+                  <TableHead className="text-right">Tahlil</TableHead>
+                  <TableHead className="text-right">Runware</TableHead>
+                  <TableHead className="text-right">Gemini</TableHead>
+                  <TableHead className="text-right">Jami</TableHead>
                   <TableHead className="text-right">Oxirgi</TableHead>
                 </TableRow>
               </TableHeader>
@@ -376,11 +423,9 @@ function MorphAiPage() {
                     </TableCell>
                     <TableCell className="text-right tabular-nums">{u.generations}</TableCell>
                     <TableCell className="text-right tabular-nums">{u.tryon}</TableCell>
-                    <TableCell className="text-right tabular-nums">{u.studio ?? 0}</TableCell>
-                    <TableCell className="text-right tabular-nums">{formatTokens(u.tokens)}</TableCell>
-                    <TableCell className="text-right text-xs tabular-nums text-muted-foreground">
-                      {formatTokens(u.prompt_tokens ?? 0)} / {formatTokens(u.candidates_tokens ?? 0)}
-                    </TableCell>
+                    <TableCell className="text-right tabular-nums">{u.analyze ?? 0}</TableCell>
+                    <TableCell className="text-right tabular-nums">{formatUsd(u.runware_usd)}</TableCell>
+                    <TableCell className="text-right tabular-nums">{formatUsd(u.gemini_usd)}</TableCell>
                     <TableCell className="text-right font-medium tabular-nums">
                       {formatCost(u.cost_usd, u.cost_uzs)}
                     </TableCell>
@@ -402,7 +447,7 @@ function MorphAiPage() {
       <div className="rounded-2xl border border-border bg-card p-5 shadow-card sm:p-6">
         <h2 className="font-heading text-lg font-semibold">So'nggi generatsiyalar</h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          Eng oxirgi 10 ta — to'liq tarix uchun Barchasi
+          Eng oxirgi 10 ta. Narx ustida qaysi provayder va nima uchun pul olingani yoziladi.
         </p>
         {q.isError ? null : q.isLoading || !d ? (
           <CardSkeleton className="mt-4 h-48" />
@@ -421,9 +466,8 @@ function MorphAiPage() {
                   <TableHead>User</TableHead>
                   <TableHead>Tur</TableHead>
                   <TableHead>Uslub</TableHead>
-                  <TableHead className="text-right">In</TableHead>
-                  <TableHead className="text-right">Out</TableHead>
-                  <TableHead className="text-right">Token</TableHead>
+                  <TableHead>Qayerdan</TableHead>
+                  <TableHead>Hisob</TableHead>
                   <TableHead className="text-right">Narx</TableHead>
                   <TableHead>Holat</TableHead>
                 </TableRow>
@@ -442,6 +486,11 @@ function MorphAiPage() {
                         cost_usd: row.cost_usd,
                         total_tokens: row.total_tokens,
                         created_at: row.created_at,
+                        price_note: row.price_note || "",
+                        provider: row.provider || "",
+                        model: row.model || "",
+                        legacy_cost_usd: row.legacy_cost_usd || row.cost_usd,
+                        error_detail: row.error_detail || "",
                       })
                     }
                   >
@@ -455,20 +504,19 @@ function MorphAiPage() {
                     <TableCell className="max-w-[160px] truncate text-sm">
                       {row.style_title || "—"}
                     </TableCell>
-                    <TableCell className="text-right tabular-nums text-xs">
-                      {formatTokens(row.prompt_tokens)}
+                    <TableCell>
+                      <Badge variant="outline">{sourceLabel(row.charge_from)}</Badge>
                     </TableCell>
-                    <TableCell className="text-right tabular-nums text-xs">
-                      {formatTokens(row.candidates_tokens)}
-                    </TableCell>
-                    <TableCell className="text-right tabular-nums">
-                      {formatTokens(row.total_tokens)}
-                      {row.tokens_estimated ? (
-                        <span className="ml-1 text-[10px] text-muted-foreground">~</span>
-                      ) : null}
+                    <TableCell className="max-w-[220px] text-xs text-muted-foreground">
+                      {row.price_note || (row.total_tokens ? `${formatTokens(row.total_tokens)} token` : "—")}
                     </TableCell>
                     <TableCell className="text-right font-medium tabular-nums">
-                      {formatUsd(row.cost_usd)}
+                      <div>{formatUsd(row.cost_usd)}</div>
+                      {row.repriced && row.legacy_cost_usd ? (
+                        <div className="text-[10px] font-normal text-muted-foreground">
+                          eski {formatUsd(row.legacy_cost_usd)}
+                        </div>
+                      ) : null}
                     </TableCell>
                     <TableCell>
                       <Badge
@@ -493,12 +541,22 @@ function MorphAiPage() {
             <DialogTitle className="font-heading">Generatsiya prompti</DialogTitle>
             <DialogDescription>
               {promptRow
-                ? `${promptRow.user_name} · ${kindLabel(promptRow.kind)} · ${formatUsd(promptRow.cost_usd)} · ${formatTokens(promptRow.total_tokens)} token`
+                ? `${promptRow.user_name} · ${kindLabel(promptRow.kind)} · ${formatUsd(promptRow.cost_usd)} · ${promptRow.price_note || `${formatTokens(promptRow.total_tokens)} token`}`
                 : ""}
             </DialogDescription>
           </DialogHeader>
-          {promptRow?.style_title ? (
-            <p className="text-sm text-muted-foreground">Uslub: {promptRow.style_title}</p>
+          {promptRow ? (
+            <div className="space-y-1 text-sm text-muted-foreground">
+              {promptRow.style_title ? <p>Uslub: {promptRow.style_title}</p> : null}
+              <p>
+                Model: {promptRow.model || "—"} · Provayder: {promptRow.provider || "—"}
+                {promptRow.total_tokens ? ` · ${formatTokens(promptRow.total_tokens)} token` : ""}
+              </p>
+              {promptRow.legacy_cost_usd && promptRow.legacy_cost_usd !== promptRow.cost_usd ? (
+                <p>Bazadagi eski hisob: {formatUsd(promptRow.legacy_cost_usd)}</p>
+              ) : null}
+              {promptRow.error_detail ? <p>Xato: {promptRow.error_detail}</p> : null}
+            </div>
           ) : null}
           <pre className="max-h-[50vh] overflow-auto rounded-xl border border-border bg-muted/30 p-4 text-xs leading-relaxed whitespace-pre-wrap">
             {promptRow?.prompt}
