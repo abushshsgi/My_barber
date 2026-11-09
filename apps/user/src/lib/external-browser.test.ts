@@ -2,9 +2,11 @@ import { describe, expect, it } from "vitest";
 import {
   buildAndroidChromeIntent,
   buildExternalPageUrl,
+  buildIosExternalUrl,
   detectInAppBrowser,
   openExternalBrowser,
   resolveExternalPageTarget,
+  tryBuildIosExternalUrl,
 } from "./external-browser";
 import { getStashedReferralCode, rememberRedirectTarget } from "./referral-storage";
 
@@ -119,13 +121,34 @@ describe("external browser url", () => {
     expect(intent).not.toContain("market://");
   });
 
-  it("does not invent a Safari scheme on iOS", () => {
+  it("opens Safari on iOS and keeps the page path and query", () => {
+    const page = "https://mysaloon.uz/ai-style?utm_source=ig";
     const assigned: string[] = [];
-    const result = openExternalBrowser("ios", "https://mysaloon.uz/ai-style?utm_source=ig", (url) =>
-      assigned.push(url),
+    const result = openExternalBrowser("ios", page, (url) => assigned.push(url));
+    expect(buildIosExternalUrl(page, "safari")).toBe("x-safari-https://mysaloon.uz/ai-style?utm_source=ig");
+    expect(result).toEqual({
+      status: "intent-dispatched",
+      intentUrl: "x-safari-https://mysaloon.uz/ai-style?utm_source=ig",
+    });
+    expect(assigned).toEqual(["x-safari-https://mysaloon.uz/ai-style?utm_source=ig"]);
+  });
+
+  it("opens Chrome on iOS with the googlechromes scheme", () => {
+    const page = "https://mysaloon.uz/ai-style?utm_source=ig#look";
+    const assigned: string[] = [];
+    const result = openExternalBrowser("ios", page, (url) => assigned.push(url), "chrome");
+    expect(buildIosExternalUrl(page, "chrome")).toBe(
+      "googlechromes://mysaloon.uz/ai-style?utm_source=ig#look",
     );
-    expect(result).toEqual({ status: "instructions", platform: "ios" });
-    expect(assigned).toEqual([]);
+    expect(buildIosExternalUrl("http://mysaloon.uz/auth", "chrome")).toBe(
+      "googlechrome://mysaloon.uz/auth",
+    );
+    expect(buildIosExternalUrl("http://mysaloon.uz/auth", "safari")).toBe(
+      "x-safari-http://mysaloon.uz/auth",
+    );
+    expect(result.status).toBe("intent-dispatched");
+    expect(assigned).toEqual(["googlechromes://mysaloon.uz/ai-style?utm_source=ig#look"]);
+    expect(tryBuildIosExternalUrl("javascript:alert(1)", "safari")).toBeNull();
   });
 
   it("unwraps the login return path so the campaign page opens in Chrome", () => {

@@ -37,7 +37,9 @@ export type InAppBrowserInfo = {
 
 export type ExternalBrowserOpenResult =
   | { status: "intent-dispatched"; intentUrl: string }
-  | { status: "instructions"; platform: "ios" | "other" };
+  | { status: "instructions"; platform: "other" };
+
+export type IosExternalBrowser = "safari" | "chrome";
 
 export function detectInAppSource(userAgent: string): InAppBrowserSource | null {
   const ua = userAgent || "";
@@ -206,13 +208,45 @@ export function tryBuildAndroidChromeIntent(pageUrl: string): string | null {
  * does not send the user to the Play Store.
  */
 export function buildAndroidChromeIntent(pageUrl: string): string {
+  const url = assertHttpUrl(pageUrl);
+  const hierarchical = `${url.host}${url.pathname}${url.search}`.replace(/;/g, "%3B");
+  const fallback = encodeURIComponent(url.toString());
+  return `intent://${hierarchical}#Intent;action=android.intent.action.VIEW;scheme=https;package=com.android.chrome;S.browser_fallback_url=${fallback};end`;
+}
+
+/**
+ * iOS handoff. These schemes only leave the in-app webview from a real link
+ * tap. Safari uses Apple's x-safari scheme; Chrome uses the documented
+ * googlechrome(s) scheme. The https:// prefix is replaced, not repeated.
+ */
+export function buildIosExternalUrl(pageUrl: string, browser: IosExternalBrowser): string {
+  const url = assertHttpUrl(pageUrl);
+  const hierarchical = `${url.host}${url.pathname}${url.search}${url.hash}`;
+  if (browser === "chrome") {
+    const scheme = url.protocol === "https:" ? "googlechromes" : "googlechrome";
+    return `${scheme}://${hierarchical}`;
+  }
+  const scheme = url.protocol === "https:" ? "x-safari-https" : "x-safari-http";
+  return `${scheme}://${hierarchical}`;
+}
+
+export function tryBuildIosExternalUrl(
+  pageUrl: string,
+  browser: IosExternalBrowser,
+): string | null {
+  try {
+    return buildIosExternalUrl(pageUrl, browser);
+  } catch {
+    return null;
+  }
+}
+
+function assertHttpUrl(pageUrl: string): URL {
   const url = new URL(pageUrl);
   if (url.protocol !== "https:" && url.protocol !== "http:") {
     throw new Error("External browser URL must be http(s).");
   }
-  const hierarchical = `${url.host}${url.pathname}${url.search}`.replace(/;/g, "%3B");
-  const fallback = encodeURIComponent(url.toString());
-  return `intent://${hierarchical}#Intent;action=android.intent.action.VIEW;scheme=https;package=com.android.chrome;S.browser_fallback_url=${fallback};end`;
+  return url;
 }
 
 export function openExternalBrowser(
@@ -222,13 +256,19 @@ export function openExternalBrowser(
     if (typeof window === "undefined") return;
     window.location.assign(url);
   },
+  browser: IosExternalBrowser = "safari",
 ): ExternalBrowserOpenResult {
   if (os === "android") {
     const intentUrl = buildAndroidChromeIntent(pageUrl);
     assign(intentUrl);
     return { status: "intent-dispatched", intentUrl };
   }
-  return { status: "instructions", platform: os === "ios" ? "ios" : "other" };
+  if (os === "ios") {
+    const intentUrl = buildIosExternalUrl(pageUrl, browser);
+    assign(intentUrl);
+    return { status: "intent-dispatched", intentUrl };
+  }
+  return { status: "instructions", platform: "other" };
 }
 
 export async function copyPageUrl(url: string): Promise<boolean> {
