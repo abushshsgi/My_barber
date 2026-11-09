@@ -105,7 +105,7 @@ export function AiStyleResultsPage({
                   const loading = tryOnLoadingId === tryOnCacheKey(item.id, menPersonaId);
                   return (
                     <article key={item.id} className="relative w-full shrink-0 snap-center bg-black">
-                      <div className="relative h-[calc(100dvh-var(--mobile-dock,0px))] w-full lg:h-[min(78dvh,760px)]">
+                      <div className="relative h-[calc(100dvh-var(--mobile-dock,0px)-var(--maint-banner-offset,0px))] w-full lg:h-[min(78dvh,760px)]">
                         <img
                           key={preview || item.imageUrl}
                           src={preview || item.imageUrl}

@@ -375,7 +375,7 @@ export function MorphChatAppView({
 
   if (hairLoading) {
     return (
-      <div className="grid h-dvh place-items-center bg-[var(--morph-bg,#FAFAFA)] text-[var(--morph-fg,#111111)] lg:h-[calc(100dvh-6rem)]">
+      <div className="grid fit-maint-screen place-items-center bg-[var(--morph-bg,#FAFAFA)] text-[var(--morph-fg,#111111)]">
         <Loader2 className="size-6 animate-spin opacity-40" />
       </div>
     );
@@ -383,7 +383,7 @@ export function MorphChatAppView({
 
   if (hairRequired) {
     return (
-      <div className="flex h-dvh flex-col overflow-hidden bg-[var(--morph-bg,#FAFAFA)] px-5 text-[var(--morph-fg,#111111)] lg:h-[calc(100dvh-6rem)]">
+      <div className="flex fit-maint-screen flex-col overflow-hidden bg-[var(--morph-bg,#FAFAFA)] px-5 text-[var(--morph-fg,#111111)]">
         <header className="flex items-center justify-between pt-[max(0.75rem,env(safe-area-inset-top))]">
           <button
             type="button"
@@ -416,7 +416,7 @@ export function MorphChatAppView({
 
   if (!chatOpen) {
     return (
-      <div className="flex h-dvh flex-col overflow-hidden bg-[var(--morph-bg,#FAFAFA)] text-[var(--morph-fg,#111111)] lg:h-[calc(100dvh-6rem)]">
+      <div className="flex fit-maint-screen flex-col overflow-hidden bg-[var(--morph-bg,#FAFAFA)] text-[var(--morph-fg,#111111)]">
         <header className="flex items-center px-4 pt-[max(0.75rem,env(safe-area-inset-top))]">
           <button
             type="button"
@@ -472,7 +472,7 @@ export function MorphChatAppView({
   }
 
   return (
-    <div className="flex h-dvh flex-col overflow-hidden bg-[var(--morph-bg,#FAFAFA)] text-[var(--morph-fg,#111111)] lg:h-[calc(100dvh-6rem)]">
+    <div className="flex fit-maint-screen flex-col overflow-hidden bg-[var(--morph-bg,#FAFAFA)] text-[var(--morph-fg,#111111)]">
       <header className="relative flex items-center gap-1.5 border-b border-black/10 px-3 py-1 pt-[max(0.35rem,env(safe-area-inset-top))] dark:border-white/10">
         <button
           type="button"

@@ -740,3 +740,76 @@
 html[data-maint-banner] .sticky.top-0 {
   top: var(--maint-banner-offset, 0px);
 }
+
+/* Banner body paddingda. To‘liq ekran sahifa yana 100dvh olsa pastga tushadi.
+   fixed — dialog, kamera, onboarding: ular butun oynani yopadi, qisqartirilmaydi. */
+html[data-maint-banner] .min-h-screen:not(.fixed),
+html[data-maint-banner] .min-h-dvh:not(.fixed),
+html[data-maint-banner] .min-h-\[100dvh\]:not(.fixed) {
+  min-height: calc(100dvh - var(--maint-banner-offset, 0px));
+}
+
+html[data-maint-banner] .h-dvh:not(.fixed),
+html[data-maint-banner] .h-screen:not(.fixed),
+html[data-maint-banner] .h-\[100dvh\]:not(.fixed) {
+  height: calc(100dvh - var(--maint-banner-offset, 0px));
+}
+
+html[data-maint-banner] .max-h-\[100dvh\]:not(.fixed) {
+  max-height: calc(100dvh - var(--maint-banner-offset, 0px));
+}
+
+/* Xarita va AI qobig‘i fixed: tepasi bannerdan keyin, pasti dockda qoladi. */
+html[data-maint-banner] .shell-below-banner {
+  top: var(--maint-banner-offset, 0px);
+}
+
+html[data-maint-banner] .shell-below-banner.h-\[100dvh\] {
+  height: calc(100dvh - var(--maint-banner-offset, 0px));
+}
+
+html[data-maint-banner] .shell-below-banner.max-h-\[100dvh\] {
+  max-height: calc(100dvh - var(--maint-banner-offset, 0px));
+}
+
+@media (min-width: 1024px) {
+  html[data-maint-banner] .min-h-screen.lg\:min-h-0 {
+    min-height: 0;
+  }
+
+  html[data-maint-banner] .shell-below-banner {
+    top: auto;
+  }
+
+  html[data-maint-banner] .shell-below-banner.lg\:h-\[calc\(100dvh-5\.25rem\)\],
+  html[data-maint-banner] .lg\:h-\[calc\(100dvh-5\.25rem\)\] {
+    height: calc(100dvh - 5.25rem - var(--maint-banner-offset, 0px));
+  }
+
+  html[data-maint-banner] .shell-below-banner.lg\:max-h-\[calc\(100dvh-5\.25rem\)\] {
+    max-height: calc(100dvh - 5.25rem - var(--maint-banner-offset, 0px));
+  }
+
+  html[data-maint-banner] .lg\:h-\[calc\(100dvh-3\.5rem\)\] {
+    height: calc(100dvh - 3.5rem - var(--maint-banner-offset, 0px));
+  }
+
+  html[data-maint-banner] .lg\:min-h-\[calc\(100dvh-3\.5rem\)\] {
+    min-height: calc(100dvh - 3.5rem - var(--maint-banner-offset, 0px));
+  }
+
+  html[data-maint-banner] .min-h-\[calc\(100dvh-5\.25rem\)\] {
+    min-height: calc(100dvh - 5.25rem - var(--maint-banner-offset, 0px));
+  }
+}
+
+/* To‘liq ekran chat: banner padding + 100dvh birga sig‘masa pastdagi maydon kesiladi. */
+.fit-maint-screen {
+  height: calc(100dvh - var(--maint-banner-offset, 0px));
+}
+
+@media (min-width: 1024px) {
+  .fit-maint-screen {
+    height: calc(100dvh - 6rem - var(--maint-banner-offset, 0px));
+  }
+}
