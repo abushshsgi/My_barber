@@ -253,21 +253,21 @@ RUNWARE_API_URL = (
     os.environ.get("RUNWARE_API_URL", "https://api.runware.ai/v1").strip()
     or "https://api.runware.ai/v1"
 )
+# Default: FLUX.2 [klein] 9B KV. Reserves run only when it is full or the queue is deep.
 RUNWARE_TRYON_MODEL = (
-    os.environ.get("RUNWARE_TRYON_MODEL", "runware:400@2").strip() or "runware:400@2"
+    os.environ.get("RUNWARE_TRYON_MODEL", "runware:400@6").strip() or "runware:400@6"
 )
-# 400@2 to'lsa 400@6, u ham to'lsa 400@4. To'rtinchi ID berilsa vergul bilan qo'shiladi.
 RUNWARE_TRYON_FALLBACK_MODELS = os.environ.get(
-    "RUNWARE_TRYON_FALLBACK_MODELS", "runware:400@6,runware:400@4"
+    "RUNWARE_TRYON_FALLBACK_MODELS", "runware:400@2,runware:400@4"
 ).strip()
 try:
     _runware_width = int(os.environ.get("RUNWARE_TRYON_WIDTH", "1024") or "1024")
 except ValueError:
     _runware_width = 1024
 try:
-    _runware_height = int(os.environ.get("RUNWARE_TRYON_HEIGHT", "1536") or "1536")
+    _runware_height = int(os.environ.get("RUNWARE_TRYON_HEIGHT", "1024") or "1024")
 except ValueError:
-    _runware_height = 1536
+    _runware_height = 1024
 try:
     _runware_timeout = int(os.environ.get("RUNWARE_TRYON_TIMEOUT", "120") or "120")
 except ValueError:
@@ -275,6 +275,23 @@ except ValueError:
 RUNWARE_TRYON_WIDTH = max(128, min(_runware_width, 2048))
 RUNWARE_TRYON_HEIGHT = max(128, min(_runware_height, 2048))
 RUNWARE_TRYON_TIMEOUT = max(30, min(_runware_timeout, 240))
+# Validated at request time. 3.5 is the documented FLUX.2 klein default.
+RUNWARE_TRYON_CFG_SCALE = os.environ.get("RUNWARE_TRYON_CFG_SCALE", "3.5").strip() or "3.5"
+RUNWARE_TRYON_NEGATIVE_PROMPT_ENABLED = os.environ.get(
+    "RUNWARE_TRYON_NEGATIVE_PROMPT_ENABLED", "true"
+).strip().lower() in ("1", "true", "yes", "on")
+RUNWARE_TRYON_NEGATIVE_PROMPT = os.environ.get("RUNWARE_TRYON_NEGATIVE_PROMPT", "").strip()
+RUNWARE_TRYON_SEED_MODE = (
+    os.environ.get("RUNWARE_TRYON_SEED_MODE", "auto").strip().lower() or "auto"
+)
+RUNWARE_TRYON_TEST_SEED = os.environ.get("RUNWARE_TRYON_TEST_SEED", "12345").strip() or "12345"
+# "default" is internal: the scheduler field is omitted and the model default is used.
+RUNWARE_TRYON_SCHEDULER = os.environ.get("RUNWARE_TRYON_SCHEDULER", "default").strip() or "default"
+RUNWARE_TRYON_OUTPUT_FORMAT = os.environ.get("RUNWARE_TRYON_OUTPUT_FORMAT", "PNG").strip() or "PNG"
+# runware:400@6 has no strength parameter. A value here is logged and never sent.
+RUNWARE_TRYON_STRENGTH = os.environ.get("RUNWARE_TRYON_STRENGTH", "").strip()
+# Empty or 0 uses TRYON_PROVIDER_CONCURRENCY. Above that, new jobs start on a reserve model.
+RUNWARE_TRYON_OVERFLOW_DEPTH = os.environ.get("RUNWARE_TRYON_OVERFLOW_DEPTH", "").strip()
 
 # Morf AI kvota. Default o‘chiq — faqat lokal test uchun "true" qiling.
 MORPH_ENTITLEMENT_BYPASS = os.environ.get("MORPH_ENTITLEMENT_BYPASS", "false").lower() in (

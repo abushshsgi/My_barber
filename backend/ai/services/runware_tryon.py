@@ -1,10 +1,12 @@
 """Morf AI Try-On via Runware image editing.
 
-Primary: FLUX.2 [klein] 9B, AIR ``runware:400@2``.
-If it is full or down, the same request tries ``runware:400@6`` (9B KV),
-then ``runware:400@4`` (4B). All three list Edit and ``inputs.referenceImages``
-(1–4 images). Width and height are 128–2048, step 16. 1024×1024 is valid.
+Primary: FLUX.2 [klein] 9B KV, AIR ``runware:400@6``.
+Reserve models are used only when that model is full or the try-on queue is
+past the overflow threshold: ``runware:400@2`` (9B), then ``runware:400@4`` (4B).
+All three list Edit and ``inputs.referenceImages`` (1–4 images, no per-image role).
+Width and height are 128–2048, step 16. 1024×1024 is valid.
 
+``strength``, ``seedImage``, and mask/inpaint fields are not part of this model.
 Try-On never falls back to Gemini image APIs.
 """
 
@@ -29,10 +31,19 @@ from .errors import AiStyleError
 from .gemini_style import load_image_bytes
 from .image_response import to_data_url
 from .runware_client import download_image, run_image_inference
+from .tryon_prompts import (
+    NEGATIVE_PROMPT,
+    NEGATIVE_PROMPT_MAX,
+    build_tryon_prompt,
+)
 
 logger = logging.getLogger(__name__)
 
 PUBLIC_ROOT = Path(settings.BASE_DIR).parent / "apps" / "user" / "public"
+
+# FLUX.2 [klein] 9B KV. Reserves: 9B, then 4B.
+DEFAULT_TRYON_MODEL = "runware:400@6"
+DEFAULT_FALLBACK_MODELS = "runware:400@2,runware:400@4"
 
 # Verified against Runware docs on 2026-11-07. Do not add a model here
 # unless its page lists Edit (or image-to-image) and reference image input.
@@ -44,7 +55,7 @@ VERIFIED_EDIT_MODELS: dict[str, dict[str, int]] = {
         "step": 16,
         "max_references": 4,
     },
-    # FLUX.2 [klein] 9B KV — multi-reference edit, faster when the first model is full
+    # FLUX.2 [klein] 9B KV — default edit model. KV cache, same edit API as 9B.
     "runware:400@6": {
         "min_edge": 128,
         "max_edge": 2048,
@@ -64,10 +75,102 @@ INPUT_MAX_EDGE = 1536
 INPUT_JPEG_QUALITY = 88
 RESULT_JPEG_QUALITY = 92
 PORTRAIT_RATIO = 4 / 3  # height / width — soch toji qirqilmasin
-# FLUX.2 klein 4 qadamga distillangan. steps/CFG model hujjatidagi default.
-# seedImage va strength bu modelda yo'q — yuborilsa Runware so'rovni rad etadi.
+# FLUX.2 klein is distilled to 4 steps. Documented CFG default is 3.5 (range 1–20).
+# seedImage, strength, and masks are rejected or unsupported — never send them.
 TRYON_STEPS = 4
 TRYON_CFG = 3.5
+PROMPT_MAX = 10000
+SEED_MAX = 9223372036854776000
+OUTPUT_FORMATS = frozenset({"JPG", "PNG", "WEBP"})
+FORBIDDEN_TASK_KEYS = frozenset(
+    {
+        "mask",
+        "maskImage",
+        "inpaintingMask",
+        "seedImage",
+        "strength",
+    }
+)
+# Documented scheduler names for runware:400@6. Internal "default" is not sent.
+DOCUMENTED_SCHEDULERS = frozenset(
+    {
+        "DDIM",
+        "DDIMScheduler",
+        "DDPMScheduler",
+        "DEISMultistepScheduler",
+        "Default",
+        "DPM++",
+        "DPM++ 2M",
+        "DPM++ 2M Beta",
+        "DPM++ 2M Exponential",
+        "DPM++ 2M Karras",
+        "DPM++ 2M SDE",
+        "DPM++ 2M SDE Beta",
+        "DPM++ 2M SDE Exponential",
+        "DPM++ 2M SDE Karras",
+        "DPM++ 2M SDE Uniform",
+        "DPM++ 2M Uniform",
+        "DPM++ 3M",
+        "DPM++ 3M Beta",
+        "DPM++ 3M Exponential",
+        "DPM++ 3M Karras",
+        "DPM++ 3M SDE Uniform",
+        "DPM++ 3M Uniform",
+        "DPM++ Beta",
+        "DPM++ Exponential",
+        "DPM++ Karras",
+        "DPM++ SDE",
+        "DPM++ SDE Beta",
+        "DPM++ SDE Exponential",
+        "DPM++ SDE Karras",
+        "DPM++ Uniform",
+        "DPM++ Uniform Beta",
+        "DPM++ Uniform Exponential",
+        "DPM++ Uniform Karras",
+        "DPMSolverMultistepInverse",
+        "DPMSolverMultistepScheduler",
+        "DPMSolverSinglestepScheduler",
+        "EDMDPMSolverMultistepScheduler",
+        "EDMEulerScheduler",
+        "Euler",
+        "Euler a",
+        "Euler Beta",
+        "Euler Exponential",
+        "Euler Karras",
+        "EulerAncestralDiscreteScheduler",
+        "EulerDiscreteScheduler",
+        "FlowMatchEulerDiscreteScheduler",
+        "Heun",
+        "HeunDiscreteScheduler",
+        "Heun Karras",
+        "IPNDMScheduler",
+        "IPNDM Uniform",
+        "IPNDM Uniform Beta",
+        "IPNDM Uniform Exponential",
+        "IPNDM Uniform Karras",
+        "KDPM2AncestralDiscreteScheduler",
+        "KDPM2DiscreteScheduler",
+        "LCM",
+        "LCMScheduler",
+        "LMS",
+        "LMSDiscreteScheduler",
+        "LMS Karras",
+        "PNDMScheduler",
+        "TCDScheduler",
+        "UniPC",
+        "UniPC 2M",
+        "UniPC 2M Karras",
+        "UniPC 2M Uniform",
+        "UniPC 3M",
+        "UniPC 3M Karras",
+        "UniPC 3M Uniform",
+        "UniPC Karras",
+        "UniPC Uniform",
+        "UniPC Uniform Beta",
+        "UniPC Uniform Exponential",
+        "UniPC Uniform Karras",
+    }
+)
 
 
 @dataclass(frozen=True)
@@ -107,11 +210,11 @@ _DEFAULT_MODEL_SPEC = {"min_edge": 128, "max_edge": 2048, "step": 16, "max_refer
 
 
 def resolved_tryon_model() -> str:
-    model = (getattr(settings, "RUNWARE_TRYON_MODEL", None) or "runware:400@2").strip()
+    model = (getattr(settings, "RUNWARE_TRYON_MODEL", None) or DEFAULT_TRYON_MODEL).strip()
     if model not in VERIFIED_EDIT_MODELS:
         raise AiStyleError(
             "RUNWARE_TRYON_MODEL Try-On uchun tasdiqlanmagan. "
-            "Image editing modeli kerak (runware:400@2 — FLUX.2 klein 9B).",
+            "Image editing modeli kerak (runware:400@6 — FLUX.2 klein 9B KV).",
             503,
             retryable=False,
         )
@@ -124,6 +227,43 @@ def tryon_model_chain() -> list[str]:
     raw = getattr(settings, "RUNWARE_TRYON_FALLBACK_MODELS", "") or ""
     extras = [part.strip() for part in str(raw).split(",") if part.strip() and part.strip() != primary]
     return [primary, *extras][:4]
+
+
+def overflow_threshold() -> int:
+    """Queue depth above this starts new jobs on a reserve model."""
+    raw = getattr(settings, "RUNWARE_TRYON_OVERFLOW_DEPTH", None)
+    if raw is not None and str(raw).strip() not in ("", "0"):
+        try:
+            value = int(raw)
+        except (TypeError, ValueError):
+            value = 0
+        if value > 0:
+            return value
+    try:
+        return max(1, int(getattr(settings, "TRYON_PROVIDER_CONCURRENCY", 8) or 8))
+    except (TypeError, ValueError):
+        return 8
+
+
+def tryon_model_chain_for_pressure(queue_depth: int | None = None) -> list[str]:
+    """Quiet traffic stays on the primary. Overflow rotates the two reserves."""
+    chain = tryon_model_chain()
+    if not chain or queue_depth is None:
+        return chain
+    try:
+        depth = int(queue_depth)
+    except (TypeError, ValueError):
+        return chain
+    if depth <= overflow_threshold():
+        return chain
+    reserves = chain[1:]
+    if not reserves:
+        return chain
+    slot = (depth - overflow_threshold() - 1) % len(reserves)
+    chosen = reserves[slot]
+    others = [model for model in reserves if model != chosen]
+    primary = chain[0]
+    return [chosen, *others, primary]
 
 
 def _model_spec(model: str) -> dict[str, int]:
@@ -147,8 +287,19 @@ def resolved_tryon_size(model: str | None = None) -> tuple[int, int]:
     return width, height
 
 
-def _pad_selfie_for_hair(raw: bytes) -> bytes:
-    """Add top headroom so hair is not cropped. Do not stretch face pixels."""
+_LONG_HAIR_MARKERS = (
+    "long layered",
+    "below the shoulder",
+    "below shoulder",
+    "collarbone",
+    "long bob",
+    "long hair",
+    "longer back",
+)
+
+
+def _pad_selfie_for_hair(raw: bytes, *, style_detail: str = "") -> bytes:
+    """Add neutral headroom. Face pixels stay the same size and shape."""
     try:
         image = Image.open(BytesIO(raw))
         image = ImageOps.exif_transpose(image)
@@ -161,10 +312,19 @@ def _pad_selfie_for_hair(raw: bytes) -> bytes:
         return raw
     min_h = int(src_w * PORTRAIT_RATIO)
     extra_top = max(int(src_h * 0.1), max(0, min_h - src_h))
-    if extra_top <= 0:
+    detail = (style_detail or "").lower()
+    needs_length = any(marker in detail for marker in _LONG_HAIR_MARKERS)
+    extra_bottom = 0
+    if needs_length and (src_h / src_w) < 1.45:
+        extra_bottom = max(int(src_h * 0.15), 1)
+    if extra_top <= 0 and extra_bottom <= 0:
         return raw
-    fill = image.getpixel((src_w // 2, 0))
-    canvas = Image.new("RGB", (src_w, src_h + extra_top), fill)
+    top_fill = image.getpixel((src_w // 2, 0))
+    bottom_fill = image.getpixel((src_w // 2, src_h - 1))
+    canvas = Image.new("RGB", (src_w, src_h + extra_top + extra_bottom), top_fill)
+    if extra_bottom:
+        bottom = Image.new("RGB", (src_w, extra_bottom), bottom_fill)
+        canvas.paste(bottom, (0, src_h + extra_top))
     canvas.paste(image, (0, extra_top))
     buffer = BytesIO()
     canvas.save(buffer, format="JPEG", quality=INPUT_JPEG_QUALITY, optimize=True)
@@ -206,25 +366,6 @@ def _output_size_for_bytes(raw: bytes, model: str) -> tuple[int, int]:
             hi=spec["max_edge"],
         )
     return width, height
-
-
-_RECOLOR_MARKERS = (
-    "balayage",
-    "highlight",
-    "blonde",
-    "platinum",
-    "bleach",
-    "dye",
-    "color",
-    "rang",
-    "sariq",
-    "qora soch",
-)
-
-
-def _style_requests_recolor(title: str, style_detail: str) -> bool:
-    blob = f"{title} {style_detail}".lower()
-    return any(marker in blob for marker in _RECOLOR_MARKERS)
 
 
 def load_public_image(relative_url: str) -> tuple[str, bytes] | None:
@@ -321,31 +462,157 @@ def _publish(jpeg: bytes) -> str:
         return to_data_url("image/jpeg", jpeg)
 
 
-def _build_tryon_prompt(*, title: str, style_detail: str) -> str:
-    color_lock = (
-        ""
-        if _style_requests_recolor(title, style_detail)
-        else (
-            "Keep this person's original hair color, undertone, and natural variation. "
-            "Do not dye, bleach, or add highlights. "
+def _flag(name: str, default: bool) -> bool:
+    raw = getattr(settings, name, default)
+    if isinstance(raw, str):
+        return raw.strip().lower() in ("1", "true", "yes", "on")
+    return bool(raw)
+
+
+def resolved_cfg_scale() -> float | None:
+    """CFGScale is supported (1–20, step 0.01, default 3.5). Invalid values are omitted."""
+    raw = getattr(settings, "RUNWARE_TRYON_CFG_SCALE", TRYON_CFG)
+    if raw is None or str(raw).strip() == "":
+        raw = TRYON_CFG
+    try:
+        value = float(raw)
+    except (TypeError, ValueError):
+        logger.warning("RUNWARE_TRYON_CFG_SCALE is not numeric; CFGScale omitted")
+        return None
+    if value != value or value in (float("inf"), float("-inf")) or value < 1 or value > 20:
+        logger.warning("RUNWARE_TRYON_CFG_SCALE=%s outside 1-20; CFGScale omitted", raw)
+        return None
+    return round(value, 2)
+
+
+def resolved_negative_prompt(cfg: float | None) -> str | None:
+    """negativePrompt is supported, max 3000, and ignored by the model when CFGScale <= 1."""
+    if not _flag("RUNWARE_TRYON_NEGATIVE_PROMPT_ENABLED", True):
+        logger.info("negativePrompt omitted: RUNWARE_TRYON_NEGATIVE_PROMPT_ENABLED is off")
+        return None
+    if cfg is not None and cfg <= 1:
+        logger.info("negativePrompt omitted: CFGScale <= 1 disables guidance")
+        return None
+    custom = str(getattr(settings, "RUNWARE_TRYON_NEGATIVE_PROMPT", "") or "").strip()
+    text = custom or NEGATIVE_PROMPT.strip()
+    if len(text) < 2:
+        return None
+    if len(text) > NEGATIVE_PROMPT_MAX:
+        logger.warning(
+            "negativePrompt omitted: length %s exceeds model limit %s",
+            len(text),
+            NEGATIVE_PROMPT_MAX,
         )
-    )
-    return (
-        "Edit reference image 1 in place. It is the same unaltered selfie of the real client "
-        "and the only identity source. "
-        "Keep this exact face: same person, same face shape, jawline, cheekbones, "
-        "bone structure, eyes, eyebrows, nose, mouth, ears, skin texture, skin tone, "
-        "age, expression, pose, head position, camera angle, framing, clothing, and background. "
-        "Do not generate a new face, do not beautify, slim, reshape, warp, or replace "
-        "the identity. The result must look like this exact person after a barber visit. "
-        "Edit only the hair on the scalp and around the ears. "
-        f'Change only the haircut on this same head to "{title}" — {style_detail}. '
-        f"{color_lock}"
-        "Keep the requested hairstyle silhouette, length, volume, parting, and strand "
-        "direction intact. Do not melt, stretch, collapse, crop, or warp the hair. "
-        "Leave space above the crown so the full hair shape is visible. "
-        "The new hair must sit on this person's real scalp and follow their real hairline. "
-        "No different person, no sample-model face, no text, watermark, or extra people."
+        return None
+    return text
+
+
+def resolved_seed() -> int | None:
+    """Omit seed in production. The API then picks an unsigned 32-bit seed."""
+    mode = str(getattr(settings, "RUNWARE_TRYON_SEED_MODE", "auto") or "auto").strip().lower()
+    if mode in ("", "auto", "random", "default"):
+        return None
+    if mode not in ("fixed", "test"):
+        logger.warning("RUNWARE_TRYON_SEED_MODE=%s is not auto or fixed; seed omitted", mode)
+        return None
+    raw = getattr(settings, "RUNWARE_TRYON_TEST_SEED", None)
+    try:
+        seed = int(raw)
+    except (TypeError, ValueError):
+        logger.warning("RUNWARE_TRYON_TEST_SEED is not an integer; seed omitted")
+        return None
+    if seed < 0 or seed > SEED_MAX:
+        logger.warning("RUNWARE_TRYON_TEST_SEED outside 0-%s; seed omitted", SEED_MAX)
+        return None
+    return seed
+
+
+def resolved_scheduler() -> str | None:
+    """Internal 'default' is not sent. Only documented scheduler names are sent."""
+    raw = str(getattr(settings, "RUNWARE_TRYON_SCHEDULER", "default") or "default").strip()
+    if raw.lower() in ("", "default"):
+        return None
+    if raw not in DOCUMENTED_SCHEDULERS:
+        logger.warning("scheduler %s is not documented for runware:400@6; field omitted", raw)
+        return None
+    return raw
+
+
+def resolved_output_format() -> str:
+    raw = str(getattr(settings, "RUNWARE_TRYON_OUTPUT_FORMAT", "PNG") or "PNG").strip().upper()
+    if raw == "JPEG":
+        raw = "JPG"
+    if raw not in OUTPUT_FORMATS:
+        logger.warning("output format %s is unsupported; using PNG", raw)
+        return "PNG"
+    return raw
+
+
+def _note_ignored_strength() -> None:
+    raw = str(getattr(settings, "RUNWARE_TRYON_STRENGTH", "") or "").strip()
+    if raw:
+        logger.info(
+            "RUNWARE_TRYON_STRENGTH ignored; runware:400@6 does not support strength"
+        )
+
+
+def build_tryon_task(
+    *,
+    model: str,
+    prompt: str,
+    width: int,
+    height: int,
+    references: list[str],
+) -> dict[str, Any]:
+    """Payload fields verified for runware:400@6. Unsupported fields are left out."""
+    _note_ignored_strength()
+    if len(prompt) > PROMPT_MAX:
+        logger.warning(
+            "positivePrompt length %s exceeds %s; request may be rejected",
+            len(prompt),
+            PROMPT_MAX,
+        )
+    cfg = resolved_cfg_scale()
+    task: dict[str, Any] = {
+        "model": model,
+        "positivePrompt": prompt,
+        "width": int(width),
+        "height": int(height),
+        "steps": TRYON_STEPS,
+        "inputs": {"referenceImages": list(references)},
+    }
+    if cfg is not None:
+        task["CFGScale"] = cfg
+    negative = resolved_negative_prompt(cfg)
+    if negative:
+        task["negativePrompt"] = negative
+    seed = resolved_seed()
+    if seed is not None:
+        task["seed"] = seed
+    scheduler = resolved_scheduler()
+    if scheduler:
+        task["scheduler"] = scheduler
+    output_format = resolved_output_format()
+    task["outputFormat"] = output_format
+    if output_format in {"JPG", "WEBP"}:
+        task["outputQuality"] = 95
+    for key in FORBIDDEN_TASK_KEYS:
+        task.pop(key, None)
+    return task
+
+
+def _build_tryon_prompt(
+    *,
+    title: str,
+    style_detail: str,
+    selected_hair_color: str | None = None,
+    include_catalog_image: bool = False,
+) -> str:
+    return build_tryon_prompt(
+        title=title,
+        style_detail=style_detail,
+        selected_hair_color=selected_hair_color,
+        include_catalog_image=include_catalog_image,
     )
 
 
@@ -363,12 +630,24 @@ def _side_consistency_hint(*, slug: str, view: str) -> str:
     return "Match the temple fade depth and line-up from the front photo."
 
 
-def _build_tryon_rotation_prompt(*, title: str, style_detail: str, slug: str, view: str) -> str:
+def _build_tryon_rotation_prompt(
+    *,
+    title: str,
+    style_detail: str,
+    slug: str,
+    view: str,
+    selected_hair_color: str | None = None,
+) -> str:
     from ai.explore_views import view_pose_line
 
     pose = view_pose_line(view)
     side = _side_consistency_hint(slug=slug, view=view)
     side_block = f" {side}" if side else ""
+    explicit = " ".join(str(selected_hair_color or "").split())[:80]
+    if explicit:
+        color_line = f' Keep the explicitly requested hair color "{explicit}".'
+    else:
+        color_line = " Keep the original hair color from reference image 1."
     return (
         "Edit reference image 1. It already shows the client's finished hairstyle "
         f'"{title}" — {style_detail}. Re-render the same person and the same haircut '
@@ -376,7 +655,7 @@ def _build_tryon_rotation_prompt(*, title: str, style_detail: str, slug: str, vi
         "Reference image 1 is the identity lock: keep the same face, face shape, "
         "jawline, eyes, nose, mouth, skin texture, skin tone, age, and expression. "
         "Any later reference images are angle anchors of the same person and the same haircut. "
-        "Do not generate a new face. Keep clothing and background. "
+        f"Do not generate a new face. Keep clothing and background.{color_line} "
         "Photorealistic portrait. No text, watermark, or extra people."
     )
 
@@ -395,25 +674,14 @@ def _infer_edit(
     edge = min(INPUT_MAX_EDGE, max(width, height))
     references = [_prepare_data_uri(raw, max_edge=edge) for raw in images]
     started = time.perf_counter()
-    result = run_image_inference(
-        {
-            "model": model,
-            "positivePrompt": prompt[:10000],
-            "negativePrompt": (
-                "different person, identity change, new face, swapped face, sample model face, "
-                "changed face shape, changed jawline, warped face, beautified face, "
-                "regenerated face, slimmed face, morphed identity, changed skin tone, "
-                "changed expression, changed clothes, changed background, extra people, "
-                "warped hair, melted hair, distorted hair, collapsed hairstyle, stretched hair, "
-                "misshapen haircut, text, watermark, logo, cartoon, plastic skin, blurry"
-            ),
-            "width": width,
-            "height": height,
-            "steps": TRYON_STEPS,
-            "CFGScale": TRYON_CFG,
-            "inputs": {"referenceImages": references},
-        }
+    task = build_tryon_task(
+        model=model,
+        prompt=prompt,
+        width=width,
+        height=height,
+        references=references,
     )
+    result = run_image_inference(task)
     image_url = str(result.get("imageURL") or result.get("imageUrl") or "").strip()
     if not image_url and not result.get("imageBase64Data") and not result.get("imageDataURI"):
         raise AiStyleError("Try-on rasm qaytarmadi. Qayta urinib ko'ring.", 502, retryable=True)
@@ -425,12 +693,13 @@ def _infer_edit(
     cost, estimated = _cost_from(result)
     latency_ms = int((time.perf_counter() - started) * 1000)
     logger.info(
-        "Runware try-on done model=%s latency_ms=%s cost_usd=%s bytes=%s refs=%s",
+        "Runware try-on done model=%s latency_ms=%s cost_usd=%s bytes=%s refs=%s seed=%s",
         model,
         latency_ms,
         cost if not estimated else "unknown",
         len(jpeg),
         len(references),
+        result.get("seed") if result.get("seed") is not None else "auto",
     )
     return jpeg, cost, estimated, latency_ms
 
@@ -447,8 +716,16 @@ def _infer_with_fallback(
     *,
     prompt: str,
     images: list[bytes],
+    queue_depth: int | None = None,
 ) -> tuple[bytes, Decimal, bool, int, str]:
-    chain = tryon_model_chain()
+    chain = tryon_model_chain_for_pressure(queue_depth)
+    if chain and chain[0] != resolved_tryon_model():
+        logger.info(
+            "Try-on load spill primary=%s model=%s queue_depth=%s",
+            resolved_tryon_model(),
+            chain[0],
+            queue_depth,
+        )
     last: AiStyleError | None = None
     source = images[0] if images else b""
     for index, model in enumerate(chain):
@@ -524,17 +801,31 @@ def generate_tryon_preview(
     slug: str,
     title: str,
     reference_image_url: str | None = None,
+    selected_hair_color: str | None = None,
+    queue_depth: int | None = None,
 ) -> TryOnResult:
     tryon_provider_name()
     resolved_tryon_model()
     _mime, selfie = load_image_bytes(selfie_data_url)
-    selfie = _pad_selfie_for_hair(selfie)
     style_detail = style_detail_for(audience, slug)
+    selfie = _pad_selfie_for_hair(selfie, style_detail=style_detail)
     images = [selfie]
-    # Catalog hairstyle photos are other people. FLUX.2 treats extra references as
-    # identity sources, so a second face leaks into the result. Hair is text-only.
-    prompt = _build_tryon_prompt(title=title, style_detail=style_detail)
-    jpeg, cost, estimated, latency_ms, model = _infer_with_fallback(prompt=prompt, images=images)
+    # inputs.referenceImages has no role field. A catalog portrait is another
+    # person, and FLUX.2 uses every reference as an identity source. The haircut
+    # is passed as text. reference_image_url is accepted and not uploaded.
+    if reference_image_url:
+        logger.debug("Catalog reference image omitted: no per-image role on runware:400@6")
+    prompt = _build_tryon_prompt(
+        title=title,
+        style_detail=style_detail,
+        selected_hair_color=selected_hair_color,
+        include_catalog_image=False,
+    )
+    jpeg, cost, estimated, latency_ms, model = _infer_with_fallback(
+        prompt=prompt,
+        images=images,
+        queue_depth=queue_depth,
+    )
     return _result(
         preview=_publish(jpeg),
         prompt=prompt,
@@ -553,6 +844,8 @@ def generate_tryon_rotated_view(
     slug: str,
     title: str,
     side_anchor_data_urls: list[str] | None = None,
+    selected_hair_color: str | None = None,
+    queue_depth: int | None = None,
 ) -> TryOnResult:
     from ai.explore_views import normalize_explore_view
 
@@ -575,6 +868,7 @@ def generate_tryon_rotated_view(
         style_detail=style_detail,
         slug=slug,
         view=normalized,
+        selected_hair_color=selected_hair_color,
     )
     images: list[bytes] = []
     for source in [front_data_url, *(side_anchor_data_urls or [])]:
@@ -582,7 +876,11 @@ def generate_tryon_rotated_view(
             continue
         _mime, payload = load_image_bytes(source)
         images.append(payload)
-    jpeg, cost, estimated, latency_ms, used_model = _infer_with_fallback(prompt=prompt, images=images)
+    jpeg, cost, estimated, latency_ms, used_model = _infer_with_fallback(
+        prompt=prompt,
+        images=images,
+        queue_depth=queue_depth,
+    )
     return _result(
         preview=_publish(jpeg),
         prompt=prompt,
@@ -599,6 +897,8 @@ def generate_tryon_multiview(
     audience: str,
     slug: str,
     title: str,
+    selected_hair_color: str | None = None,
+    queue_depth: int | None = None,
 ) -> dict[str, Any]:
     views: dict[str, str] = {"front": front_data_url}
     total_cost = Decimal("0")
@@ -614,6 +914,8 @@ def generate_tryon_multiview(
         audience=audience,
         slug=slug,
         title=title,
+        selected_hair_color=selected_hair_color,
+        queue_depth=queue_depth,
     )
     views["left"] = left.preview_image
     total_cost += left.cost_usd
@@ -629,6 +931,8 @@ def generate_tryon_multiview(
         slug=slug,
         title=title,
         side_anchor_data_urls=[left.preview_image],
+        selected_hair_color=selected_hair_color,
+        queue_depth=queue_depth,
     )
     views["right"] = right.preview_image
     total_cost += right.cost_usd
@@ -643,6 +947,8 @@ def generate_tryon_multiview(
         slug=slug,
         title=title,
         side_anchor_data_urls=[left.preview_image, right.preview_image],
+        selected_hair_color=selected_hair_color,
+        queue_depth=queue_depth,
     )
     views["back"] = back.preview_image
     total_cost += back.cost_usd

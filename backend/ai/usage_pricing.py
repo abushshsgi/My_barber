@@ -199,7 +199,7 @@ def runware_list_usd(model: str | None = None) -> Decimal:
         else:
             base = RUNWARE_USD_PER_1024["runware:400@2"]
     width = int(getattr(settings, "RUNWARE_TRYON_WIDTH", 1024) or 1024)
-    height = int(getattr(settings, "RUNWARE_TRYON_HEIGHT", 1536) or 1536)
+    height = int(getattr(settings, "RUNWARE_TRYON_HEIGHT", 1024) or 1024)
     pixels = Decimal(max(128, width) * max(128, height))
     unit = pixels / Decimal(1024 * 1024)
     return (base * unit).quantize(USD_QUANT, rounding=ROUND_HALF_UP)

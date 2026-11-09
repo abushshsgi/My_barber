@@ -19,7 +19,7 @@ from django.utils import timezone
 from config.redis_url import get_redis_url, redis_blocking_client_kwargs, redis_client_kwargs
 
 from .gemini_style import AiStyleError
-from .runware_tryon import generate_tryon_multiview, generate_tryon_preview
+from .runware_tryon import DEFAULT_TRYON_MODEL, generate_tryon_multiview, generate_tryon_preview
 from .image_provider import provider_health, queue_generation_context
 from ..usage_log import record_ai_generation
 
@@ -121,6 +121,16 @@ def _job_ttl() -> int:
 
 def _max_queue_depth() -> int:
     return int(getattr(settings, "TRYON_QUEUE_MAX_DEPTH", 200))
+
+
+def _queue_depth(client) -> int:
+    try:
+        waiting = int(client.llen(QUEUE_KEY) or 0)
+        processing = int(client.zcard(PROCESSING_KEY) or 0)
+        delayed = int(client.zcard(DELAYED_KEY) or 0)
+    except Exception:
+        return 0
+    return waiting + processing + delayed
 
 
 def _max_retries() -> int:
@@ -545,6 +555,7 @@ def enqueue_tryon_job(
     reference_image_url: str | None,
     persona_id: str | None = None,
     job_kind: str = "tryon",
+    selected_hair_color: str | None = None,
 ) -> str:
     client = _redis_client()
     if client is None:
@@ -596,6 +607,9 @@ def enqueue_tryon_job(
         "reference_image_url": reference_image_url,
         "job_kind": kind,
     }
+    color = " ".join(str(selected_hair_color or "").split())[:80]
+    if color:
+        payload["selected_hair_color"] = color
 
     pipe = client.pipeline()
     pipe.setex(_payload_key(job_id), _job_ttl(), json.dumps(payload))
@@ -1136,12 +1150,16 @@ def process_next_tryon_job(*, block_seconds: int = 5) -> bool:
     try:
         with queue_generation_context():
             job_kind = str(payload.get("job_kind") or meta.get("job_kind") or "tryon")
+            pressure = _queue_depth(client)
+            selected_color = str(payload.get("selected_hair_color") or "").strip() or None
             if job_kind == "multiview":
                 multi = generate_tryon_multiview(
                     front_data_url=str(payload.get("image") or ""),
                     audience=str(payload.get("audience") or "unisex"),
                     slug=str(payload.get("slug") or ""),
                     title=str(payload.get("title") or ""),
+                    selected_hair_color=selected_color,
+                    queue_depth=pressure,
                 )
                 views = multi.get("views") or {}
                 meta["status"] = STATUS_COMPLETED
@@ -1182,6 +1200,8 @@ def process_next_tryon_job(*, block_seconds: int = 5) -> bool:
                 slug=str(payload.get("slug") or ""),
                 title=str(payload.get("title") or ""),
                 reference_image_url=payload.get("reference_image_url"),
+                selected_hair_color=selected_color,
+                queue_depth=pressure,
             )
             meta["status"] = STATUS_COMPLETED
             meta["preview_image"] = result.preview_image
@@ -1262,7 +1282,7 @@ def process_next_tryon_job(*, block_seconds: int = 5) -> bool:
             status="failed",
             style_id=str(meta.get("style_id") or ""),
             style_title=str(meta.get("style_title") or ""),
-            model=(getattr(settings, "RUNWARE_TRYON_MODEL", None) or "runware:400@2"),
+            model=(getattr(settings, "RUNWARE_TRYON_MODEL", None) or DEFAULT_TRYON_MODEL),
             provider="runware",
             job_id=job_id,
             error_detail=exc.message,
@@ -1290,7 +1310,7 @@ def process_next_tryon_job(*, block_seconds: int = 5) -> bool:
             status="failed",
             style_id=str(meta.get("style_id") or ""),
             style_title=str(meta.get("style_title") or ""),
-            model=(getattr(settings, "RUNWARE_TRYON_MODEL", None) or "runware:400@2"),
+            model=(getattr(settings, "RUNWARE_TRYON_MODEL", None) or DEFAULT_TRYON_MODEL),
             provider="runware",
             job_id=job_id,
             error_detail="Rasm yaratishda xatolik.",

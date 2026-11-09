@@ -336,6 +336,7 @@ class AiStyleTryOnView(UnthrottledAPIView):
             return Response({"detail": "Uslub tanlang."}, status=400)
 
         style = get_object_or_404(Hairstyle, style_id=style_id, is_published=True)
+        selected_hair_color = " ".join(str(request.data.get("hair_color") or "").split())[:80]
         age_group = birth_year_to_group(user.birth_year)
         persona_id = _resolve_persona_from_body(request, style.audience)
         reference_url = resolve_hairstyle_image_path(
@@ -357,6 +358,7 @@ class AiStyleTryOnView(UnthrottledAPIView):
                     slug=style.slug,
                     reference_image_url=reference_url,
                     persona_id=persona_id or "",
+                    selected_hair_color=selected_hair_color or None,
                 )
                 return Response(
                     {
@@ -377,6 +379,7 @@ class AiStyleTryOnView(UnthrottledAPIView):
                 slug=style.slug,
                 title=style.title_uz,
                 reference_image_url=reference_url,
+                selected_hair_color=selected_hair_color or None,
             )
             record_ai_generation(
                 user_id=user.pk,
