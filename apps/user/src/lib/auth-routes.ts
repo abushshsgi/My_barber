@@ -1,67 +1,29 @@
 /**
- * Login shart bo'lgan yo'llar.
- * Bosh sahifa, xarita, salon, explore, offers — ochiq;
- * buyurtma / Morf AI / profil va shaxsiy bo'limlar — login.
+ * Mehmon faqat kirish va yuridik sahifalarda qoladi.
+ * Bosh sahifa, try-on, Morf AI, salon va qolgan funksiyalar login talab qiladi.
  */
-const AUTH_REQUIRED_PREFIXES = [
-  "/bookings",
-  "/booking/",
-  "/profile",
-  "/settings",
-  "/favorites",
-  "/favorite-stylists",
-  "/wallet",
-  "/onboarding",
-  "/chat",
-  "/notifications",
-  "/addresses",
-  "/account/",
-  "/payment-methods",
-  "/sessions",
-  "/subscriptions",
-  "/family",
-  "/referrals",
-  "/giftcard",
-  "/loyalty",
-  "/ai-style",
-  "/verify-email",
-  "/today",
-  "/reviews",
-  "/explore-gen",
-  "/dev.explore-gen",
-] as const;
-
-/** Public routes that never require authentication */
-const PUBLIC_ROUTES = [
-  "/",
+const PUBLIC_PATHS = new Set([
   "/auth",
   "/privacy-policy",
   "/terms-of-use",
-  "/for-salons",
   "/delete-account",
-  "/explore",
-  "/map",
-  "/salon/",
-  "/barber/",
-] as const;
+  "/for-salons",
+]);
 
-/** Morf / try-on: /explore/:id/try */
-function isExploreTryPath(pathname: string): boolean {
-  return /^\/explore\/[^/]+\/try\/?$/.test(pathname);
+function normalizePath(pathname: string): string {
+  const raw = (pathname.split("?")[0] ?? pathname).split("#")[0] || "/";
+  const withSlash = raw.startsWith("/") ? raw : `/${raw}`;
+  if (withSlash.length > 1 && withSlash.endsWith("/")) return withSlash.slice(0, -1);
+  return withSlash;
 }
 
 export function pathRequiresAuth(pathname: string): boolean {
-  // Explicitly public routes
-  if (PUBLIC_ROUTES.some((route) => {
-    if (route.endsWith("/")) return pathname.startsWith(route);
-    return pathname === route || pathname.startsWith(`${route}/`);
-  })) {
-    return false;
-  }
+  const path = normalizePath(pathname);
+  if (path === "/auth" || path.startsWith("/auth/")) return false;
+  return !PUBLIC_PATHS.has(path);
+}
 
-  if (isExploreTryPath(pathname)) return true;
-  return AUTH_REQUIRED_PREFIXES.some((prefix) => {
-    if (prefix.endsWith("/")) return pathname.startsWith(prefix);
-    return pathname === prefix || pathname.startsWith(`${prefix}/`);
-  });
+/** Login qilinmagan mehmon himoyalangan sahifada qolmasin. */
+export function guestMustLogin(pathname: string, hasSession: boolean): boolean {
+  return pathRequiresAuth(pathname) && !hasSession;
 }

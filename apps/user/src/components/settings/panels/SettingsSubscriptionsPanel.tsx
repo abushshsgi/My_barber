@@ -13,6 +13,7 @@ import {
 import { hasValidUserSession } from "@/lib/api/client";
 import { type SubscriptionPlan } from "@/lib/api/subscriptions";
 import { getPublicSiteOrigin } from "@/lib/public-origin";
+import { TELEGRAM_SUPPORT_URL } from "@/lib/support-contact";
 import { pickFeatureLabel, pickPlanName } from "@/lib/plan-labels";
 import { withoutStudioFeatures } from "@/lib/morph-studio";
 import { FALLBACK_SUBSCRIPTION_PLANS } from "@/lib/subscription-fallback-plans";
@@ -91,7 +92,9 @@ export function SettingsSubscriptionsPanel() {
 
   const shopPlans = useMemo(() => {
     const catalog = plansQ.data?.length ? plansQ.data : FALLBACK_SUBSCRIPTION_PLANS;
-    return catalog.filter((plan) => plan.code !== "free" && plan.purchasable !== false);
+    return [...catalog]
+      .filter((plan) => plan.code !== "free" && plan.purchasable !== false)
+      .sort((a, b) => a.sort_order - b.sort_order);
   }, [plansQ.data]);
   const upgradeChoices = useMemo(() => {
     if (!me?.has_active) return shopPlans;
@@ -116,8 +119,10 @@ export function SettingsSubscriptionsPanel() {
   const nextCode = me?.has_active ? nextUpgradePlan(activeCode) : null;
   const selected =
     upgradeChoices.find((plan) => plan.code === picked) ??
-    upgradeChoices.find((plan) => plan.code === focusPlan) ??
-    upgradeChoices.find((plan) => plan.code === nextCode) ??
+    (me?.has_active
+      ? upgradeChoices.find((plan) => plan.code === focusPlan) ??
+        upgradeChoices.find((plan) => plan.code === nextCode)
+      : upgradeChoices.find((plan) => plan.code === "starter")) ??
     upgradeChoices[0] ??
     null;
 
@@ -284,6 +289,14 @@ export function SettingsSubscriptionsPanel() {
               </>
             )}
           </button>
+          <a
+            href={TELEGRAM_SUPPORT_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex h-9 items-center justify-center text-[13px] font-semibold text-[var(--morph-muted,#737373)]"
+          >
+            {t("morph.paywall.askSupport", { defaultValue: "Savol bormi? Telegramda yozing" })}
+          </a>
         </>
       ) : me?.has_active ? (
         <p className="text-sm text-[var(--morph-muted,#737373)]">

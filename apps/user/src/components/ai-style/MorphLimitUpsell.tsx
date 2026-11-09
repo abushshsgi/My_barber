@@ -1,6 +1,6 @@
 import { useNavigate } from "@tanstack/react-router";
 import { ArrowRight, CheckCircle2, Loader2, ShieldCheck, Star, X } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import {
@@ -19,6 +19,7 @@ import type { MorphLimitKind } from "@/lib/morph-plan-limit";
 import type { SubscriptionMe, SubscriptionPlan } from "@/lib/api/subscriptions";
 import { pickFeatureLabel, pickPlanName } from "@/lib/plan-labels";
 import { getPublicSiteOrigin } from "@/lib/public-origin";
+import { TELEGRAM_SUPPORT_URL } from "@/lib/support-contact";
 import { FALLBACK_SUBSCRIPTION_PLANS } from "@/lib/subscription-fallback-plans";
 import { isPlanUpgrade } from "@/lib/subscription-upgrade";
 import { cn } from "@/lib/utils";
@@ -30,7 +31,7 @@ type Props = {
   onOpenChange: (open: boolean) => void;
   kind: MorphLimitKind;
   me: SubscriptionMe | null;
-  /** SOS / Javon — Pro tanlangan holda ochiladi. */
+  /** Eski chaqiruv. Varaq har doim Starterdan ochiladi — foydalanuvchi Plus yoki Proni o‘zi tanlaydi. */
   preferPlan?: "plus" | "pro";
 };
 
@@ -46,7 +47,7 @@ function shopPlans(plans: SubscriptionPlan[]): SubscriptionPlan[] {
     .sort((a, b) => a.sort_order - b.sort_order);
 }
 
-export function MorphLimitUpsell({ open, onOpenChange, kind, me, preferPlan }: Props) {
+export function MorphLimitUpsell({ open, onOpenChange, kind, me }: Props) {
   const { t } = useTranslation();
   const isMobile = useIsMobile();
   const hero = paywallHero(kind, t);
@@ -67,9 +68,9 @@ export function MorphLimitUpsell({ open, onOpenChange, kind, me, preferPlan }: P
             <DrawerDescription>{subtitle}</DrawerDescription>
           </DrawerHeader>
           <MorphPaywallBody
+            open={open}
             kind={kind}
             me={me}
-            preferPlan={preferPlan}
             onClose={() => onOpenChange(false)}
           />
         </DrawerContent>
@@ -85,9 +86,9 @@ export function MorphLimitUpsell({ open, onOpenChange, kind, me, preferPlan }: P
           <DialogDescription>{subtitle}</DialogDescription>
         </DialogHeader>
         <MorphPaywallBody
+          open={open}
           kind={kind}
           me={me}
-          preferPlan={preferPlan}
           onClose={() => onOpenChange(false)}
         />
       </DialogContent>
@@ -119,7 +120,7 @@ function paywallHero(
   }
   if (kind === "care") {
     return {
-      kicker: t("morph.paywall.kickerDay", { defaultValue: "Kunlik taklif" }),
+      kicker: "",
       title: t("morph.paywall.titleMonth", { defaultValue: "Morf AI ni bir oyga oching" }),
       subtitle: t("morph.paywall.subtitleCare", {
         defaultValue: "Parvarish, SOS, ob-havo. To‘lov Payme — siz qaror qilasiz",
@@ -127,7 +128,7 @@ function paywallHero(
     };
   }
   return {
-    kicker: t("morph.paywall.kickerDay", { defaultValue: "Kunlik taklif" }),
+    kicker: "",
     title: t("morph.paywall.titleMonth", { defaultValue: "Morf AI ni bir oyga oching" }),
     subtitle: t("morph.paywall.subtitleMonth", {
         defaultValue: "Selfie va chat. To‘lov Payme — siz qaror qilasiz",
@@ -136,14 +137,14 @@ function paywallHero(
 }
 
 function MorphPaywallBody({
+  open,
   kind,
   me,
-  preferPlan,
   onClose,
 }: {
+  open: boolean;
   kind: MorphLimitKind;
   me: SubscriptionMe | null;
-  preferPlan?: "plus" | "pro";
   onClose: () => void;
 }) {
   const { t, i18n } = useTranslation();
@@ -155,6 +156,7 @@ function MorphPaywallBody({
   const [picked, setPicked] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [payOpen, setPayOpen] = useState(false);
+  const prevOpen = useRef(open);
   const hero = paywallHero(kind, t);
   const activeCode = me?.has_active ? me.subscription?.plan_code ?? null : null;
 
@@ -163,17 +165,17 @@ function MorphPaywallBody({
     return shopPlans(catalog).filter((plan) => isPlanUpgrade(plan.code, activeCode));
   }, [plansQ.data, activeCode]);
 
+  if (prevOpen.current !== open) {
+    prevOpen.current = open;
+    if (open && picked !== null) setPicked(null);
+  }
+
   useEffect(() => {
+    if (!open) return;
     if (picked && cards.some((p) => p.code === picked)) return;
-    const prefer =
-      (preferPlan === "pro" && cards.find((p) => p.code === "pro")?.code) ||
-      (preferPlan === "plus" && cards.find((p) => p.code === "plus")?.code) ||
-      (kind === "care" && cards.find((p) => p.code === "plus")?.code) ||
-      cards.find((p) => p.highlight)?.code ||
-      cards[0]?.code ||
-      null;
-    setPicked(prefer);
-  }, [cards, kind, picked, preferPlan]);
+    const starter = cards.find((p) => p.code === "starter")?.code ?? cards[0]?.code ?? null;
+    setPicked(starter);
+  }, [open, cards, picked]);
 
   const selected = cards.find((p) => p.code === picked) ?? cards[0] ?? null;
   const included = (selected?.features ?? []).filter(
@@ -226,9 +228,11 @@ function MorphPaywallBody({
     <div className="flex min-h-0 flex-1 flex-col">
       <div className="min-h-0 flex-1 space-y-2.5 overflow-y-auto overscroll-contain pb-2 [-webkit-overflow-scrolling:touch]">
         <div>
-          <p className="text-[11px] font-extrabold uppercase tracking-[0.14em] text-[#737373]">
-            {hero.kicker}
-          </p>
+          {hero.kicker ? (
+            <p className="text-[11px] font-extrabold uppercase tracking-[0.14em] text-[#737373]">
+              {hero.kicker}
+            </p>
+          ) : null}
           <h3 className="mt-0.5 text-[22px] font-extrabold leading-7 tracking-tight">{hero.title}</h3>
           <p className="mt-0.5 text-[13px] leading-5 text-[#737373]">{hero.subtitle}</p>
         </div>
@@ -317,6 +321,14 @@ function MorphPaywallBody({
               </>
             )}
           </button>
+          <a
+            href={TELEGRAM_SUPPORT_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex h-9 w-full items-center justify-center text-[13px] font-semibold text-[#737373]"
+          >
+            {t("morph.paywall.askSupport", { defaultValue: "Savol bormi? Telegramda yozing" })}
+          </a>
         </div>
       ) : (
         <button

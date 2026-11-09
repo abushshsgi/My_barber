@@ -27,7 +27,7 @@ export function MorphSoftPaywall({ className, onSubscribe }: Props) {
       ) : (
         <Link
           to="/subscriptions"
-          search={{ plan: "plus", returnTo: "/ai-style" }}
+          search={{ plan: "starter", returnTo: "/ai-style" }}
           className={ctaClass}
         >
           <Crown className="size-4" strokeWidth={2.25} />

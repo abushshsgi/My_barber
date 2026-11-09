@@ -172,11 +172,37 @@ export function clearStashedBarberInviteCode(): void {
   }
 }
 
+/** Kirishdan oldin kelgan referal va barber taklifini saqlaydi. */
+export function rememberEntrySearch(search = ""): void {
+  const ref = parseReferralFromLocationSearch(search);
+  if (ref) stashReferralCode(ref);
+  const bref = parseBarberInviteFromLocationSearch(search);
+  if (bref) stashBarberInviteCode(bref);
+}
+
+/** /auth?redirect=/explore?ref=... ichidagi referal va barber kodini saqlaydi. */
+export function rememberRedirectTarget(redirectPath: unknown): void {
+  const safe = safeAuthRedirectPath(redirectPath);
+  if (!safe) return;
+  try {
+    rememberEntrySearch(new URL(safe, "https://mysaloon.uz").search);
+  } catch {
+    /* ignore malformed return path */
+  }
+}
+
 /** Authdan keyin qaytish yo'li — ochiq redirectga yo'l bermaydi. */
 export function safeAuthRedirectPath(raw: unknown): string | undefined {
   if (typeof raw !== "string") return undefined;
   const path = raw.trim();
-  if (!path.startsWith("/") || path.startsWith("//") || path.includes("://")) return undefined;
-  if (path === "/auth" || path.startsWith("/auth?")) return undefined;
+  if (
+    !path.startsWith("/") ||
+    path.startsWith("//") ||
+    path.includes("\\") ||
+    path.includes("://")
+  ) {
+    return undefined;
+  }
+  if (path === "/auth" || path.startsWith("/auth?") || path.startsWith("/auth/")) return undefined;
   return path;
 }

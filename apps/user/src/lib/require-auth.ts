@@ -1,17 +1,39 @@
 import { redirect } from "@tanstack/react-router";
 import { bootstrapUserSession, hasValidUserSession } from "@/lib/api/client";
 import { pathRequiresAuth } from "@/lib/auth-routes";
-import { safeAuthRedirectPath } from "@/lib/referral-storage";
+import { buildExternalPageUrl } from "@/lib/external-browser";
+import { rememberEntrySearch, safeAuthRedirectPath } from "@/lib/referral-storage";
 
 export { pathRequiresAuth } from "@/lib/auth-routes";
 
-export async function requireAuth(pathname: string) {
+/** Loginidan keyin qaytish: path, query, UTM. Tokenlar URLda qolmaydi. */
+export function buildAuthReturnPath(
+  pathname: string,
+  searchStr = "",
+  hash = "",
+): string | undefined {
+  const absolute = buildExternalPageUrl({
+    origin: "https://mysaloon.uz",
+    pathname,
+    search: searchStr,
+    hash,
+  });
+  const url = new URL(absolute);
+  return safeAuthRedirectPath(`${url.pathname}${url.search}${url.hash}`);
+}
+
+export async function requireAuth(pathname: string, searchStr = "", hash = "") {
   if (typeof window === "undefined") return;
+  rememberEntrySearch(searchStr);
   if (!pathRequiresAuth(pathname)) return;
   if (hasValidUserSession()) return;
   const ok = await bootstrapUserSession();
   if (!ok) {
-    throw redirect({ to: "/auth", search: { redirect: pathname } });
+    const redirectTo = buildAuthReturnPath(pathname, searchStr, hash);
+    throw redirect({
+      to: "/auth",
+      search: redirectTo ? { redirect: redirectTo } : {},
+    });
   }
 }
 

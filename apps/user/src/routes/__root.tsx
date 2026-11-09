@@ -26,6 +26,7 @@ import { AuthSessionGuard } from "../components/AuthSessionGuard";
 import { OnboardingGuard } from "../components/OnboardingGuard";
 import { GoogleAnalytics } from "../components/GoogleAnalytics";
 import { SiteTelemetry } from "../components/SiteTelemetry";
+import { ExternalBrowserPrompt } from "../components/ExternalBrowserPrompt";
 import { FirebaseInit } from "../components/FirebaseInit";
 import { GA_ENABLED, GA_MEASUREMENT_ID } from "../lib/ga";
 
@@ -93,7 +94,9 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
         <p className="mt-2 text-sm text-muted-foreground">
           {isChunk
             ? t("errors.chunkReload", { defaultValue: "Sayt yangilandi — sahifani qayta yuklang." })
-            : t("errors.pageLoadFail", { defaultValue: "Sahifa yuklanmadi. Qaytadan urinib ko'ring." })}
+            : t("errors.pageLoadFail", {
+                defaultValue: "Sahifa yuklanmadi. Qaytadan urinib ko'ring.",
+              })}
         </p>
         {import.meta.env.DEV ? (
           <p className="mt-3 break-all text-left text-xs font-mono text-muted-foreground">
@@ -130,8 +133,12 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
 }
 
 const sharedRootOptions = {
-  beforeLoad: async ({ location }: { location: { pathname: string } }) => {
-    await requireAuth(location.pathname);
+  beforeLoad: async ({
+    location,
+  }: {
+    location: { pathname: string; searchStr: string; hash: string };
+  }) => {
+    await requireAuth(location.pathname, location.searchStr, location.hash);
   },
   component: RootComponent,
   notFoundComponent: NotFoundComponent,
@@ -210,6 +217,7 @@ function AppShell() {
             </OnboardingGuard>
           </AuthSessionGuard>
           <ClientOnly>
+            <ExternalBrowserPrompt />
             <FirebaseInit />
             <GoogleAnalytics />
             <SiteTelemetry />

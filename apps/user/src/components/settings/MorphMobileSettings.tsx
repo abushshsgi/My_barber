@@ -12,6 +12,7 @@ import {
   Mail,
   Mic,
   RotateCcw,
+  Send,
   SlidersHorizontal,
   Sparkles,
   Trash2,
@@ -29,6 +30,7 @@ import { MorphAppearanceSettings } from "@/components/settings/MorphAppearanceSe
 import { deleteMyAccount } from "@/lib/api/user";
 import type { MorphChatLimits } from "@/lib/api/ai";
 import { logout } from "@/lib/auth";
+import { TELEGRAM_SUPPORT_HANDLE, TELEGRAM_SUPPORT_URL } from "@/lib/support-contact";
 import { patchMorphAiPrefs, readMorphAiPrefs } from "@/lib/morf-ai-prefs";
 import { cn } from "@/lib/utils";
 
@@ -360,6 +362,12 @@ export function MorphMobileSettings() {
                   icon={CircleHelp}
                   title={t("chat.settings.helpCenter", { defaultValue: "Yordam markazi" })}
                   onClick={() => void navigate({ to: "/ai-style/help" })}
+                />
+                <Item
+                  icon={Send}
+                  title={t("chat.settings.telegramSupport", { defaultValue: "Telegram orqali yozish" })}
+                  subtitle={TELEGRAM_SUPPORT_HANDLE}
+                  onClick={() => window.open(TELEGRAM_SUPPORT_URL, "_blank", "noopener,noreferrer")}
                   last
                 />
               </Section>

@@ -5,6 +5,8 @@ import { migrateFaceProfileOnLogout } from "@/lib/face-profile";
 import { resolveFetchBase } from "@/lib/api/base-url";
 import { isPublicCustomerApiPath } from "@/lib/public-api-paths";
 import { pathRequiresAuth } from "@/lib/auth-routes";
+import { buildExternalPageUrl } from "@/lib/external-browser";
+import { rememberEntrySearch, safeAuthRedirectPath } from "@/lib/referral-storage";
 import { clearQueryClientCache } from "@/lib/query-client";
 import { migrateUserPrefsOnLogout } from "@/lib/user-prefs";
 
@@ -193,11 +195,22 @@ function redirectToAuthIfNeeded() {
   if (typeof window === "undefined") return;
   const path = window.location.pathname;
   if (path === "/auth" || path.startsWith("/auth/")) return;
-  // Ochiq sahifalarda sessiyani tozalash kifoya — login'ga majburan itarmaymiz.
-  if (!pathRequiresAuth(path)) return;
   const search = window.location.search || "";
-  const redirect = encodeURIComponent(`${path}${search}`);
-  window.location.assign(`/auth?redirect=${redirect}`);
+  rememberEntrySearch(search);
+  if (!pathRequiresAuth(path)) return;
+  const absolute = buildExternalPageUrl({
+    origin: window.location.origin,
+    pathname: path,
+    search,
+    hash: window.location.hash,
+  });
+  const url = new URL(absolute);
+  const redirectTo = safeAuthRedirectPath(`${url.pathname}${url.search}${url.hash}`);
+  if (!redirectTo) {
+    window.location.assign("/auth");
+    return;
+  }
+  window.location.assign(`/auth?redirect=${encodeURIComponent(redirectTo)}`);
 }
 
 function readActiveUserIdBeforeClear(): number | null {
@@ -290,7 +303,8 @@ function formatApiError(body: unknown, fallback: string): string {
     if (typeof obj.message === "string") return translateApiDetail(obj.message, code);
     const first = Object.values(obj).find((v) => typeof v === "string" || Array.isArray(v));
     if (typeof first === "string") return translateApiDetail(first, code);
-    if (Array.isArray(first) && typeof first[0] === "string") return translateApiDetail(first[0], code);
+    if (Array.isArray(first) && typeof first[0] === "string")
+      return translateApiDetail(first[0], code);
   }
   return fallback;
 }

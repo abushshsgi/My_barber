@@ -14,6 +14,7 @@ import {
 } from "@/lib/api/support";
 import { authQueryEnabled } from "@/lib/auth-query";
 import { getAuthUserId } from "@/lib/auth-user";
+import { TELEGRAM_SUPPORT_HANDLE, TELEGRAM_SUPPORT_URL } from "@/lib/support-contact";
 
 const FAQ = [
   {
@@ -345,6 +346,21 @@ export function SettingsSupportPanel({ embedded = false }: { embedded?: boolean 
             </p>
           </div>
         </ProfileSubpageCard>
+
+        <a
+          href={TELEGRAM_SUPPORT_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex cursor-pointer items-start gap-3 rounded-2xl border border-border bg-card px-4 py-3.5 shadow-[0_1px_2px_rgba(15,15,15,0.05)] transition-colors duration-200 hover:bg-muted/40"
+        >
+          <Send className="mt-0.5 h-5 w-5 shrink-0 text-[#229ED9]" />
+          <div>
+            <p className="text-sm font-bold">Telegram orqali yozish</p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {TELEGRAM_SUPPORT_HANDLE} — savol va to‘lov bo‘yicha shu yerga yozing.
+            </p>
+          </div>
+        </a>
 
         <Link
           to="/ai-style/help"

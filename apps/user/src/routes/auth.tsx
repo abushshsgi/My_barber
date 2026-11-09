@@ -33,6 +33,7 @@ import {
   clearStashedReferralCode,
   parseBarberInviteFromSearch,
   parseReferralFromSearch,
+  rememberRedirectTarget,
   safeAuthRedirectPath,
   stashBarberInviteCode,
   stashReferralCode,
@@ -54,6 +55,7 @@ export const Route = createFileRoute("/auth")({
   beforeLoad: async ({ search }) => {
     if (search.ref) stashReferralCode(search.ref);
     if (search.bref) stashBarberInviteCode(search.bref);
+    rememberRedirectTarget(search.redirect);
     await redirectIfAuthenticated();
   },
   head: () => ({ meta: [{ title: "Kirish — mysaloon.uz" }] }),
@@ -178,7 +180,7 @@ function Auth() {
     clearQueryClientCache();
     toast.success(data.is_new_user ? t("auth.welcomeNew") : t("auth.welcomeBack"));
     void router
-      .navigate({ to: postAuthPath(data.user) })
+      .navigate({ href: postAuthPath(data.user) })
       .then(() => queryClient.invalidateQueries())
       .catch(() => queryClient.invalidateQueries());
   };
@@ -284,7 +286,7 @@ function Auth() {
       clearStashedBarberInviteCode();
       setSession(pendingAuth.access, pendingAuth.refresh, res.user);
       void router
-        .navigate({ to: postAuthPath(res.user) })
+        .navigate({ href: postAuthPath(res.user) })
         .then(() => queryClient.invalidateQueries())
         .catch(() => queryClient.invalidateQueries());
     },

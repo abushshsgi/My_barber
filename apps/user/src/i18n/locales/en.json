@@ -2270,5 +2270,22 @@
     "multiviewReady": "360° views ready — Front / Left / Right / Back",
     "multiviewFailed": "360° could not be created now — showing front try-on",
     "multiviewRetry": "360° again"
+  },
+  "inAppBrowser": {
+    "title": "Continue in your browser",
+    "description": "Open MySaloon in an external browser to sign in with Google.",
+    "openChrome": "Open in Chrome",
+    "openSafari": "Open in Safari",
+    "copyLink": "Copy link",
+    "continue": "Continue on this site",
+    "copied": "Link copied",
+    "copiedSafari": "Link copied. Safari does not open by itself — use Instagram's menu.",
+    "copyFailed": "Copy the link manually.",
+    "chromeFailed": "Chrome did not open. Copy the link or use the menu.",
+    "stepMenu": "Tap the three dots (⋯) in the top-right corner.",
+    "stepAndroid": "Choose “Open in Chrome” or “Open in browser”.",
+    "stepIos": "Choose “Open in Safari”. This button does not open Safari by itself.",
+    "stepOther": "Choose an external browser from the menu.",
+    "urlLabel": "Current page link"
   }
 }

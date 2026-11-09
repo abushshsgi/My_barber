@@ -13,6 +13,7 @@ import {
   useSupportTickets,
 } from "@/hooks/use-support";
 import type { ApiSupportTicket } from "@/lib/api/support";
+import { TELEGRAM_SUPPORT_HANDLE, TELEGRAM_SUPPORT_URL } from "@/lib/support-contact";
 
 type Mode = "help" | "report";
 
@@ -109,6 +110,22 @@ export function MorphAiSupportPage({ mode }: Props) {
           <TicketThread ticketId={ticketId} onBack={() => setTicketId(null)} />
         ) : (
           <div className="mt-6 space-y-6">
+            <a
+              href={TELEGRAM_SUPPORT_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-3 rounded-2xl border border-black/10 bg-white px-4 py-3.5"
+            >
+              <span className="grid size-9 shrink-0 place-items-center rounded-full bg-[#2AABEE]/15 text-[#229ED9]">
+                <Send className="size-4" />
+              </span>
+              <span className="min-w-0">
+                <span className="block text-sm font-semibold">
+                  {t("aiStylePage.support.telegram", { defaultValue: "Telegram orqali yozish" })}
+                </span>
+                <span className="block text-sm text-[#111111]/55">{TELEGRAM_SUPPORT_HANDLE}</span>
+              </span>
+            </a>
             {mode === "help" ? <HelpFaq /> : <ReportLead />}
             {userId ? (
               <>

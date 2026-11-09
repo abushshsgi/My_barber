@@ -2,8 +2,10 @@ import { GoogleLogin, GoogleOAuthProvider } from "@react-oauth/google";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
+import { useInAppBrowserDetection } from "@/hooks/useInAppBrowserDetection";
 import { loginWithGoogle } from "@/lib/api";
 import type { PhoneVerifyResponse } from "@/lib/api/types";
+import { requestExternalBrowserPrompt } from "@/lib/external-browser";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -154,7 +156,46 @@ function GoogleSignInButtonInner({
   );
 }
 
+function InAppGoogleHandoff({ emphasized, busy }: { emphasized?: boolean; busy?: boolean }) {
+  const { t } = useTranslation();
+  const openExternal = () => requestExternalBrowserPrompt();
+
+  if (!emphasized) {
+    return (
+      <button
+        type="button"
+        disabled={busy}
+        onClick={openExternal}
+        className="flex min-h-12 w-full items-center justify-center gap-3 rounded-xl border border-border bg-background px-4 text-sm font-bold disabled:opacity-60"
+      >
+        <GoogleGlyph className="size-5" />
+        {t("auth.googleContinue")}
+      </button>
+    );
+  }
+
+  return (
+    <EmphasizedChrome busy={busy}>
+      <button
+        type="button"
+        disabled={busy}
+        onClick={openExternal}
+        className="auth-google-cta flex min-h-[58px] w-full items-center justify-center gap-3 rounded-2xl bg-[#1a73e8] px-5 text-white shadow-[0_14px_28px_-12px_rgba(26,115,232,0.55)] disabled:opacity-60"
+      >
+        <span className="flex size-9 items-center justify-center rounded-full bg-white shadow-sm">
+          <GoogleGlyph className="size-[18px]" />
+        </span>
+        <span className="text-[15px] font-bold sm:text-base">{t("auth.googleContinue")}</span>
+      </button>
+    </EmphasizedChrome>
+  );
+}
+
 export function GoogleSignInButton(props: Props) {
+  const inApp = useInAppBrowserDetection().isInAppBrowser;
+  if (inApp) {
+    return <InAppGoogleHandoff emphasized={props.emphasized} busy={props.busy} />;
+  }
   return (
     <GoogleOAuthProvider clientId={props.clientId}>
       <GoogleSignInButtonInner {...props} />
