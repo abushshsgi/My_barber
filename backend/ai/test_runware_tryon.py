@@ -155,9 +155,10 @@ class RunwareTryOnTests(SimpleTestCase):
         self.assertEqual(task["model"], "runware:400@2")
         self.assertEqual(len(refs), 1)
         self.assertTrue(all(item.startswith("data:image/jpeg;base64,") for item in refs))
-        self.assertEqual(task["seedImage"], refs[0])
-        self.assertLessEqual(task["strength"], 0.45)
-        self.assertGreaterEqual(task["strength"], 0.2)
+        self.assertNotIn("seedImage", task)
+        self.assertNotIn("strength", task)
+        self.assertEqual(task["steps"], 4)
+        self.assertEqual(task["CFGScale"], 3.5)
         prompt = task["positivePrompt"].lower()
         self.assertIn("reference image 1", prompt)
         self.assertNotIn("reference image 2", prompt)
@@ -209,6 +210,27 @@ class RunwareTryOnTests(SimpleTestCase):
                 tryon_model_chain(),
                 ["runware:400@2", "runware:400@6", "runware:400@4"],
             )
+
+    def test_unsupported_parameter_is_not_reported_as_a_missing_model(self):
+        from ai.services.runware_client import run_image_inference
+
+        session = MagicMock()
+        session.post.return_value = _Response(
+            400,
+            {
+                "errors": [
+                    {
+                        "code": "unsupportedParameter",
+                        "message": "Parameter seedImage is not supported for this model",
+                    }
+                ]
+            },
+        )
+        with patch("ai.services.runware_client.http_session", return_value=session):
+            with self.assertRaises(AiStyleError) as ctx:
+                run_image_inference({"model": "runware:400@2", "positivePrompt": "edit"})
+        self.assertEqual(ctx.exception.status, 400)
+        self.assertNotIn("RUNWARE_TRYON_MODEL", ctx.exception.message)
 
     def test_rate_limit_is_single_attempt(self):
         from ai.services.runware_client import run_image_inference

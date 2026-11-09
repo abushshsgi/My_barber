@@ -64,10 +64,10 @@ INPUT_MAX_EDGE = 1536
 INPUT_JPEG_QUALITY = 88
 RESULT_JPEG_QUALITY = 92
 PORTRAIT_RATIO = 4 / 3  # height / width — soch toji qirqilmasin
-# seedImage strength: past = yuz saqlanadi, yuqori = soch erkin o'zgaradi.
-TRYON_STRENGTH = 0.34
-TRYON_STEPS = 8
-TRYON_CFG = 2.2
+# FLUX.2 klein 4 qadamga distillangan. steps/CFG model hujjatidagi default.
+# seedImage va strength bu modelda yo'q — yuborilsa Runware so'rovni rad etadi.
+TRYON_STEPS = 4
+TRYON_CFG = 3.5
 
 
 @dataclass(frozen=True)
@@ -331,12 +331,11 @@ def _build_tryon_prompt(*, title: str, style_detail: str) -> str:
         )
     )
     return (
-        "Photorealistic img2img edit of the seed photograph. "
-        "The seed image and reference image 1 are the same unaltered selfie of the real client. "
-        "Copy the face from the seed pixels: same person, same face, same face shape, "
-        "jawline, cheekbones, bone structure, eyes, eyebrows, nose, mouth, ears, "
-        "skin texture, skin tone, age, expression, pose, head position, camera angle, "
-        "framing, clothing, and background. "
+        "Edit reference image 1 in place. It is the same unaltered selfie of the real client "
+        "and the only identity source. "
+        "Keep this exact face: same person, same face shape, jawline, cheekbones, "
+        "bone structure, eyes, eyebrows, nose, mouth, ears, skin texture, skin tone, "
+        "age, expression, pose, head position, camera angle, framing, clothing, and background. "
         "Do not generate a new face, do not beautify, slim, reshape, warp, or replace "
         "the identity. The result must look like this exact person after a barber visit. "
         "Edit only the hair on the scalp and around the ears. "
@@ -374,8 +373,10 @@ def _build_tryon_rotation_prompt(*, title: str, style_detail: str, slug: str, vi
         "Edit reference image 1. It already shows the client's finished hairstyle "
         f'"{title}" — {style_detail}. Re-render the same person and the same haircut '
         f"from this camera angle only: {pose}.{side_block} "
+        "Reference image 1 is the identity lock: keep the same face, face shape, "
+        "jawline, eyes, nose, mouth, skin texture, skin tone, age, and expression. "
         "Any later reference images are angle anchors of the same person and the same haircut. "
-        "Keep identity, skin tone, age, facial features, haircut, hair color, clothing, and background. "
+        "Do not generate a new face. Keep clothing and background. "
         "Photorealistic portrait. No text, watermark, or extra people."
     )
 
@@ -410,8 +411,6 @@ def _infer_edit(
             "height": height,
             "steps": TRYON_STEPS,
             "CFGScale": TRYON_CFG,
-            "seedImage": references[0],
-            "strength": TRYON_STRENGTH,
             "inputs": {"referenceImages": references},
         }
     )

@@ -115,6 +115,12 @@ def _raise_mapped(status: int, errors: Any, safe_body: str, secrets: list[str]) 
             402,
             retryable=False,
         )
+    if "parameter" in blob or "seedimage" in blob or "strength" in blob:
+        raise AiStyleError(
+            "Try-on so'rovi rad etildi. Qayta urinib ko'ring.",
+            400,
+            retryable=False,
+        )
     if "unsupported" in blob and ("edit" in blob or "reference" in blob or "operation" in blob):
         raise AiStyleError(
             "Bu Runware modeli rasm tahririni qo'llab-quvvatlamaydi. Try-on to'xtatildi.",
@@ -122,7 +128,9 @@ def _raise_mapped(status: int, errors: Any, safe_body: str, secrets: list[str]) 
             retryable=False,
         )
     if status == 404 or (
-        "model" in blob and ("not found" in blob or "unsupported" in blob or "unknown" in blob)
+        "model" in blob
+        and "parameter" not in blob
+        and ("not found" in blob or "unsupported" in blob or "unknown" in blob)
     ):
         raise AiStyleError(
             "Try-on modeli topilmadi. RUNWARE_TRYON_MODEL ni tekshiring.",
