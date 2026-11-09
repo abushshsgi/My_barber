@@ -280,27 +280,24 @@ function MorphPaywallBody({
         </div>
 
         {showFlash ? (
-          <article className="rounded-[22px] border border-black bg-[#111111] px-4 py-3 text-white">
-            <p className="text-[11px] font-extrabold uppercase tracking-[0.14em] text-white/70">
-              {t("subscriptions.flashKicker")}
-            </p>
-            <p className="mt-1 text-[18px] font-extrabold leading-6">{t("subscriptions.flashTitle")}</p>
-            <p className="mt-1 text-[13px] leading-5 text-white/75">{t("subscriptions.flashBody")}</p>
-            <p className="mt-2 font-mono text-[22px] font-extrabold tabular-nums">
-              {String(Math.floor(flashLeft / 60)).padStart(2, "0")}:{String(flashLeft % 60).padStart(2, "0")}
+          <div className="flex items-center gap-2 rounded-2xl bg-[#111111] px-3 py-1.5 text-white">
+            <p className="min-w-0 flex-1 truncate text-[13px] font-extrabold leading-5">
+              {t("subscriptions.flashTitle")}
+              <span className="ml-2 font-mono text-[12px] font-bold tabular-nums text-white/70">
+                {String(Math.floor(flashLeft / 60)).padStart(2, "0")}:
+                {String(flashLeft % 60).padStart(2, "0")}
+              </span>
             </p>
             <button
               type="button"
               disabled={flashBusy || flashLeft < 60}
               onClick={() => void startFlash()}
-              className="mt-3 flex h-11 w-full items-center justify-center gap-2 rounded-full bg-white text-[15px] font-extrabold text-[#111111] disabled:opacity-50"
+              className="inline-flex h-8 shrink-0 items-center justify-center gap-1 rounded-full bg-white px-3 text-[13px] font-extrabold text-[#111111] disabled:opacity-50"
             >
-              {flashBusy ? <Loader2 className="size-4 animate-spin" /> : null}
-              {flashLeft < 60
-                ? t("subscriptions.flashBurned")
-                : t("subscriptions.flashPay", { price: (flash?.price_uzs ?? 1000).toLocaleString(locale) })}
+              {flashBusy ? <Loader2 className="size-3.5 animate-spin" /> : null}
+              {t("subscriptions.flashPayShort", { defaultValue: "Payme" })}
             </button>
-          </article>
+          </div>
         ) : null}
 
         {(kind === "tryon" || kind === "access") && flash?.status === "burned" ? (
