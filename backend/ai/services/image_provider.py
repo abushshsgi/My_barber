@@ -1,7 +1,8 @@
-"""Unified image generation provider selection (Vertex primary; Studio optional).
+"""Gemini image provider selection for Studio (Vertex primary; Studio optional).
 
-Runware is not enabled: no verified production credentials or request contract
-in this codebase. IMAGE_GENERATION_PROVIDER=runware is rejected.
+Morf Try-On does not use this module. Try-on is Runware-only
+(`ai.services.runware_tryon`). IMAGE_GENERATION_PROVIDER=runware is rejected
+here so a Gemini image call cannot be pointed at Runware by mistake.
 """
 
 from __future__ import annotations
@@ -85,6 +86,7 @@ def provider_health() -> dict[str, Any]:
         "active": selected,
         "vertex_configured": vertex_ok,
         "studio_configured": studio_ok,
-        "runware_configured": False,
+        "runware_configured": bool((getattr(settings, "RUNWARE_API_KEY", None) or "").strip()),
+        "tryon_provider": "runware",
         "fallback_enabled": bool(getattr(settings, "IMAGE_PROVIDER_FALLBACK", False)),
     }

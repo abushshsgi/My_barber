@@ -10,11 +10,11 @@ from typing import Any
 
 from django.conf import settings
 from django.db.models import Count, Max, Q, Sum
-from django.db.models.functions import TruncDate
 from django.http import HttpResponse
 from django.utils import timezone
 
 from ai.models import AiGenerationUsage, AiStyleHistoryEntry, Hairstyle, MorphAiGenerationEntry, MorphAiSettings
+from ai.morph_analytics import charge_for_usage, load_usage_facts, public_charge, rollup_usage_facts
 from control_panel.platform_analytics import resolve_range
 
 
@@ -41,6 +41,8 @@ def get_settings_payload() -> dict[str, Any]:
         "gallery_public": s.gallery_public,
         "referral_generation_enabled": s.referral_generation_enabled,
         "runtime_model": getattr(settings, "GEMINI_MODEL", "") or "",
+        "tryon_model": getattr(settings, "RUNWARE_TRYON_MODEL", "") or "runware:400@2",
+        "tryon_provider": "runware",
         "updated_at": s.updated_at.isoformat() if s.updated_at else None,
     }
 
@@ -262,26 +264,22 @@ def build_budget_status(start_raw: str | None = None, end_raw: str | None = None
     else:
         start_dt, end_dt = today_start, now
 
-    agg = AiGenerationUsage.objects.filter(
-        created_at__gte=start_dt, created_at__lte=end_dt
-    ).aggregate(
-        cost=Sum("cost_usd"),
-        generations=Count("id"),
-        tryon=Count("id", filter=Q(kind=AiGenerationUsage.Kind.TRYON)),
-    )
-    spent = agg["cost"] or Decimal("0")
+    period_qs = AiGenerationUsage.objects.filter(created_at__gte=start_dt, created_at__lte=end_dt)
+    rolled = rollup_usage_facts(load_usage_facts(period_qs))
+    agg = {
+        "generations": rolled["totals"]["generations"],
+        "tryon": rolled["totals"]["tryon"],
+    }
+    spent = rolled["totals"]["cost"] or Decimal("0")
     cap = s.daily_budget_usd or Decimal("0")
     remaining = (cap - spent) if cap > 0 else None
     pct = float((spent / cap) * 100) if cap > 0 else 0.0
     blocked = bool(s.budget_enforce and cap > 0 and spent >= cap)
 
-    daily = list(
-        AiGenerationUsage.objects.filter(created_at__gte=start_dt, created_at__lte=end_dt)
-        .annotate(day=TruncDate("created_at"))
-        .values("day")
-        .annotate(cost_usd=Sum("cost_usd"), generations=Count("id"))
-        .order_by("day")
-    )
+    daily = [
+        {"day": row["date"], "cost_usd": row["cost_usd"], "generations": row["generations"]}
+        for row in rolled["daily"]
+    ]
     return {
         "settings": {
             "daily_budget_usd": str(cap),
@@ -299,16 +297,17 @@ def build_budget_status(start_raw: str | None = None, end_raw: str | None = None
         },
         "today": {
             "spent_usd": _money(
-                AiGenerationUsage.objects.filter(created_at__gte=today_start).aggregate(
-                    c=Sum("cost_usd")
-                )["c"]
-                or 0
+                rollup_usage_facts(
+                    load_usage_facts(
+                        AiGenerationUsage.objects.filter(created_at__gte=today_start)
+                    )
+                )["totals"]["cost"]
             ),
         },
         "daily": [
             {
-                "date": row["day"].isoformat() if row["day"] else "",
-                "cost_usd": _money(row["cost_usd"]),
+                "date": row["day"] or "",
+                "cost_usd": row["cost_usd"],
                 "generations": int(row["generations"] or 0),
             }
             for row in daily
@@ -548,8 +547,14 @@ def build_export_csv(start_raw: str | None, end_raw: str | None) -> HttpResponse
             "style_id",
             "style_title",
             "model",
+            "provider",
+            "charge_from",
+            "activity",
+            "price_basis",
+            "price_note",
             "total_tokens",
             "cost_usd",
+            "legacy_cost_usd",
             "latency_ms",
             "error_detail",
             "job_id",
@@ -559,6 +564,17 @@ def build_export_csv(start_raw: str | None, end_raw: str | None) -> HttpResponse
         uname = ""
         if item.user_id and item.user:
             uname = item.user.full_name or item.user.phone or item.user.email or ""
+        billed = public_charge(
+            charge_for_usage(
+                kind=item.kind,
+                status=item.status,
+                provider=item.provider,
+                model=item.model,
+                cost_usd=item.cost_usd,
+                total_tokens=item.total_tokens,
+                tokens_estimated=item.tokens_estimated,
+            )
+        )
         writer.writerow(
             [
                 item.id,
@@ -570,8 +586,14 @@ def build_export_csv(start_raw: str | None, end_raw: str | None) -> HttpResponse
                 item.style_id,
                 item.style_title,
                 item.model,
+                item.provider,
+                billed["charge_from"],
+                billed["activity"],
+                billed["price_basis"],
+                billed["price_note"],
                 item.total_tokens,
-                str(item.cost_usd),
+                billed["cost_usd"],
+                billed["legacy_cost_usd"],
                 item.latency_ms,
                 item.error_detail,
                 item.job_id,

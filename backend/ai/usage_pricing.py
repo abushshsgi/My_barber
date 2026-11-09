@@ -175,6 +175,264 @@ def merge_usage_tokens(*payloads: dict[str, Any] | None) -> dict[str, int]:
     return merged
 
 
+# Runware FLUX.2 [klein] — published price is per image at 1024×1024, 4 steps.
+# https://runware.ai/collections/family-flux
+# Larger output is scaled by megapixels. The API `cost` field is the real bill
+# when Runware returns it; this table is only the fallback.
+RUNWARE_USD_PER_1024 = {
+    "runware:400@2": Decimal("0.000780"),  # FLUX.2 klein 9B
+    "runware:400@6": Decimal("0.000780"),  # FLUX.2 klein 9B KV
+    "runware:400@4": Decimal("0.000600"),  # FLUX.2 klein 4B
+}
+_GEMINI_PROVIDERS = frozenset({"vertex", "studio", "gemini", "google"})
+_ANALYZE_KINDS = frozenset({"analyze", "face_check", "ingredient"})
+_VOICE_KINDS = frozenset({"voice_stt", "voice_tts"})
+
+
+def runware_list_usd(model: str | None = None) -> Decimal:
+    """Configured try-on output size × Runware list price. Not an API invoice."""
+    key = (model or "").strip()
+    base = RUNWARE_USD_PER_1024.get(key)
+    if base is None:
+        if "400@4" in key:
+            base = RUNWARE_USD_PER_1024["runware:400@4"]
+        else:
+            base = RUNWARE_USD_PER_1024["runware:400@2"]
+    width = int(getattr(settings, "RUNWARE_TRYON_WIDTH", 1024) or 1024)
+    height = int(getattr(settings, "RUNWARE_TRYON_HEIGHT", 1536) or 1536)
+    pixels = Decimal(max(128, width) * max(128, height))
+    unit = pixels / Decimal(1024 * 1024)
+    return (base * unit).quantize(USD_QUANT, rounding=ROUND_HALF_UP)
+
+
+def _as_cost(value: Any) -> Decimal:
+    raw = value if isinstance(value, Decimal) else _dec(value, "0")
+    if raw < 0:
+        raw = Decimal("0")
+    return raw.quantize(USD_QUANT, rounding=ROUND_HALF_UP)
+
+
+def explain_usage_charge(
+    *,
+    kind: str,
+    status: str,
+    provider: str = "",
+    model: str = "",
+    cost_usd: Any = 0,
+    total_tokens: int = 0,
+    tokens_estimated: bool = False,
+) -> dict[str, Any]:
+    """Where this row's money went.
+
+    Try-on images are Runware. A stored Gemini token estimate on an old try-on
+    is replaced with the Runware list price. Analysis and chat stay on Gemini
+    token rates, because those calls still hit Gemini.
+    """
+    kind_l = (kind or "").strip().lower()
+    status_l = (status or "").strip().lower()
+    provider_l = (provider or "").strip().lower()
+    model_l = (model or "").strip()
+    stored = _as_cost(cost_usd)
+    tokens = max(0, int(total_tokens or 0))
+    is_runware = provider_l == "runware" or model_l.startswith("runware:")
+    success = status_l == "success"
+
+    def pack(
+        shown: Decimal,
+        *,
+        charge_from: str,
+        activity: str,
+        price_basis: str,
+        price_note: str,
+    ) -> dict[str, Any]:
+        shown_q = _as_cost(shown)
+        return {
+            "cost_usd": shown_q,
+            "legacy_cost_usd": stored,
+            "charge_from": charge_from,
+            "activity": activity,
+            "price_basis": price_basis,
+            "price_note": price_note,
+            "repriced": shown_q != stored,
+        }
+
+    if kind_l in ("tryon", "studio") and is_runware:
+        if success and stored > 0 and not tokens_estimated:
+            return pack(
+                stored,
+                charge_from="runware",
+                activity="generatsiya" if kind_l == "tryon" else "studio",
+                price_basis="runware_api",
+                price_note="Runware API · rasm generatsiya",
+            )
+        if success:
+            listed = runware_list_usd(model_l)
+            return pack(
+                listed,
+                charge_from="runware",
+                activity="generatsiya" if kind_l == "tryon" else "studio",
+                price_basis="runware_list",
+                price_note="Runware narxnoma · API cost kelmagan",
+            )
+        if stored > 0 and not tokens_estimated:
+            return pack(
+                stored,
+                charge_from="runware",
+                activity="generatsiya" if kind_l == "tryon" else "studio",
+                price_basis="runware_api",
+                price_note="Runware API · xato, lekin hisob yozilgan",
+            )
+        return pack(
+            Decimal("0"),
+            charge_from="none",
+            activity="generatsiya" if kind_l == "tryon" else "studio",
+            price_basis="unbilled",
+            price_note="Pul olinmadi · Runware xato",
+        )
+
+    # Per-image bill with no token metadata is Runware even if provider was empty.
+    if kind_l == "tryon" and tokens <= 0 and stored > 0 and not tokens_estimated:
+        return pack(
+            stored,
+            charge_from="runware",
+            activity="generatsiya",
+            price_basis="runware_api",
+            price_note="Runware API · rasm generatsiya",
+        )
+
+    if kind_l == "tryon" and success:
+        listed = runware_list_usd(None)
+        return pack(
+            listed,
+            charge_from="runware",
+            activity="generatsiya",
+            price_basis="runware_list",
+            price_note="Runware narxnoma · eski Gemini token hisobi almashtirildi",
+        )
+
+    if kind_l == "tryon":
+        if stored > 0 and (provider_l in _GEMINI_PROVIDERS or model_l.startswith("gemini") or tokens > 0):
+            return pack(
+                stored,
+                charge_from="gemini",
+                activity="generatsiya",
+                price_basis="gemini_tokens",
+                price_note="Gemini · try-on xato, saqlangan token hisobi",
+            )
+        return pack(
+            Decimal("0"),
+            charge_from="none",
+            activity="generatsiya",
+            price_basis="unbilled",
+            price_note="Pul olinmadi · try-on xato",
+        )
+
+    if kind_l == "studio":
+        if stored <= 0 and not success:
+            return pack(
+                Decimal("0"),
+                charge_from="none",
+                activity="studio",
+                price_basis="unbilled",
+                price_note="Pul olinmadi · studio xato",
+            )
+        return pack(
+            stored,
+            charge_from="gemini",
+            activity="studio",
+            price_basis="gemini_tokens",
+            price_note="Gemini · studio rasm (token)",
+        )
+
+    if kind_l in _ANALYZE_KINDS:
+        if stored <= 0 and not success:
+            return pack(
+                Decimal("0"),
+                charge_from="none",
+                activity="tahlil",
+                price_basis="unbilled",
+                price_note="Pul olinmadi · tahlil xato",
+            )
+        note = "Gemini · tahlil token"
+        if not success and stored > 0:
+            note = "Gemini · tahlil xato, token hisobi yozilgan"
+        return pack(
+            stored,
+            charge_from="gemini",
+            activity="tahlil",
+            price_basis="gemini_tokens",
+            price_note=note,
+        )
+
+    if kind_l == "chat":
+        if stored <= 0 and not success:
+            return pack(
+                Decimal("0"),
+                charge_from="none",
+                activity="chat",
+                price_basis="unbilled",
+                price_note="Pul olinmadi · chat xato",
+            )
+        return pack(
+            stored,
+            charge_from="gemini",
+            activity="chat",
+            price_basis="gemini_tokens",
+            price_note="Gemini · chat token",
+        )
+
+    if kind_l in _VOICE_KINDS:
+        if stored <= 0 and not success:
+            return pack(
+                Decimal("0"),
+                charge_from="none",
+                activity="ovoz",
+                price_basis="unbilled",
+                price_note="Pul olinmadi · ovoz xato",
+            )
+        return pack(
+            stored,
+            charge_from="gemini",
+            activity="ovoz",
+            price_basis="gemini_tokens",
+            price_note="Gemini · ovoz token",
+        )
+
+    if stored <= 0:
+        return pack(
+            Decimal("0"),
+            charge_from="none",
+            activity="boshqa",
+            price_basis="unbilled",
+            price_note="Pul olinmadi",
+        )
+    return pack(
+        stored,
+        charge_from="gemini" if provider_l in _GEMINI_PROVIDERS or not is_runware else "runware",
+        activity="boshqa",
+        price_basis="gemini_tokens",
+        price_note="Saqlangan hisob",
+    )
+
+
+def billing_bucket(charge: dict[str, Any]) -> str:
+    source = charge.get("charge_from")
+    if source == "runware":
+        return "runware"
+    if source == "none":
+        return "unbilled"
+    activity = charge.get("activity")
+    if activity == "tahlil":
+        return "gemini_analyze"
+    if activity == "chat":
+        return "gemini_chat"
+    if activity == "studio":
+        return "gemini_studio"
+    if activity == "ovoz":
+        return "gemini_voice"
+    return "gemini_other"
+
+
 def cost_usd_for_image(
     *,
     prompt_tokens: int,

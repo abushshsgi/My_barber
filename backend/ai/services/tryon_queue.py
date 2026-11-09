@@ -469,8 +469,8 @@ def _payload_from_db(job_id: str) -> dict[str, Any] | None:
 
 
 def _active_provider_name() -> str:
-    health = provider_health()
-    return str(health.get("active") or "vertex")
+    # Try-on images are billed by Runware. Vertex/Studio remain analysis-only.
+    return "runware"
 
 
 def acquire_provider_slot(client, provider: str, *, wait_seconds: float = 2.0) -> bool:
@@ -1262,6 +1262,8 @@ def process_next_tryon_job(*, block_seconds: int = 5) -> bool:
             status="failed",
             style_id=str(meta.get("style_id") or ""),
             style_title=str(meta.get("style_title") or ""),
+            model=(getattr(settings, "RUNWARE_TRYON_MODEL", None) or "runware:400@2"),
+            provider="runware",
             job_id=job_id,
             error_detail=exc.message,
         )
@@ -1288,6 +1290,8 @@ def process_next_tryon_job(*, block_seconds: int = 5) -> bool:
             status="failed",
             style_id=str(meta.get("style_id") or ""),
             style_title=str(meta.get("style_title") or ""),
+            model=(getattr(settings, "RUNWARE_TRYON_MODEL", None) or "runware:400@2"),
+            provider="runware",
             job_id=job_id,
             error_detail="Rasm yaratishda xatolik.",
         )

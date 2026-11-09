@@ -6,12 +6,11 @@ from datetime import timedelta
 from decimal import Decimal
 from typing import Any
 
-from django.db.models import Avg, Count, Max, Min, Q, Sum
-from django.db.models.functions import TruncDate
+from django.db.models import Avg
 from django.utils import timezone
 
 from ai.models import AiGenerationUsage
-from ai.usage_pricing import usd_to_uzs
+from ai.usage_pricing import billing_bucket, explain_usage_charge, runware_list_usd, usd_to_uzs
 from control_panel.platform_analytics import resolve_range
 
 
@@ -29,6 +28,268 @@ def _safe_limit(raw: Any, *, default: int = 50, cap: int = 200) -> int:
 def _money(value: Decimal | float | int | None) -> str:
     d = value if isinstance(value, Decimal) else Decimal(str(value or 0))
     return f"{d.quantize(Decimal('0.000001'))}"
+
+
+_BUCKET_META = {
+    "runware": ("Runware generatsiya", "Try-on rasm. Haqiqiy API cost, bo'lmasa narxnoma."),
+    "gemini_analyze": ("Gemini tahlil", "Yuz va uslub tahlili — token stavkasi."),
+    "gemini_chat": ("Gemini chat", "Morf AI chat — token stavkasi."),
+    "gemini_studio": ("Gemini studio", "Studio tahriri hali Gemini rasm modeli."),
+    "gemini_voice": ("Gemini ovoz", "Ovoz tanish va o'qish — token."),
+    "gemini_other": ("Boshqa Gemini", "Boshqa Gemini chaqiruv."),
+    "unbilled": ("Pul olinmagan", "Xato. Provayder hisob yozmagan."),
+}
+_BUCKET_ORDER = (
+    "runware",
+    "gemini_analyze",
+    "gemini_chat",
+    "gemini_studio",
+    "gemini_voice",
+    "gemini_other",
+    "unbilled",
+)
+
+
+def charge_for_usage(
+    *,
+    kind: str,
+    status: str,
+    provider: str = "",
+    model: str = "",
+    cost_usd: Any = 0,
+    total_tokens: int = 0,
+    tokens_estimated: bool = False,
+) -> dict[str, Any]:
+    charge = explain_usage_charge(
+        kind=kind,
+        status=status,
+        provider=provider,
+        model=model,
+        cost_usd=cost_usd,
+        total_tokens=total_tokens,
+        tokens_estimated=tokens_estimated,
+    )
+    charge["bucket"] = billing_bucket(charge)
+    return charge
+
+
+def public_charge(charge: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "cost_usd": _money(charge["cost_usd"]),
+        "cost_uzs": usd_to_uzs(charge["cost_usd"]),
+        "legacy_cost_usd": _money(charge["legacy_cost_usd"]),
+        "charge_from": charge["charge_from"],
+        "activity": charge["activity"],
+        "price_basis": charge["price_basis"],
+        "price_note": charge["price_note"],
+        "repriced": bool(charge["repriced"]),
+        "bucket": charge["bucket"],
+    }
+
+
+def rollup_usage_facts(rows: list[dict[str, Any]]) -> dict[str, Any]:
+    """Corrected Runware/Gemini totals for one analytics window."""
+    buckets: dict[str, dict[str, Any]] = {
+        key: {"calls": 0, "cost": Decimal("0")} for key in _BUCKET_ORDER
+    }
+    daily: dict[str, dict[str, Any]] = {}
+    users: dict[int, dict[str, Any]] = {}
+    tryon_costs: list[Decimal] = []
+    repriced_tryon = 0
+    totals = {
+        "generations": 0,
+        "success": 0,
+        "failed": 0,
+        "tryon": 0,
+        "analyze": 0,
+        "face_check": 0,
+        "studio": 0,
+        "chat": 0,
+        "voice": 0,
+        "tokens": 0,
+        "prompt_tokens": 0,
+        "candidates_tokens": 0,
+        "cost": Decimal("0"),
+        "runware": Decimal("0"),
+        "gemini": Decimal("0"),
+    }
+    seen_users: set[int] = set()
+
+    for row in rows:
+        kind = str(row.get("kind") or "")
+        status = str(row.get("status") or "")
+        charge = charge_for_usage(
+            kind=kind,
+            status=status,
+            provider=str(row.get("provider") or ""),
+            model=str(row.get("model") or ""),
+            cost_usd=row.get("cost_usd") or 0,
+            total_tokens=int(row.get("total_tokens") or 0),
+            tokens_estimated=bool(row.get("tokens_estimated")),
+        )
+        cost = charge["cost_usd"]
+        bucket = charge["bucket"]
+        buckets[bucket]["calls"] += 1
+        buckets[bucket]["cost"] += cost
+        totals["generations"] += 1
+        if status == AiGenerationUsage.Status.SUCCESS:
+            totals["success"] += 1
+        elif status == AiGenerationUsage.Status.FAILED:
+            totals["failed"] += 1
+        if kind == AiGenerationUsage.Kind.TRYON:
+            totals["tryon"] += 1
+            if status == AiGenerationUsage.Status.SUCCESS:
+                tryon_costs.append(cost)
+            if charge["repriced"] and charge["price_basis"] == "runware_list":
+                repriced_tryon += 1
+        elif kind == AiGenerationUsage.Kind.ANALYZE:
+            totals["analyze"] += 1
+        elif kind == AiGenerationUsage.Kind.FACE_CHECK:
+            totals["face_check"] += 1
+        elif kind == AiGenerationUsage.Kind.STUDIO:
+            totals["studio"] += 1
+        elif kind == AiGenerationUsage.Kind.CHAT:
+            totals["chat"] += 1
+        elif kind in (AiGenerationUsage.Kind.VOICE_STT, AiGenerationUsage.Kind.VOICE_TTS):
+            totals["voice"] += 1
+        totals["tokens"] += int(row.get("total_tokens") or 0)
+        totals["prompt_tokens"] += int(row.get("prompt_tokens") or 0)
+        totals["candidates_tokens"] += int(row.get("candidates_tokens") or 0)
+        totals["cost"] += cost
+        if charge["charge_from"] == "runware":
+            totals["runware"] += cost
+        elif charge["charge_from"] == "gemini":
+            totals["gemini"] += cost
+
+        created = row.get("created_at")
+        day_key = ""
+        if created is not None:
+            day_key = timezone.localtime(created).date().isoformat()
+        day = daily.setdefault(
+            day_key,
+            {
+                "date": day_key,
+                "generations": 0,
+                "tryon": 0,
+                "analyze": 0,
+                "studio": 0,
+                "chat": 0,
+                "tokens": 0,
+                "cost": Decimal("0"),
+                "runware": Decimal("0"),
+                "gemini": Decimal("0"),
+                "users": set(),
+            },
+        )
+        day["generations"] += 1
+        if kind == AiGenerationUsage.Kind.TRYON:
+            day["tryon"] += 1
+        elif kind == AiGenerationUsage.Kind.ANALYZE:
+            day["analyze"] += 1
+        elif kind == AiGenerationUsage.Kind.STUDIO:
+            day["studio"] += 1
+        elif kind == AiGenerationUsage.Kind.CHAT:
+            day["chat"] += 1
+        day["tokens"] += int(row.get("total_tokens") or 0)
+        day["cost"] += cost
+        if charge["charge_from"] == "runware":
+            day["runware"] += cost
+        elif charge["charge_from"] == "gemini":
+            day["gemini"] += cost
+        uid = row.get("user_id")
+        if uid:
+            day["users"].add(uid)
+            seen_users.add(uid)
+            user = users.get(uid)
+            if user is None:
+                user = {
+                    "user_id": uid,
+                    "name": _user_label(row),
+                    "phone": row.get("user__phone") or "",
+                    "email": row.get("user__email") or "",
+                    "generations": 0,
+                    "tryon": 0,
+                    "analyze": 0,
+                    "studio": 0,
+                    "chat": 0,
+                    "tokens": 0,
+                    "prompt_tokens": 0,
+                    "candidates_tokens": 0,
+                    "cost": Decimal("0"),
+                    "runware": Decimal("0"),
+                    "gemini": Decimal("0"),
+                    "last_at": created,
+                }
+                users[uid] = user
+            user["generations"] += 1
+            if kind == AiGenerationUsage.Kind.TRYON:
+                user["tryon"] += 1
+            elif kind == AiGenerationUsage.Kind.ANALYZE:
+                user["analyze"] += 1
+            elif kind == AiGenerationUsage.Kind.STUDIO:
+                user["studio"] += 1
+            elif kind == AiGenerationUsage.Kind.CHAT:
+                user["chat"] += 1
+            user["tokens"] += int(row.get("total_tokens") or 0)
+            user["prompt_tokens"] += int(row.get("prompt_tokens") or 0)
+            user["candidates_tokens"] += int(row.get("candidates_tokens") or 0)
+            user["cost"] += cost
+            if charge["charge_from"] == "runware":
+                user["runware"] += cost
+            elif charge["charge_from"] == "gemini":
+                user["gemini"] += cost
+            if created is not None and (user["last_at"] is None or created > user["last_at"]):
+                user["last_at"] = created
+
+    positive_tryon = [c for c in tryon_costs if c > 0]
+    tryon_sum = sum(positive_tryon, Decimal("0"))
+    billing = []
+    for key in _BUCKET_ORDER:
+        calls = int(buckets[key]["calls"])
+        if key not in ("runware", "gemini_analyze", "gemini_chat", "unbilled") and calls <= 0:
+            continue
+        label, detail = _BUCKET_META[key]
+        cost = buckets[key]["cost"]
+        billing.append(
+            {
+                "key": key,
+                "label": label,
+                "detail": detail,
+                "calls": calls,
+                "cost_usd": _money(cost),
+                "cost_uzs": usd_to_uzs(cost),
+            }
+        )
+    daily_rows = []
+    for key in sorted(k for k in daily if k):
+        row = daily[key]
+        daily_rows.append(
+            {
+                "date": row["date"],
+                "generations": row["generations"],
+                "tryon": row["tryon"],
+                "analyze": row["analyze"],
+                "studio": row["studio"],
+                "chat": row["chat"],
+                "tokens": row["tokens"],
+                "cost_usd": _money(row["cost"]),
+                "cost_uzs": usd_to_uzs(row["cost"]),
+                "runware_usd": _money(row["runware"]),
+                "gemini_usd": _money(row["gemini"]),
+                "users": len(row["users"]),
+            }
+        )
+    user_rows = sorted(users.values(), key=lambda item: (item["cost"], item["generations"]), reverse=True)
+    return {
+        "totals": totals,
+        "unique_users": len(seen_users),
+        "billing": billing,
+        "daily": daily_rows,
+        "users": user_rows,
+        "tryon_costs": positive_tryon,
+        "tryon_sum": tryon_sum,
+        "repriced_tryon": repriced_tryon,
+    }
 
 
 def _user_label(row: dict[str, Any]) -> str:
@@ -76,6 +337,29 @@ def _queue_snapshot() -> dict[str, Any]:
         return {"enabled": False, "depth": 0}
 
 
+def load_usage_facts(qs) -> list[dict[str, Any]]:
+    return list(
+        qs.values(
+            "user_id",
+            "kind",
+            "status",
+            "provider",
+            "model",
+            "cost_usd",
+            "total_tokens",
+            "prompt_tokens",
+            "candidates_tokens",
+            "tokens_estimated",
+            "created_at",
+            "user__full_name",
+            "user__first_name",
+            "user__last_name",
+            "user__phone",
+            "user__email",
+        )
+    )
+
+
 def build_morph_ai_analytics(
     start_raw: str | None,
     end_raw: str | None,
@@ -88,36 +372,14 @@ def build_morph_ai_analytics(
     now = timezone.now()
     active_since = now - ACTIVE_WINDOW
 
-    # Alias must not reuse field names referenced by other aggregates in the same call
-    # (e.g. total_tokens=Sum(...) breaks Avg("total_tokens")).
-    totals = qs.aggregate(
-        generations=Count("id"),
-        success=Count("id", filter=Q(status=AiGenerationUsage.Status.SUCCESS)),
-        failed=Count("id", filter=Q(status=AiGenerationUsage.Status.FAILED)),
-        tryon=Count("id", filter=Q(kind=AiGenerationUsage.Kind.TRYON)),
-        analyze=Count("id", filter=Q(kind=AiGenerationUsage.Kind.ANALYZE)),
-        face_check=Count("id", filter=Q(kind=AiGenerationUsage.Kind.FACE_CHECK)),
-        studio=Count("id", filter=Q(kind=AiGenerationUsage.Kind.STUDIO)),
-        chat=Count("id", filter=Q(kind=AiGenerationUsage.Kind.CHAT)),
-        unique_users=Count("user_id", distinct=True),
-        sum_tokens=Sum("total_tokens"),
-        sum_prompt_tokens=Sum("prompt_tokens"),
-        sum_candidates_tokens=Sum("candidates_tokens"),
-        total_cost=Sum("cost_usd"),
-        avg_cost=Avg("cost_usd"),
-        avg_latency=Avg("latency_ms"),
-        avg_tokens=Avg("total_tokens"),
+    facts = load_usage_facts(qs)
+    rolled = rollup_usage_facts(facts)
+    totals = rolled["totals"]
+    tryon_costs = rolled["tryon_costs"]
+    tryon_avg = (
+        rolled["tryon_sum"] / Decimal(len(tryon_costs)) if tryon_costs else Decimal("0")
     )
-
-    tryon_qs = qs.filter(kind=AiGenerationUsage.Kind.TRYON, status=AiGenerationUsage.Status.SUCCESS)
-    tryon_cost = tryon_qs.aggregate(
-        avg=Avg("cost_usd"),
-        min=Min("cost_usd"),
-        max=Max("cost_usd"),
-        count=Count("id"),
-        tokens=Sum("total_tokens"),
-        cost=Sum("cost_usd"),
-    )
+    latency = qs.aggregate(avg_latency=Avg("latency_ms"))
 
     active_users = (
         AiGenerationUsage.objects.filter(created_at__gte=active_since, user_id__isnull=False)
@@ -135,57 +397,32 @@ def build_morph_ai_analytics(
         kind=AiGenerationUsage.Kind.STUDIO,
     ).count()
 
-    daily = list(
-        qs.annotate(day=TruncDate("created_at"))
-        .values("day")
-        .annotate(
-            generations=Count("id"),
-            tryon=Count("id", filter=Q(kind=AiGenerationUsage.Kind.TRYON)),
-            analyze=Count("id", filter=Q(kind=AiGenerationUsage.Kind.ANALYZE)),
-            studio=Count("id", filter=Q(kind=AiGenerationUsage.Kind.STUDIO)),
-            chat=Count("id", filter=Q(kind=AiGenerationUsage.Kind.CHAT)),
-            tokens=Sum("total_tokens"),
-            cost_usd=Sum("cost_usd"),
-            users=Count("user_id", distinct=True),
-        )
-        .order_by("day")
-    )
-
-    top_users = list(
-        qs.filter(user_id__isnull=False)
-        .values(
-            "user_id",
-            "user__full_name",
-            "user__first_name",
-            "user__last_name",
-            "user__phone",
-            "user__email",
-        )
-        .annotate(
-            generations=Count("id"),
-            tryon=Count("id", filter=Q(kind=AiGenerationUsage.Kind.TRYON)),
-            analyze=Count("id", filter=Q(kind=AiGenerationUsage.Kind.ANALYZE)),
-            studio=Count("id", filter=Q(kind=AiGenerationUsage.Kind.STUDIO)),
-            chat=Count("id", filter=Q(kind=AiGenerationUsage.Kind.CHAT)),
-            tokens=Sum("total_tokens"),
-            prompt_tokens=Sum("prompt_tokens"),
-            candidates_tokens=Sum("candidates_tokens"),
-            cost_usd=Sum("cost_usd"),
-            last_at=Max("created_at"),
-        )
-        .order_by("-cost_usd", "-generations")[: _safe_limit(top_limit, default=20, cap=100)]
-    )
-
     recent = list(
         qs.select_related("user")
         .order_by("-created_at")[: _safe_limit(recent_limit, default=50, cap=200)]
     )
+    top_cap = _safe_limit(top_limit, default=20, cap=100)
 
     total_gens = int(totals["generations"] or 0)
     success = int(totals["success"] or 0)
     success_rate = round((success / total_gens) * 100, 1) if total_gens else 0.0
-    avg_cost = totals["avg_cost"] or Decimal("0")
-    tryon_avg = tryon_cost["avg"] or Decimal("0")
+    avg_cost = (totals["cost"] / Decimal(total_gens)) if total_gens else Decimal("0")
+    avg_tokens = (totals["tokens"] / total_gens) if total_gens else 0
+    tryon_min = min(tryon_costs) if tryon_costs else Decimal("0")
+    tryon_max = max(tryon_costs) if tryon_costs else Decimal("0")
+
+    def _recent_charge(item: AiGenerationUsage) -> dict[str, Any]:
+        return public_charge(
+            charge_for_usage(
+                kind=item.kind,
+                status=item.status,
+                provider=item.provider,
+                model=item.model,
+                cost_usd=item.cost_usd,
+                total_tokens=item.total_tokens,
+                tokens_estimated=item.tokens_estimated,
+            )
+        )
 
     return {
         "generated_at": now.isoformat(),
@@ -193,6 +430,14 @@ def build_morph_ai_analytics(
             "start": start_dt.date().isoformat(),
             "end": end_dt.date().isoformat(),
         },
+        "pricing": {
+            "tryon_provider": "runware",
+            "analyze_provider": "gemini",
+            "chat_provider": "gemini",
+            "runware_list_usd": _money(runware_list_usd(None)),
+            "repriced_tryon": rolled["repriced_tryon"],
+        },
+        "billing": rolled["billing"],
         "live": {
             "active_users_15m": active_users,
             "generations_15m": gens_15m,
@@ -210,56 +455,49 @@ def build_morph_ai_analytics(
             "face_check": int(totals["face_check"] or 0),
             "studio": int(totals["studio"] or 0),
             "chat": int(totals["chat"] or 0),
-            "unique_users": int(totals["unique_users"] or 0),
-            "total_tokens": int(totals["sum_tokens"] or 0),
-            "prompt_tokens": int(totals["sum_prompt_tokens"] or 0),
-            "candidates_tokens": int(totals["sum_candidates_tokens"] or 0),
-            "total_cost_usd": _money(totals["total_cost"]),
-            "total_cost_uzs": usd_to_uzs(totals["total_cost"]),
+            "unique_users": int(rolled["unique_users"] or 0),
+            "total_tokens": int(totals["tokens"] or 0),
+            "prompt_tokens": int(totals["prompt_tokens"] or 0),
+            "candidates_tokens": int(totals["candidates_tokens"] or 0),
+            "total_cost_usd": _money(totals["cost"]),
+            "total_cost_uzs": usd_to_uzs(totals["cost"]),
+            "runware_cost_usd": _money(totals["runware"]),
+            "runware_cost_uzs": usd_to_uzs(totals["runware"]),
+            "gemini_cost_usd": _money(totals["gemini"]),
+            "gemini_cost_uzs": usd_to_uzs(totals["gemini"]),
             "usd_to_uzs_rate": usd_to_uzs(1),
             "avg_cost_usd": _money(avg_cost),
-            "avg_tokens": int(round(float(totals["avg_tokens"] or 0))),
-            "avg_latency_ms": int(round(float(totals["avg_latency"] or 0))),
+            "avg_tokens": int(round(float(avg_tokens))),
+            "avg_latency_ms": int(round(float(latency["avg_latency"] or 0))),
             "tryon_avg_cost_usd": _money(tryon_avg),
-            "tryon_min_cost_usd": _money(tryon_cost["min"] or 0),
-            "tryon_max_cost_usd": _money(tryon_cost["max"] or 0),
-            "tryon_total_cost_usd": _money(tryon_cost["cost"]),
-            "tryon_total_tokens": int(tryon_cost["tokens"] or 0),
+            "tryon_min_cost_usd": _money(tryon_min),
+            "tryon_max_cost_usd": _money(tryon_max),
+            "tryon_total_cost_usd": _money(rolled["tryon_sum"]),
+            "tryon_total_tokens": 0,
+            "repriced_tryon": rolled["repriced_tryon"],
         },
-        "daily": [
-            {
-                "date": row["day"].isoformat() if row["day"] else "",
-                "generations": int(row["generations"] or 0),
-                "tryon": int(row["tryon"] or 0),
-                "analyze": int(row["analyze"] or 0),
-                "studio": int(row["studio"] or 0),
-                "chat": int(row["chat"] or 0),
-                "tokens": int(row["tokens"] or 0),
-                "cost_usd": _money(row["cost_usd"]),
-                "cost_uzs": usd_to_uzs(row["cost_usd"]),
-                "users": int(row["users"] or 0),
-            }
-            for row in daily
-        ],
+        "daily": rolled["daily"],
         "top_users": [
             {
                 "user_id": row["user_id"],
-                "name": _user_label(row),
-                "phone": row.get("user__phone") or "",
-                "email": row.get("user__email") or "",
-                "generations": int(row["generations"] or 0),
-                "tryon": int(row["tryon"] or 0),
-                "analyze": int(row["analyze"] or 0),
-                "studio": int(row["studio"] or 0),
-                "chat": int(row["chat"] or 0),
-                "tokens": int(row["tokens"] or 0),
-                "prompt_tokens": int(row["prompt_tokens"] or 0),
-                "candidates_tokens": int(row["candidates_tokens"] or 0),
-                "cost_usd": _money(row["cost_usd"]),
-                "cost_uzs": usd_to_uzs(row["cost_usd"]),
+                "name": row["name"],
+                "phone": row["phone"],
+                "email": row["email"],
+                "generations": row["generations"],
+                "tryon": row["tryon"],
+                "analyze": row["analyze"],
+                "studio": row["studio"],
+                "chat": row["chat"],
+                "tokens": row["tokens"],
+                "prompt_tokens": row["prompt_tokens"],
+                "candidates_tokens": row["candidates_tokens"],
+                "cost_usd": _money(row["cost"]),
+                "cost_uzs": usd_to_uzs(row["cost"]),
+                "runware_usd": _money(row["runware"]),
+                "gemini_usd": _money(row["gemini"]),
                 "last_at": row["last_at"].isoformat() if row.get("last_at") else None,
             }
-            for row in top_users
+            for row in rolled["users"][:top_cap]
         ],
         "recent": [
             {
@@ -279,11 +517,10 @@ def build_morph_ai_analytics(
                 "prompt": item.prompt,
                 "model": item.model,
                 "provider": item.provider,
+                **_recent_charge(item),
                 "prompt_tokens": item.prompt_tokens,
                 "candidates_tokens": item.candidates_tokens,
                 "total_tokens": item.total_tokens,
-                "cost_usd": _money(item.cost_usd),
-                "cost_uzs": usd_to_uzs(item.cost_usd),
                 "tokens_estimated": item.tokens_estimated,
                 "latency_ms": item.latency_ms,
                 "error_detail": item.error_detail,

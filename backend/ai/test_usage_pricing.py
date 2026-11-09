@@ -1,10 +1,12 @@
 from decimal import Decimal
 
-from django.test import SimpleTestCase
+from django.test import SimpleTestCase, override_settings
 
 from ai.usage_pricing import (
+    billing_bucket,
     cost_usd_for_chat,
     cost_usd_for_image,
+    explain_usage_charge,
     extract_usage_tokens,
     finalize_usage,
     usd_to_uzs,
@@ -76,3 +78,64 @@ class UsagePricingTests(SimpleTestCase):
         )
         self.assertEqual(merged["prompt_tokens"], 210)
         self.assertEqual(merged["total_tokens"], 250)
+
+    @override_settings(RUNWARE_TRYON_WIDTH=1024, RUNWARE_TRYON_HEIGHT=1024)
+    def test_runware_api_cost_is_kept(self):
+        charge = explain_usage_charge(
+            kind="tryon",
+            status="success",
+            provider="runware",
+            model="runware:400@2",
+            cost_usd="0.002470",
+            total_tokens=0,
+            tokens_estimated=False,
+        )
+        self.assertEqual(charge["cost_usd"], Decimal("0.002470"))
+        self.assertEqual(charge["price_basis"], "runware_api")
+        self.assertEqual(charge["charge_from"], "runware")
+        self.assertFalse(charge["repriced"])
+        self.assertEqual(billing_bucket(charge), "runware")
+
+    @override_settings(RUNWARE_TRYON_WIDTH=1024, RUNWARE_TRYON_HEIGHT=1024)
+    def test_old_gemini_tryon_uses_runware_list_price(self):
+        charge = explain_usage_charge(
+            kind="tryon",
+            status="success",
+            provider="vertex",
+            model="gemini-2.5-flash-image",
+            cost_usd="0.034200",
+            total_tokens=2240,
+            tokens_estimated=True,
+        )
+        self.assertEqual(charge["cost_usd"], Decimal("0.000780"))
+        self.assertEqual(charge["legacy_cost_usd"], Decimal("0.034200"))
+        self.assertEqual(charge["price_basis"], "runware_list")
+        self.assertTrue(charge["repriced"])
+        self.assertIn("Gemini", charge["price_note"])
+
+    def test_analyze_stays_on_gemini_tokens(self):
+        charge = explain_usage_charge(
+            kind="analyze",
+            status="success",
+            provider="vertex",
+            model="gemini-3.5-flash-lite",
+            cost_usd="0.000931",
+            total_tokens=1800,
+            tokens_estimated=False,
+        )
+        self.assertEqual(charge["cost_usd"], Decimal("0.000931"))
+        self.assertEqual(charge["charge_from"], "gemini")
+        self.assertEqual(charge["activity"], "tahlil")
+        self.assertEqual(billing_bucket(charge), "gemini_analyze")
+
+    def test_failed_analyze_is_unbilled(self):
+        charge = explain_usage_charge(
+            kind="analyze",
+            status="failed",
+            provider="",
+            cost_usd="0",
+            total_tokens=0,
+        )
+        self.assertEqual(charge["cost_usd"], Decimal("0"))
+        self.assertEqual(charge["charge_from"], "none")
+        self.assertEqual(billing_bucket(charge), "unbilled")

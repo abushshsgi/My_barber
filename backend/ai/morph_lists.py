@@ -7,13 +7,12 @@ import io
 import math
 from typing import Any
 
-from django.db.models import Count, Max, Q, Sum
-from django.db.models.functions import TruncDate
+from django.db.models import Count, Sum
 from django.http import HttpResponse
 from django.utils import timezone
 
 from ai.models import AiGenerationUsage, AiStyleHistoryEntry, MorphAiGenerationEntry, MorphAiSettings
-from ai.morph_analytics import _user_label
+from ai.morph_analytics import charge_for_usage, load_usage_facts, public_charge, rollup_usage_facts
 from ai.morph_ops import _gallery_generation_item, _gallery_history_item, _money
 from control_panel.platform_analytics import resolve_range
 
@@ -81,7 +80,17 @@ def _serialize_generation(item: AiGenerationUsage) -> dict[str, Any]:
         "prompt_tokens": item.prompt_tokens,
         "candidates_tokens": item.candidates_tokens,
         "total_tokens": item.total_tokens,
-        "cost_usd": _money(item.cost_usd),
+        **public_charge(
+            charge_for_usage(
+                kind=item.kind,
+                status=item.status,
+                provider=item.provider,
+                model=item.model,
+                cost_usd=item.cost_usd,
+                total_tokens=item.total_tokens,
+                tokens_estimated=item.tokens_estimated,
+            )
+        ),
         "tokens_estimated": item.tokens_estimated,
         "latency_ms": item.latency_ms,
         "error_detail": item.error_detail,
@@ -112,54 +121,36 @@ def _list_generations(start_raw, end_raw, page, page_size) -> dict[str, Any]:
 
 def _list_spenders(start_raw, end_raw, page, page_size) -> dict[str, Any]:
     start_dt, end_dt = resolve_range(start_raw, end_raw)
-    base = (
+    facts = load_usage_facts(
         AiGenerationUsage.objects.filter(
             created_at__gte=start_dt,
             created_at__lte=end_dt,
             user_id__isnull=False,
         )
-        .values(
-            "user_id",
-            "user__full_name",
-            "user__first_name",
-            "user__last_name",
-            "user__phone",
-            "user__email",
-        )
-        .annotate(
-            generations=Count("id"),
-            tryon=Count("id", filter=Q(kind=AiGenerationUsage.Kind.TRYON)),
-            analyze=Count("id", filter=Q(kind=AiGenerationUsage.Kind.ANALYZE)),
-            studio=Count("id", filter=Q(kind=AiGenerationUsage.Kind.STUDIO)),
-            face_check=Count("id", filter=Q(kind=AiGenerationUsage.Kind.FACE_CHECK)),
-            tokens=Sum("total_tokens"),
-            prompt_tokens=Sum("prompt_tokens"),
-            candidates_tokens=Sum("candidates_tokens"),
-            cost_usd=Sum("cost_usd"),
-            last_at=Max("created_at"),
-        )
-        .order_by("-cost_usd", "-generations")
     )
-    count = base.count()
+    rolled = rollup_usage_facts(facts)
+    count = len(rolled["users"])
     start = (page - 1) * page_size
     rows = [
         {
             "user_id": row["user_id"],
-            "name": _user_label(row),
-            "phone": row.get("user__phone") or "",
-            "email": row.get("user__email") or "",
-            "generations": int(row["generations"] or 0),
-            "tryon": int(row["tryon"] or 0),
-            "analyze": int(row["analyze"] or 0),
-            "studio": int(row["studio"] or 0),
-            "face_check": int(row["face_check"] or 0),
-            "tokens": int(row["tokens"] or 0),
-            "prompt_tokens": int(row["prompt_tokens"] or 0),
-            "candidates_tokens": int(row["candidates_tokens"] or 0),
-            "cost_usd": _money(row["cost_usd"]),
+            "name": row["name"],
+            "phone": row["phone"],
+            "email": row["email"],
+            "generations": row["generations"],
+            "tryon": row["tryon"],
+            "analyze": row["analyze"],
+            "studio": row["studio"],
+            "chat": row["chat"],
+            "tokens": row["tokens"],
+            "prompt_tokens": row["prompt_tokens"],
+            "candidates_tokens": row["candidates_tokens"],
+            "cost_usd": _money(row["cost"]),
+            "runware_usd": _money(row["runware"]),
+            "gemini_usd": _money(row["gemini"]),
             "last_at": row["last_at"].isoformat() if row.get("last_at") else None,
         }
-        for row in base[start : start + page_size]
+        for row in rolled["users"][start : start + page_size]
     ]
     payload = _paginate(rows, page=page, page_size=page_size, count=count)
     payload["range"] = {
@@ -288,32 +279,10 @@ def _list_queue(page, page_size) -> dict[str, Any]:
 
 def _list_daily(start_raw, end_raw, page, page_size) -> dict[str, Any]:
     start_dt, end_dt = resolve_range(start_raw, end_raw)
-    rows_qs = list(
+    facts = load_usage_facts(
         AiGenerationUsage.objects.filter(created_at__gte=start_dt, created_at__lte=end_dt)
-        .annotate(day=TruncDate("created_at"))
-        .values("day")
-        .annotate(
-            generations=Count("id"),
-            tryon=Count("id", filter=Q(kind=AiGenerationUsage.Kind.TRYON)),
-            analyze=Count("id", filter=Q(kind=AiGenerationUsage.Kind.ANALYZE)),
-            tokens=Sum("total_tokens"),
-            cost_usd=Sum("cost_usd"),
-            users=Count("user_id", distinct=True),
-        )
-        .order_by("-day")
     )
-    rows = [
-        {
-            "date": row["day"].isoformat() if row["day"] else "",
-            "generations": int(row["generations"] or 0),
-            "tryon": int(row["tryon"] or 0),
-            "analyze": int(row["analyze"] or 0),
-            "tokens": int(row["tokens"] or 0),
-            "cost_usd": _money(row["cost_usd"]),
-            "users": int(row["users"] or 0),
-        }
-        for row in rows_qs
-    ]
+    rows = list(reversed(rollup_usage_facts(facts)["daily"]))
     payload = _paginate(rows, page=page, page_size=page_size)
     payload["range"] = {
         "start": start_dt.date().isoformat(),
@@ -422,8 +391,13 @@ def build_morph_list_export_csv(
                 "kind",
                 "status",
                 "style_title",
+                "provider",
+                "charge_from",
+                "activity",
+                "price_note",
                 "total_tokens",
                 "cost_usd",
+                "legacy_cost_usd",
                 "error_detail",
                 "job_id",
             ]
@@ -438,8 +412,13 @@ def build_morph_list_export_csv(
                     r.get("kind"),
                     r.get("status"),
                     r.get("style_title"),
+                    r.get("provider"),
+                    r.get("charge_from"),
+                    r.get("activity"),
+                    r.get("price_note"),
                     r.get("total_tokens"),
                     r.get("cost_usd"),
+                    r.get("legacy_cost_usd"),
                     r.get("error_detail"),
                     r.get("job_id"),
                 ]
