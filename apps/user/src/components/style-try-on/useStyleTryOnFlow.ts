@@ -6,6 +6,7 @@ import { isMorphPlanLimitError } from "@/lib/morph-plan-limit";
 import { refreshMorphAiGenerationsCache, saveMorphAiGeneration } from "@/lib/morf-ai-gallery";
 import { markMorphAiOnboarded } from "@/lib/morf-ai-session";
 import { prepareSelfieDataUrl, prepareSelfieFromFile } from "@/lib/selfie-image";
+import { useActionAuth } from "@/hooks/use-action-auth";
 
 type UseStyleTryOnFlowOptions = {
   styleId: string;
@@ -62,6 +63,7 @@ export function useStyleTryOnFlow({
   onPlanLimit,
   onTryOnSuccess,
 }: UseStyleTryOnFlowOptions) {
+  const allowAction = useActionAuth();
   const [photo, setPhoto] = useState<string | null>(null);
   const [preparingPreview, setPreparingPreview] = useState<string | null>(null);
   const [preparing, setPreparing] = useState(false);
@@ -79,6 +81,7 @@ export function useStyleTryOnFlow({
   }, [styleId]);
 
   const runTryOn = async (dataUrl: string, source: "auto" | "manual" = "manual") => {
+    if (!allowAction()) return;
     const flightKey = styleTryOnFlightKey(styleId, personaId, dataUrl);
     let run = styleTryOnInFlight.get(flightKey);
     const joinedExisting = Boolean(run);
@@ -158,6 +161,7 @@ export function useStyleTryOnFlow({
 
   const onFile = async (file: File | null | undefined) => {
     if (!file) return;
+    if (!allowAction()) return;
     try {
       const dataUrl = await prepareSelfieFromFile(file);
       await applyPhoto(dataUrl);
@@ -173,8 +177,14 @@ export function useStyleTryOnFlow({
     void applyPhoto(payload.dataUrl);
   };
 
-  const openFile = () => fileRef.current?.click();
-  const openCamera = () => setCameraOpen(true);
+  const openFile = () => {
+    if (!allowAction()) return;
+    fileRef.current?.click();
+  };
+  const openCamera = () => {
+    if (!allowAction()) return;
+    setCameraOpen(true);
+  };
   const closeCamera = () => setCameraOpen(false);
 
   const reset = () => {

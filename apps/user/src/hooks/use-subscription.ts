@@ -8,11 +8,15 @@ import {
   previewSubscriptionPromo,
   type SubscriptionMe,
 } from "@/lib/api/subscriptions";
+import { authQueryEnabled } from "@/lib/auth-query";
+import { hasValidUserSession } from "@/lib/api/client";
 
 export function useSubscriptionMe() {
+  const loggedIn = hasValidUserSession();
   return useQuery({
     queryKey: ["subscriptions", "me"],
     queryFn: fetchSubscriptionMe,
+    enabled: authQueryEnabled(loggedIn),
     staleTime: 8_000,
     refetchOnWindowFocus: true,
   });

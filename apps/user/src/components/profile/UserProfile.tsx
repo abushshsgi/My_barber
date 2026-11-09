@@ -31,6 +31,7 @@ export function UserProfile() {
   const { data: notifications = [] } = useNotificationsApi();
   const unreadCount = notifications.filter((n) => !n.read).length;
   const loggedIn = hasValidUserSession();
+  const displayName = user.name || t("common.guest", { defaultValue: "Mehmon" });
   const bookings = stats?.bookingsCount ?? 0;
   const favorites = stats?.favoritesCount ?? 0;
 
@@ -58,9 +59,9 @@ export function UserProfile() {
       </div>
 
       <div className="mt-5 flex flex-col items-center text-center">
-        <UserAvatar name={user.name} src={user.avatar} size={88} editable={loggedIn} />
+        <UserAvatar name={displayName} src={user.avatar} size={88} editable={loggedIn} />
         <Link to="/settings" className="mt-3 inline-flex max-w-full items-center gap-1">
-          <span className="truncate text-[22px] font-bold tracking-tight">{user.name}</span>
+          <span className="truncate text-[22px] font-bold tracking-tight">{displayName}</span>
           <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
         </Link>
         <span className="mt-2 rounded-full bg-surface px-3 py-1 text-[11px] font-bold text-muted-foreground">

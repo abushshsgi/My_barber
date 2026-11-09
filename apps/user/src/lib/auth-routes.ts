@@ -1,14 +1,23 @@
 /**
- * Mehmon faqat kirish va yuridik sahifalarda qoladi.
- * Bosh sahifa, try-on, Morf AI, salon va qolgan funksiyalar login talab qiladi.
+ * Mehmon sahifani ko'ra oladi. Funksiya va tugma alohida login so'raydi.
+ * Ko'rish: bosh sahifa, profil, try-on, chatbot.
  */
 const PUBLIC_PATHS = new Set([
+  "/",
+  "/profile",
+  "/ai-style",
+  "/ai-style/chat",
   "/auth",
   "/privacy-policy",
   "/terms-of-use",
   "/delete-account",
   "/for-salons",
 ]);
+
+/** /explore/:styleId/try — try-on sahifasini ko'rish. */
+function isGuestTryOnPath(path: string): boolean {
+  return /^\/explore\/[^/]+\/try$/.test(path);
+}
 
 function normalizePath(pathname: string): string {
   const raw = (pathname.split("?")[0] ?? pathname).split("#")[0] || "/";
@@ -20,6 +29,7 @@ function normalizePath(pathname: string): string {
 export function pathRequiresAuth(pathname: string): boolean {
   const path = normalizePath(pathname);
   if (path === "/auth" || path.startsWith("/auth/")) return false;
+  if (isGuestTryOnPath(path)) return false;
   return !PUBLIC_PATHS.has(path);
 }
 

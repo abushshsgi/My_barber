@@ -2,12 +2,21 @@ import { describe, expect, it } from "vitest";
 import { guestMustLogin, pathRequiresAuth } from "./auth-routes";
 
 describe("pathRequiresAuth", () => {
-  it("sends product pages, including try-on, to login", () => {
-    expect(pathRequiresAuth("/")).toBe(true);
+  it("lets guests view home, profile, try-on and chatbot", () => {
+    expect(pathRequiresAuth("/")).toBe(false);
+    expect(pathRequiresAuth("/profile")).toBe(false);
+    expect(pathRequiresAuth("/ai-style")).toBe(false);
+    expect(pathRequiresAuth("/ai-style/chat")).toBe(false);
+    expect(pathRequiresAuth("/explore/fade/try")).toBe(false);
+  });
+
+  it("still requires login for functions and other pages", () => {
     expect(pathRequiresAuth("/explore")).toBe(true);
     expect(pathRequiresAuth("/explore/fade")).toBe(true);
-    expect(pathRequiresAuth("/explore/fade/try")).toBe(true);
-    expect(pathRequiresAuth("/ai-style")).toBe(true);
+    expect(pathRequiresAuth("/ai-style/history")).toBe(true);
+    expect(pathRequiresAuth("/ai-style/care")).toBe(true);
+    expect(pathRequiresAuth("/settings")).toBe(true);
+    expect(pathRequiresAuth("/wallet")).toBe(true);
     expect(pathRequiresAuth("/map")).toBe(true);
     expect(pathRequiresAuth("/salon/12")).toBe(true);
     expect(pathRequiresAuth("/barber/4")).toBe(true);
@@ -28,11 +37,15 @@ describe("pathRequiresAuth", () => {
     expect(pathRequiresAuth("/privacy")).toBe(true);
   });
 
-  it("blocks guests on try-on and lets a session through", () => {
-    expect(guestMustLogin("/explore/fade/try", false)).toBe(true);
-    expect(guestMustLogin("/ai-style", false)).toBe(true);
-    expect(guestMustLogin("/", false)).toBe(true);
-    expect(guestMustLogin("/explore/fade/try", true)).toBe(false);
+  it("lets guests view try-on and still blocks function pages", () => {
+    expect(guestMustLogin("/explore/fade/try", false)).toBe(false);
+    expect(guestMustLogin("/ai-style", false)).toBe(false);
+    expect(guestMustLogin("/ai-style/chat", false)).toBe(false);
+    expect(guestMustLogin("/profile", false)).toBe(false);
+    expect(guestMustLogin("/", false)).toBe(false);
+    expect(guestMustLogin("/bookings", false)).toBe(true);
+    expect(guestMustLogin("/wallet", false)).toBe(true);
+    expect(guestMustLogin("/ai-style", true)).toBe(false);
     expect(guestMustLogin("/auth", false)).toBe(false);
     expect(guestMustLogin("/privacy-policy", false)).toBe(false);
   });

@@ -44,13 +44,14 @@ export function MorphMobileProfile() {
     t("profile.subscription", { defaultValue: "Obuna" });
   const active = Boolean(subQ.data?.has_active);
   const history = historyQ.data ?? [];
+  const displayName = user.name || t("common.guest", { defaultValue: "Mehmon" });
 
   return (
     <div className="-mx-4 min-h-[70vh] bg-[var(--morph-bg,var(--background))] px-[clamp(0.75rem,3.2vw,1.25rem)] pb-[max(6rem,calc(env(safe-area-inset-bottom)+5rem))] pt-[max(1.25rem,env(safe-area-inset-top))] text-[var(--morph-fg,inherit)] sm:-mx-6 md:-mx-8">
       <div className="flex items-center gap-3">
         <UserAvatar name={user.name} src={user.avatar} size={56} editable={loggedIn} />
         <Link to="/settings" className="min-w-0 flex-1">
-          <p className="truncate text-lg font-semibold tracking-tight">{user.name}</p>
+          <p className="truncate text-lg font-semibold tracking-tight">{displayName}</p>
           <p className="text-sm text-[var(--morph-muted,#737373)]">
             {t("profile.settings", { defaultValue: "Sozlamalar" })}
           </p>
@@ -180,6 +181,7 @@ export function MorphMobileProfile() {
       ) : (
         <Link
           to="/auth"
+          search={{ redirect: "/profile" }}
           className="mt-6 flex w-full items-center justify-center rounded-full bg-[var(--morph-fg,#111)] py-3 text-sm font-semibold text-[var(--morph-bg,#fff)]"
         >
           {t("common.login", { defaultValue: "Kirish" })}

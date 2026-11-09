@@ -22,6 +22,7 @@ import { Button } from "@/components/ui/button";
 import { useMorphAiPrivacy } from "@/hooks/use-morf-ai-privacy";
 import { useMorphLimitGate } from "@/hooks/use-morph-limit-gate";
 import { hasValidUserSession } from "@/lib/api/client";
+import { buildAuthReturnPath } from "@/lib/require-auth";
 import {
   fetchMorphChatThreads,
   sendMorphChatMessage,
@@ -379,8 +380,19 @@ export function MorphAiChatPage() {
     async (raw?: string, assumeHair?: ChatHairAnswers) => {
       const trimmed = (raw ?? input).trim();
       if (!trimmed || sending) return null;
-      if (!loggedIn) {
-        void navigate({ to: "/auth" });
+      if (!hasValidUserSession()) {
+        const redirectTo =
+          typeof window === "undefined"
+            ? undefined
+            : buildAuthReturnPath(
+                window.location.pathname,
+                window.location.search,
+                window.location.hash,
+              );
+        void navigate({
+          to: "/auth",
+          search: redirectTo ? { redirect: redirectTo } : {},
+        });
         return null;
       }
       const hair = assumeHair ?? (hairQ.data?.complete ? hairQ.data : null);
@@ -522,7 +534,7 @@ export function MorphAiChatPage() {
         setSending(false);
       }
     },
-    [applyLimits, gate, hairQ.data, input, loggedIn, messages, navigate, sending, t],
+    [applyLimits, gate, hairQ.data, input, messages, navigate, sending, t],
   );
 
   const openThread = useCallback((id: string) => {

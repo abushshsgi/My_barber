@@ -9,6 +9,7 @@ import { MorphLimitUpsell } from "@/components/ai-style/MorphLimitUpsell";
 import type { AiAnalysisResult, AiSuggestion } from "@/components/ai-style/ai-style-shared";
 import { useAiStyleFlow } from "@/components/ai-style/useAiStyleFlow";
 import { DesktopPageSplit } from "@/components/desktop/DesktopPageSplit";
+import { useActionAuth } from "@/hooks/use-action-auth";
 import { useMorphLimitGate } from "@/hooks/use-morph-limit-gate";
 import { useExplorePersona } from "@/hooks/use-explore-persona";
 import { useHairstyle } from "@/hooks/use-hairstyles";
@@ -54,6 +55,7 @@ function mergeFocusSuggestion(
 
 export function AiStyleFlow({ audience, menPersonaId: menPersonaIdProp, focusStyleId }: Props) {
   const { t } = useTranslation();
+  const allowAction = useActionAuth();
   const limitGate = useMorphLimitGate();
   const { personaId: explorePersonaId } = useExplorePersona();
   const menPersonaId = menPersonaIdProp ?? explorePersonaId;
@@ -165,6 +167,7 @@ export function AiStyleFlow({ audience, menPersonaId: menPersonaIdProp, focusSty
 
   const toggleSave = useCallback(
     (id: string, meta?: { title: string; previewImage?: string }) => {
+      if (!allowAction()) return;
       const previewImage = meta?.previewImage ?? flow.tryOnByStyle[id];
       const title = meta?.title;
 
@@ -186,7 +189,7 @@ export function AiStyleFlow({ audience, menPersonaId: menPersonaIdProp, focusSty
       setSaved((prev) => (prev.includes(id) ? prev : [...prev, id]));
       toast.success(t("aiStylePage.savedToast"));
     },
-    [saved, flow.tryOnByStyle, t],
+    [saved, flow.tryOnByStyle, t, allowAction],
   );
 
   const layoutProps = {

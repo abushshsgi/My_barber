@@ -12,6 +12,7 @@ import { useProfileScreen } from "@/components/profile/useProfileScreen";
 import { useAppTranslation } from "@/hooks/use-app-translation";
 import { useNotificationsApi } from "@/hooks/use-notifications-api";
 import { useWalletBalance } from "@/hooks/use-wallet";
+import { hasValidUserSession } from "@/lib/api/client";
 import { formatBookingWhen } from "@/lib/bookings-utils";
 import { formatPrice } from "@/lib/mock-data";
 
@@ -22,7 +23,9 @@ export function ProfileDesktopPage() {
   const { data: notifications = [] } = useNotificationsApi();
   const unreadCount = notifications.filter((n) => !n.read).length;
   const when = nextBooking ? formatBookingWhen(nextBooking.date) : null;
-  const firstName = user.firstName || user.name.split(" ")[0] || user.name;
+  const loggedIn = hasValidUserSession();
+  const displayName = user.name || t("common.guest", { defaultValue: "Mehmon" });
+  const firstName = user.firstName || displayName.split(" ")[0] || displayName;
 
   const bookingsMeta =
     nextBooking && when
@@ -126,10 +129,10 @@ export function ProfileDesktopPage() {
         </p>
 
         <div className="mt-6 flex items-center gap-4">
-          <UserAvatar name={user.name} src={user.avatar} size={64} editable />
+          <UserAvatar name={displayName} src={user.avatar} size={64} editable={loggedIn} />
           <div className="min-w-0 flex-1">
             <MyNameWithBadge
-              name={user.name}
+              name={displayName}
               size="md"
               nameClassName="truncate text-lg font-semibold text-foreground"
             />

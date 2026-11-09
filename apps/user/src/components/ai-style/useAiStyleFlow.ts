@@ -24,6 +24,7 @@ import {
 } from "@/lib/morph-plan-limit";
 import type { Audience } from "@/lib/mock-data";
 import type { AiFaceHint } from "@/lib/api/ai";
+import { useActionAuth } from "@/hooks/use-action-auth";
 
 type UseAiStyleFlowOptions = {
   menPersonaId?: ExplorePersonaId | null;
@@ -61,6 +62,7 @@ function tryOnInFlightKey(photo: string, cacheKey: string): string {
 
 export function useAiStyleFlow(options: UseAiStyleFlowOptions = {}) {
   const { menPersonaId, focusStyleId, audience, tryOnGate, onPlanLimit, onTryOnSuccess } = options;
+  const allowAction = useActionAuth();
   const [photo, setPhoto] = useState<string | null>(null);
   const [preparingPhoto, setPreparingPhoto] = useState(false);
   const [preparingPreview, setPreparingPreview] = useState<string | null>(null);
@@ -169,6 +171,7 @@ export function useAiStyleFlow(options: UseAiStyleFlowOptions = {}) {
 
   const onFile = async (file: File | null | undefined) => {
     if (!file) return;
+    if (!allowAction()) return;
     try {
       const dataUrl = await prepareSelfieFromFile(file);
       await applyPhoto(dataUrl);
@@ -212,13 +215,20 @@ export function useAiStyleFlow(options: UseAiStyleFlowOptions = {}) {
     }
   };
 
-  const openFile = () => fileRef.current?.click();
-  const openCamera = () => setCameraOpen(true);
+  const openFile = () => {
+    if (!allowAction()) return;
+    fileRef.current?.click();
+  };
+  const openCamera = () => {
+    if (!allowAction()) return;
+    setCameraOpen(true);
+  };
   const closeCamera = () => setCameraOpen(false);
 
   const analyze = useCallback(
     async (targetAudience: Audience) => {
       if (!photo) return;
+      if (!allowAction()) return;
       setAnalyzing(true);
       setDone(false);
       setSummaryReady(false);
@@ -278,7 +288,7 @@ export function useAiStyleFlow(options: UseAiStyleFlowOptions = {}) {
         setAnalyzing(false);
       }
     },
-    [photo, faceHint, menPersonaId],
+    [photo, faceHint, menPersonaId, allowAction],
   );
 
   const generateTryOn = useCallback(
@@ -288,6 +298,7 @@ export function useAiStyleFlow(options: UseAiStyleFlowOptions = {}) {
       title?: string,
       source: "auto" | "manual" = "manual",
     ) => {
+      if (!allowAction()) return;
       const effectivePersona = personaId ?? menPersonaId ?? undefined;
       const cacheKey = tryOnCacheKey(styleId, effectivePersona);
       if (!photo || tryOnByStyle[cacheKey]) return;
@@ -354,7 +365,7 @@ export function useAiStyleFlow(options: UseAiStyleFlowOptions = {}) {
         setTryOnLoadingId(null);
       }
     },
-    [photo, tryOnByStyle, menPersonaId, result, tryOnGate, onPlanLimit, onTryOnSuccess],
+    [photo, tryOnByStyle, menPersonaId, result, tryOnGate, onPlanLimit, onTryOnSuccess, allowAction],
   );
 
   const updateTryOnPreview = useCallback(

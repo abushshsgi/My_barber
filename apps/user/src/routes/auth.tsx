@@ -406,48 +406,51 @@ function Auth() {
     <div className="flex min-h-[100dvh] flex-col bg-background lg:grid lg:grid-cols-2">
       <AuthMarketingSlot />
 
-      <div className="relative flex min-h-[100dvh] flex-col justify-center overflow-hidden px-6 py-10 lg:px-12 xl:px-16">
-        <div className="relative mx-auto w-full max-w-[22rem]">
-          <div className="mb-8">
+      <div className="relative flex min-h-[100dvh] flex-col overflow-hidden bg-background px-6 pb-8 pt-[max(5.5rem,env(safe-area-inset-top))] lg:justify-center lg:px-12 lg:py-10 lg:pt-10 xl:px-16">
+        <div
+          className="pointer-events-none absolute -left-20 top-0 h-64 w-64 rounded-full bg-[#ff5c5c]/12 blur-3xl"
+          aria-hidden
+        />
+        <div
+          className="pointer-events-none absolute -right-24 bottom-8 h-72 w-72 rounded-full bg-foreground/[0.05] blur-3xl"
+          aria-hidden
+        />
+        <div className="relative mx-auto flex w-full max-w-[24rem] flex-1 flex-col lg:max-w-[26rem] lg:flex-none">
+          <div className="mb-7 lg:mb-8">
             <MysaloonLogo size="xl" withAppMark={isNative} />
           </div>
 
-          <div key={step} className="auth-form-stagger">
-            {phoneAuthEnabled ? (
-              <>
-                <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-muted-foreground">
-                  {header.kicker}
-                </p>
-                <h1 className="mt-2.5 font-display text-[2rem] font-bold leading-[1.1] tracking-tight sm:text-[2.25rem]">
-                  {header.title}
-                </h1>
-                <p className="mt-2.5 max-w-sm text-[15px] leading-relaxed text-muted-foreground">
-                  {header.desc}
-                </p>
-              </>
-            ) : (
-              <h1 className="font-display text-[1.75rem] font-bold leading-tight tracking-tight">
-                {t("auth.login")}
-              </h1>
-            )}
+          <div
+            key={step}
+            className="auth-form-stagger rounded-[28px] border border-border/80 bg-background/95 p-5 shadow-[0_28px_70px_-40px_rgba(15,15,15,0.55)] sm:p-6"
+          >
+            <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-muted-foreground">
+              {header.kicker}
+            </p>
+            <h1 className="mt-2.5 font-display text-[2rem] font-bold leading-[1.08] tracking-tight sm:text-[2.2rem]">
+              {header.title}
+            </h1>
+            <p className="mt-2.5 text-[15px] leading-relaxed text-muted-foreground">{header.desc}</p>
 
-            <div className={phoneAuthEnabled ? "mt-9" : "mt-7"}>
+            <div className="mt-7">
               {!phoneAuthEnabled ? (
                 <div className="space-y-5">
                   {googleClientId ? (
-                    <GoogleSignInButton
-                      clientId={googleClientId}
-                      emphasized
-                      busy={busy}
-                      onBusyChange={setGoogleBusy}
-                      onSuccess={(data) => {
-                        if (!data?.access || !data?.refresh || !data?.user) {
-                          toast.error(t("auth.errBadResponse"));
-                          return;
-                        }
-                        finishLogin(data, "google");
-                      }}
-                    />
+                    <div className="auth-google-card rounded-2xl border border-border/80 bg-background p-1.5">
+                      <GoogleSignInButton
+                        clientId={googleClientId}
+                        emphasized
+                        busy={busy}
+                        onBusyChange={setGoogleBusy}
+                        onSuccess={(data) => {
+                          if (!data?.access || !data?.refresh || !data?.user) {
+                            toast.error(t("auth.errBadResponse"));
+                            return;
+                          }
+                          finishLogin(data, "google");
+                        }}
+                      />
+                    </div>
                   ) : (
                     <div className="rounded-2xl border border-border bg-surface/80 px-4 py-4 text-sm text-muted-foreground">
                       {t("auth.googleNotConfigured")}
