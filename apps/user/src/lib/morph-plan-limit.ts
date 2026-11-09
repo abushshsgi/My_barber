@@ -25,7 +25,7 @@ export function isMorphPlanLimitError(error: unknown): error is MorphPlanLimitEr
 
 /** Server detail — obuna/oylik kvota (DRF throttle emas). */
 export function isMorphPlanLimitMessage(message: string): boolean {
-  return /Oylik Morph|Oylik Morf|Bepul Morph|Bepul Morf|Morf AI faqat obuna|obuna|Studio Plus|Bu reja Morph|do'stingizni taklif|Tarifni yangilang|Plus\/Pro|chat token/i.test(
+  return /Oylik Morph|Oylik Morf|Bepul Morph|Bepul Morf|Morf AI faqat obuna|obuna|Studio Plus|Bu reja Morph|do'stingizni taklif|Tarifni yangilang|Plus\/Pro|chat token|kuyadi|1 000|yaratilmoqda|faqat 1 marta/i.test(
     message,
   );
 }
@@ -41,6 +41,7 @@ export function isMorphRateLimitMessage(message: string): boolean {
 }
 
 export function morphTryOnUsageBlocked(usage: SubscriptionUsage | undefined, me?: SubscriptionMe | null): boolean {
+  if (me?.flash_tryon?.can_generate) return false;
   if (me?.access?.morph_ai_allowed === false) return true;
   const remaining = usage?.morph_ai_remaining;
   if (typeof remaining === "number") return remaining <= 0;
@@ -65,6 +66,7 @@ export function morphChatTokensBlocked(usage: SubscriptionUsage): boolean {
 /** Try-on: obuna kvotasi yoki referal krediti. */
 export function morphAccessBlocked(me: SubscriptionMe | null | undefined): boolean {
   if (!me) return true;
+  if (me.flash_tryon?.can_generate) return false;
   if (me.access && typeof me.access.morph_ai_allowed === "boolean") {
     return !me.access.morph_ai_allowed;
   }

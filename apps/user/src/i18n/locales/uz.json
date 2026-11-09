@@ -64,6 +64,9 @@
     "chunkReload": "Sayt yangilandi — sahifani qayta yuklang.",
     "pageLoadFail": "Sahifa yuklanmadi. Qaytadan urinib ko'ring."
   },
+  "maintenance": {
+    "banner": "Saytda texnik ishlar olib borilmoqda. Sayt to'liq ishlamasligi mumkin."
+  },
   "scrollToTop": {
     "label": "Yuqoriga"
   },
@@ -799,6 +802,11 @@
     "footnote": "Obuna faqat to'lov tasdiqlangandan keyin yoqiladi. Limitlar serverda hisoblanadi.",
     "footnoteReferral": " 1 ta do'stni taklif qilsangiz — 1 Morf AI generatsiya krediti beriladi.",
     "payWithPayme": "Payme orqali to'lash",
+    "flashKicker": "Yangi hisob · 30 daqiqa",
+    "flashTitle": "1 ta rasm · 1 000 so'm · 1 marta",
+    "flashBody": "Faqat shu oynada. Payme tasdiqlagandan keyin try-on ochiladi. 30 daqiqadan keyin kuyadi.",
+    "flashPay": "{{price}} so'm — Payme",
+    "flashBurned": "30 daqiqa tugadi. Bu rasm kuyadi.",
     "currentPlanCta": "Joriy obuna",
     "lowerPlan": "Pastroq tarif",
     "checkoutFailed": "Payme checkout ochilmadi.",

@@ -86,7 +86,18 @@ function StatusIcon({ status }: { status: string }) {
   return <XCircle className="size-10" strokeWidth={1.5} />;
 }
 
-function statusCopy(status: string): { title: string; body: string } {
+function statusCopy(status: string, flash = false, flashReady = false): { title: string; body: string } {
+  if (status === "paid" && flash) {
+    return flashReady
+      ? {
+          title: "To‘lov tasdiqlandi",
+          body: "1 ta rasm ochildi. Try-on sahifasiga qaytilmoqda.",
+        }
+      : {
+          title: "To‘lov qabul qilindi",
+          body: "30 daqiqa tugagan. Bu rasm ochilmadi.",
+        };
+  }
   if (status === "paid") {
     return {
       title: "To‘lov tasdiqlandi",
@@ -163,14 +174,17 @@ export function PaymeCheckoutStatus({ orderId }: { orderId: string }) {
 
   useEffect(() => {
     if (row?.status !== "paid") return;
+    const flash = row.plan_code === "flash";
     const timer = window.setTimeout(() => {
-      void navigate({ to: "/subscriptions", replace: true });
+      void navigate({ to: flash && row.me?.flash_tryon?.can_generate ? "/ai-style" : "/subscriptions", replace: true });
     }, 1400);
     return () => window.clearTimeout(timer);
-  }, [row?.status, navigate]);
+  }, [navigate, row]);
 
   const status = row?.status || "pending";
-  const copy = statusCopy(status);
+  const isFlash = row?.plan_code === "flash";
+  const flashReady = Boolean(row?.me?.flash_tryon?.can_generate);
+  const copy = statusCopy(status, isFlash, flashReady);
   const needsLogin = Boolean(error && /401|credentials|Authentication/i.test(error));
 
   return (

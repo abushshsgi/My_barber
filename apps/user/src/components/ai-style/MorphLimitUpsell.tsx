@@ -15,6 +15,7 @@ import { markPaymeAwaitReturn, storePaymeOrder } from "@/components/subscription
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useSubscriptionCheckout, useSubscriptionPlans } from "@/hooks/use-subscription";
 import { hasValidUserSession } from "@/lib/api/client";
+import { checkoutFlashTryon } from "@/lib/api/subscriptions";
 import type { MorphLimitKind } from "@/lib/morph-plan-limit";
 import type { SubscriptionMe, SubscriptionPlan } from "@/lib/api/subscriptions";
 import { pickFeatureLabel, pickPlanName } from "@/lib/plan-labels";
@@ -155,6 +156,7 @@ function MorphPaywallBody({
   const checkout = useSubscriptionCheckout();
   const [picked, setPicked] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [flashBusy, setFlashBusy] = useState(false);
   const [payOpen, setPayOpen] = useState(false);
   const prevOpen = useRef(open);
   const hero = paywallHero(kind, t);
@@ -181,6 +183,46 @@ function MorphPaywallBody({
   const included = (selected?.features ?? []).filter(
     (f) => f.included !== false && !HIDDEN_FEATURE_KEYS.has(f.key),
   );
+  const flash = me?.flash_tryon;
+  const showFlash = (kind === "tryon" || kind === "access") && Boolean(flash?.can_buy);
+  const flashEnds = flash?.expires_at ?? null;
+  const [flashLeft, setFlashLeft] = useState(0);
+
+  useEffect(() => {
+    if (!showFlash || !flashEnds) return;
+    const tick = () => {
+      const ms = new Date(flashEnds).getTime() - Date.now();
+      setFlashLeft(Math.max(0, Math.floor(ms / 1000)));
+    };
+    tick();
+    const id = window.setInterval(tick, 1000);
+    return () => window.clearInterval(id);
+  }, [showFlash, flashEnds]);
+
+  const startFlash = async () => {
+    if (!hasValidUserSession()) {
+      void navigate({ to: "/auth", search: { redirect: "/ai-style" } });
+      return;
+    }
+    if (flashLeft > 0 && flashLeft < 60) return;
+    setFlashBusy(true);
+    try {
+      const origin = typeof window !== "undefined" ? window.location.origin : getPublicSiteOrigin();
+      const res = await checkoutFlashTryon({ return_url: `${origin}/subscriptions/payme` });
+      if (!res.checkout_url || !res.order_id) {
+        toast.error(res.message || res.detail || t("subscriptions.checkoutFailed"));
+        return;
+      }
+      storePaymeOrder(res.order_id);
+      markPaymeAwaitReturn();
+      window.location.assign(res.checkout_url);
+    } catch (error) {
+      const raw = error instanceof Error ? error.message : t("subscriptions.genericError");
+      toast.error(/401|credentials|Authentication/i.test(raw) ? t("profile.paymeLogin", { defaultValue: "To‘lov uchun kiring" }) : raw);
+    } finally {
+      setFlashBusy(false);
+    }
+  };
 
   const startCheckout = async () => {
     if (!selected) return;
@@ -236,6 +278,36 @@ function MorphPaywallBody({
           <h3 className="mt-0.5 text-[22px] font-extrabold leading-7 tracking-tight">{hero.title}</h3>
           <p className="mt-0.5 text-[13px] leading-5 text-[#737373]">{hero.subtitle}</p>
         </div>
+
+        {showFlash ? (
+          <article className="rounded-[22px] border border-black bg-[#111111] px-4 py-3 text-white">
+            <p className="text-[11px] font-extrabold uppercase tracking-[0.14em] text-white/70">
+              {t("subscriptions.flashKicker")}
+            </p>
+            <p className="mt-1 text-[18px] font-extrabold leading-6">{t("subscriptions.flashTitle")}</p>
+            <p className="mt-1 text-[13px] leading-5 text-white/75">{t("subscriptions.flashBody")}</p>
+            <p className="mt-2 font-mono text-[22px] font-extrabold tabular-nums">
+              {String(Math.floor(flashLeft / 60)).padStart(2, "0")}:{String(flashLeft % 60).padStart(2, "0")}
+            </p>
+            <button
+              type="button"
+              disabled={flashBusy || flashLeft < 60}
+              onClick={() => void startFlash()}
+              className="mt-3 flex h-11 w-full items-center justify-center gap-2 rounded-full bg-white text-[15px] font-extrabold text-[#111111] disabled:opacity-50"
+            >
+              {flashBusy ? <Loader2 className="size-4 animate-spin" /> : null}
+              {flashLeft < 60
+                ? t("subscriptions.flashBurned")
+                : t("subscriptions.flashPay", { price: (flash?.price_uzs ?? 1000).toLocaleString(locale) })}
+            </button>
+          </article>
+        ) : null}
+
+        {(kind === "tryon" || kind === "access") && flash?.status === "burned" ? (
+          <p className="rounded-2xl bg-black/5 px-3 py-2 text-[13px] font-semibold leading-5 text-[#111111]">
+            {t("subscriptions.flashBurned")}
+          </p>
+        ) : null}
 
         {cards.length > 1 ? (
           <div className="flex rounded-full bg-black/5 p-0.5">

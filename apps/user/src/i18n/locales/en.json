@@ -64,6 +64,9 @@
     "chunkReload": "The site was updated — please reload.",
     "pageLoadFail": "The page failed to load. Please try again."
   },
+  "maintenance": {
+    "banner": "Technical work is in progress. The site may not work properly."
+  },
   "scrollToTop": {
     "label": "Back to top"
   },
@@ -799,6 +802,11 @@
     "footnote": "The plan turns on only after payment is confirmed. Limits are counted on the server.",
     "footnoteReferral": " Invite 1 friend and get 1 Morf AI generation credit.",
     "payWithPayme": "Pay with Payme",
+    "flashKicker": "New account · 30 minutes",
+    "flashTitle": "1 image · 1,000 som · once",
+    "flashBody": "Only in this window. Try-on opens after Payme confirms payment. It expires after 30 minutes.",
+    "flashPay": "{{price}} som — Payme",
+    "flashBurned": "The 30 minutes are over. This image has expired.",
     "currentPlanCta": "Current plan",
     "lowerPlan": "Lower plan",
     "checkoutFailed": "Couldn't open Payme checkout.",

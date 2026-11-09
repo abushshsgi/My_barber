@@ -110,6 +110,18 @@ export type SubscriptionMe = {
   };
   referral_credits?: number;
   referral_generation_enabled?: boolean;
+  flash_tryon?: {
+    price_uzs: number;
+    images: number;
+    once: boolean;
+    window_minutes: number;
+    expires_at: string | null;
+    seconds_left: number;
+    can_buy: boolean;
+    can_generate: boolean;
+    status: "unavailable" | "open" | "pending" | "paid" | "used" | "burned" | string;
+    used: boolean;
+  };
   welcome_offer?: {
     eligible: boolean;
     discount_pct: number;
@@ -225,6 +237,24 @@ export async function checkoutSubscription(payload: {
   detail?: string;
 }> {
   return apiJson("/api/v1/subscriptions/checkout/", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function checkoutFlashTryon(payload: {
+  return_url?: string;
+}): Promise<{
+  ok?: boolean;
+  checkout_url?: string | null;
+  order_id?: string;
+  amount_uzs?: number;
+  status?: string;
+  plan_code?: string;
+  message?: string;
+  detail?: string;
+}> {
+  return apiJson("/api/v1/subscriptions/flash-tryon/checkout/", {
     method: "POST",
     body: JSON.stringify(payload),
   });
