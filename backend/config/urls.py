@@ -60,6 +60,7 @@ from control_panel.views import (
     AdminUserSignupAnalyticsView,
     UserSupportTicketListCreateView,
 )
+from control_panel.referral_tryon_admin import AdminReferralTryonView
 from control_panel.statistics_views import (
     AdminStatisticsBookingsView,
     AdminStatisticsExportView,
@@ -442,6 +443,7 @@ router.register(r"barber/support", MyBarberSupportTicketViewSet, basename="barbe
 api_routes = [
     path("admin/stats/", AdminStatsView.as_view()),
     path("admin/statistics/live/", AdminStatisticsLiveView.as_view()),
+    path("admin/statistics/referral-tryon/", AdminReferralTryonView.as_view()),
     path("admin/statistics/overview/", AdminStatisticsOverviewView.as_view()),
     path("admin/statistics/revenue/", AdminStatisticsRevenueView.as_view()),
     path("admin/statistics/users/", AdminStatisticsUsersView.as_view()),

@@ -87,6 +87,7 @@ import { Route as AdminStatisticsBarbersRouteImport } from './routes/admin.stati
 import { Route as AdminStatisticsBookingsRouteImport } from './routes/admin.statistics.bookings'
 import { Route as AdminStatisticsCustomerInvitesRouteImport } from './routes/admin.statistics.customer-invites'
 import { Route as AdminStatisticsLiveRouteImport } from './routes/admin.statistics.live'
+import { Route as AdminStatisticsReferralTryonRouteImport } from './routes/admin.statistics.referral-tryon'
 import { Route as AdminStatisticsRevenueRouteImport } from './routes/admin.statistics.revenue'
 import { Route as AdminStatisticsSalonsRouteImport } from './routes/admin.statistics.salons'
 import { Route as AdminStatisticsSubscriptionsRouteImport } from './routes/admin.statistics.subscriptions'
@@ -505,6 +506,12 @@ const AdminStatisticsLiveRoute = AdminStatisticsLiveRouteImport.update({
   path: '/live',
   getParentRoute: () => AdminStatisticsRoute,
 } as any)
+const AdminStatisticsReferralTryonRoute =
+  AdminStatisticsReferralTryonRouteImport.update({
+    id: '/referral-tryon',
+    path: '/referral-tryon',
+    getParentRoute: () => AdminStatisticsRoute,
+  } as any)
 const AdminStatisticsRevenueRoute = AdminStatisticsRevenueRouteImport.update({
   id: '/revenue',
   path: '/revenue',
@@ -702,6 +709,7 @@ export interface FileRoutesByFullPath {
   '/admin/statistics/bookings': typeof AdminStatisticsBookingsRoute
   '/admin/statistics/customer-invites': typeof AdminStatisticsCustomerInvitesRoute
   '/admin/statistics/live': typeof AdminStatisticsLiveRoute
+  '/admin/statistics/referral-tryon': typeof AdminStatisticsReferralTryonRoute
   '/admin/statistics/revenue': typeof AdminStatisticsRevenueRoute
   '/admin/statistics/salons': typeof AdminStatisticsSalonsRoute
   '/admin/statistics/subscriptions': typeof AdminStatisticsSubscriptionsRoute
@@ -794,6 +802,7 @@ export interface FileRoutesByTo {
   '/admin/statistics/bookings': typeof AdminStatisticsBookingsRoute
   '/admin/statistics/customer-invites': typeof AdminStatisticsCustomerInvitesRoute
   '/admin/statistics/live': typeof AdminStatisticsLiveRoute
+  '/admin/statistics/referral-tryon': typeof AdminStatisticsReferralTryonRoute
   '/admin/statistics/revenue': typeof AdminStatisticsRevenueRoute
   '/admin/statistics/salons': typeof AdminStatisticsSalonsRoute
   '/admin/statistics/subscriptions': typeof AdminStatisticsSubscriptionsRoute
@@ -896,6 +905,7 @@ export interface FileRoutesById {
   '/admin/statistics/bookings': typeof AdminStatisticsBookingsRoute
   '/admin/statistics/customer-invites': typeof AdminStatisticsCustomerInvitesRoute
   '/admin/statistics/live': typeof AdminStatisticsLiveRoute
+  '/admin/statistics/referral-tryon': typeof AdminStatisticsReferralTryonRoute
   '/admin/statistics/revenue': typeof AdminStatisticsRevenueRoute
   '/admin/statistics/salons': typeof AdminStatisticsSalonsRoute
   '/admin/statistics/subscriptions': typeof AdminStatisticsSubscriptionsRoute
@@ -1001,6 +1011,7 @@ export interface FileRouteTypes {
     | '/admin/statistics/bookings'
     | '/admin/statistics/customer-invites'
     | '/admin/statistics/live'
+    | '/admin/statistics/referral-tryon'
     | '/admin/statistics/revenue'
     | '/admin/statistics/salons'
     | '/admin/statistics/subscriptions'
@@ -1093,6 +1104,7 @@ export interface FileRouteTypes {
     | '/admin/statistics/bookings'
     | '/admin/statistics/customer-invites'
     | '/admin/statistics/live'
+    | '/admin/statistics/referral-tryon'
     | '/admin/statistics/revenue'
     | '/admin/statistics/salons'
     | '/admin/statistics/subscriptions'
@@ -1194,6 +1206,7 @@ export interface FileRouteTypes {
     | '/admin/statistics/bookings'
     | '/admin/statistics/customer-invites'
     | '/admin/statistics/live'
+    | '/admin/statistics/referral-tryon'
     | '/admin/statistics/revenue'
     | '/admin/statistics/salons'
     | '/admin/statistics/subscriptions'
@@ -1781,6 +1794,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminStatisticsLiveRouteImport
       parentRoute: typeof AdminStatisticsRoute
     }
+    '/admin/statistics/referral-tryon': {
+      id: '/admin/statistics/referral-tryon'
+      path: '/referral-tryon'
+      fullPath: '/admin/statistics/referral-tryon'
+      preLoaderRoute: typeof AdminStatisticsReferralTryonRouteImport
+      parentRoute: typeof AdminStatisticsRoute
+    }
     '/admin/statistics/revenue': {
       id: '/admin/statistics/revenue'
       path: '/revenue'
@@ -2217,6 +2237,7 @@ interface AdminStatisticsRouteChildren {
   AdminStatisticsBookingsRoute: typeof AdminStatisticsBookingsRoute
   AdminStatisticsCustomerInvitesRoute: typeof AdminStatisticsCustomerInvitesRoute
   AdminStatisticsLiveRoute: typeof AdminStatisticsLiveRoute
+  AdminStatisticsReferralTryonRoute: typeof AdminStatisticsReferralTryonRoute
   AdminStatisticsRevenueRoute: typeof AdminStatisticsRevenueRoute
   AdminStatisticsSalonsRoute: typeof AdminStatisticsSalonsRoute
   AdminStatisticsSubscriptionsRoute: typeof AdminStatisticsSubscriptionsRoute
@@ -2232,6 +2253,7 @@ const AdminStatisticsRouteChildren: AdminStatisticsRouteChildren = {
   AdminStatisticsBookingsRoute: AdminStatisticsBookingsRoute,
   AdminStatisticsCustomerInvitesRoute: AdminStatisticsCustomerInvitesRoute,
   AdminStatisticsLiveRoute: AdminStatisticsLiveRoute,
+  AdminStatisticsReferralTryonRoute: AdminStatisticsReferralTryonRoute,
   AdminStatisticsRevenueRoute: AdminStatisticsRevenueRoute,
   AdminStatisticsSalonsRoute: AdminStatisticsSalonsRoute,
   AdminStatisticsSubscriptionsRoute: AdminStatisticsSubscriptionsRoute,

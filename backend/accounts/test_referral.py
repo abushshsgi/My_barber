@@ -80,6 +80,8 @@ class ReferralServiceTests(TestCase):
         referrer.refresh_from_db()
         self.assertEqual(referee.referred_by_id, referrer.pk)
         self.assertEqual(referrer.morph_referral_credits, 1)
+        self.assertTrue(attribution.credit_granted)
+        self.assertEqual(attribution.status, ReferralAttribution.Status.REWARDED)
         self.assertEqual(
             ReferralAttribution.objects.filter(referrer=referrer, referee=referee).count(),
             1,
@@ -236,3 +238,81 @@ class ReferralApiTests(TestCase):
         self.assertFalse(
             ReferralAttribution.objects.filter(referee=existing).exists()
         )
+
+
+@override_settings(
+    CACHES={
+        "default": {
+            "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+            "LOCATION": "referral-admin-tryon-tests",
+        }
+    }
+)
+class AdminReferralTryonTests(TestCase):
+    def setUp(self):
+        from accounts.admin_auth import AdminPrincipal
+        from accounts.models import AdminAccount
+
+        admin = AdminAccount.objects.create(email="admin-tryon@test.uz", password="secret")
+        self.client = APIClient()
+        self.client.force_authenticate(user=AdminPrincipal(admin))
+
+    def test_lists_invites_tries_and_usage(self):
+        referrer = _make_user("1112301")
+        referrer.full_name = "Ali Valiyev"
+        referrer.save(update_fields=["full_name"])
+        code = ensure_referral_code(referrer)
+        first = _make_user("1112302")
+        first.full_name = "Do'st Bir"
+        first.save(update_fields=["full_name"])
+        second = _make_user("1112303")
+        apply_referral(new_user=first, code=code)
+        apply_referral(new_user=second, code=code)
+        referrer.morph_referral_credits = 1
+        referrer.save(update_fields=["morph_referral_credits"])
+
+        plain = _make_user("1112304")
+        ReferralAttribution.objects.create(
+            referrer=plain,
+            referee=_make_user("1112305"),
+            code_used="NOCREDIT",
+            credit_granted=False,
+        )
+
+        res = self.client.get("/api/v1/admin/statistics/referral-tryon/")
+        self.assertEqual(res.status_code, 200)
+        body = res.json()
+        self.assertEqual(body["summary"]["referrers"], 2)
+        self.assertEqual(body["summary"]["friends"], 3)
+        self.assertEqual(body["summary"]["tries_granted"], 2)
+        self.assertEqual(body["summary"]["tries_used"], 1)
+        self.assertEqual(body["summary"]["tries_left"], 1)
+        self.assertEqual(body["summary"]["referrers_used"], 1)
+        self.assertEqual(body["summary"]["referrers_without_try"], 1)
+
+        ali = next(row for row in body["results"] if row["user_id"] == referrer.pk)
+        self.assertEqual(ali["full_name"], "Ali Valiyev")
+        self.assertEqual(ali["friends_count"], 2)
+        self.assertEqual(ali["tries_granted"], 2)
+        self.assertEqual(ali["tries_used"], 1)
+        self.assertEqual(ali["tries_left"], 1)
+        self.assertEqual(ali["usage"], "used")
+        self.assertEqual(len(ali["friends"]), 2)
+        self.assertTrue(all(friend["try_granted"] for friend in ali["friends"]))
+
+        used = self.client.get("/api/v1/admin/statistics/referral-tryon/?used=yes&q=Ali")
+        self.assertEqual(used.status_code, 200)
+        self.assertEqual(used.json()["count"], 1)
+        self.assertEqual(used.json()["results"][0]["user_id"], referrer.pk)
+
+        unused = self.client.get("/api/v1/admin/statistics/referral-tryon/?used=none")
+        self.assertEqual(unused.status_code, 200)
+        self.assertEqual(unused.json()["count"], 1)
+        self.assertEqual(unused.json()["results"][0]["user_id"], plain.pk)
+
+    def test_requires_admin(self):
+        user = _make_user("1112306")
+        client = APIClient()
+        client.force_authenticate(user=user)
+        res = client.get("/api/v1/admin/statistics/referral-tryon/")
+        self.assertIn(res.status_code, (401, 403))

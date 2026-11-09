@@ -217,7 +217,7 @@ class SkinProfile(models.Model):
 
 
 class ReferralAttribution(models.Model):
-    """Kim kimni taklif qilgani — bonussiz, faqat attribution (kelajakda mukofot uchun tayyor)."""
+    """Kim kimni taklif qilgani. credit_granted — shu do'st uchun 1 ta try-on berilganmi."""
 
     class Status(models.TextChoices):
         ATTRIBUTED = "attributed", "Attributed"
@@ -232,6 +232,11 @@ class ReferralAttribution(models.Model):
     code_used = models.CharField(max_length=12)
     status = models.CharField(
         max_length=16, choices=Status.choices, default=Status.ATTRIBUTED, db_index=True
+    )
+    credit_granted = models.BooleanField(
+        default=False,
+        db_index=True,
+        help_text="Shu taklif uchun referrerga 1 ta Morf AI try-on krediti yozilgan.",
     )
     created_at = models.DateTimeField(auto_now_add=True)
 

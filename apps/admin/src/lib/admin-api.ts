@@ -5282,6 +5282,60 @@ export async function fetchAdminBarberCustomerInvites(
   return apiJson(`/api/v1/admin/barbers/${barberId}/customer-invites/`);
 }
 
+export type ReferralTryonUsage = "used" | "unused" | "none";
+
+export type AdminReferralTryonFriend = {
+  id: number;
+  full_name: string;
+  phone: string;
+  email: string | null;
+  joined_at: string | null;
+  try_granted: boolean;
+};
+
+export type AdminReferralTryonRow = {
+  user_id: number;
+  full_name: string;
+  phone: string;
+  email: string | null;
+  friends_count: number;
+  tries_granted: number;
+  tries_used: number;
+  tries_left: number;
+  usage: ReferralTryonUsage;
+  friends: AdminReferralTryonFriend[];
+};
+
+export type AdminReferralTryonResponse = {
+  summary: {
+    referrers: number;
+    friends: number;
+    tries_granted: number;
+    tries_used: number;
+    tries_left: number;
+    referrers_used: number;
+    referrers_unused: number;
+    referrers_without_try: number;
+  };
+  count: number;
+  page: number;
+  page_size: number;
+  results: AdminReferralTryonRow[];
+};
+
+export async function fetchAdminReferralTryon(params?: {
+  q?: string;
+  used?: "all" | "yes" | "no" | "none";
+  page?: number;
+}): Promise<AdminReferralTryonResponse> {
+  const sp = new URLSearchParams();
+  if (params?.q) sp.set("q", params.q);
+  if (params?.used && params.used !== "all") sp.set("used", params.used);
+  if (params?.page) sp.set("page", String(params.page));
+  const qs = sp.toString();
+  return apiJson(qs ? `/api/v1/admin/statistics/referral-tryon/?${qs}` : "/api/v1/admin/statistics/referral-tryon/");
+}
+
 export type CareProductCategory =
   | "shampoo"
   | "balsam"

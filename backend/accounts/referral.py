@@ -136,22 +136,28 @@ def apply_referral(*, new_user: User, code: object) -> ReferralAttribution | Non
         return None
 
     try:
+        from subscriptions.services import referral_generation_enabled
+
+        granted_credit = referral_generation_enabled()
+    except Exception:
+        granted_credit = True
+
+    try:
         with transaction.atomic():
             attribution = ReferralAttribution.objects.create(
                 referrer=referrer,
                 referee=new_user,
                 code_used=normalized,
+                status=(
+                    ReferralAttribution.Status.REWARDED
+                    if granted_credit
+                    else ReferralAttribution.Status.ATTRIBUTED
+                ),
+                credit_granted=granted_credit,
             )
             User.objects.filter(pk=new_user.pk, referred_by__isnull=True).update(
                 referred_by=referrer
             )
-            granted_credit = False
-            try:
-                from subscriptions.services import referral_generation_enabled
-
-                granted_credit = referral_generation_enabled()
-            except Exception:
-                granted_credit = True
             if granted_credit:
                 User.objects.filter(pk=referrer.pk).update(
                     morph_referral_credits=F("morph_referral_credits") + 1

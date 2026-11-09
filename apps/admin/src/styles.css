@@ -163,3 +163,30 @@
     letter-spacing: -0.01em;
   }
 }
+
+@keyframes admin-slot-enter {
+  from {
+    transform: translateY(-110%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+@keyframes admin-slot-leave {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(110%);
+  }
+}
+
+.admin-slot-enter {
+  animation: admin-slot-enter 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.admin-slot-leave {
+  animation: admin-slot-leave 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+  pointer-events: none;
+}

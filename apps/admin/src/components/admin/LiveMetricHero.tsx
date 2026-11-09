@@ -1,6 +1,6 @@
 import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useAnimatedNumber } from "@/hooks/use-animated-number";
+import { SlideNumber } from "@/components/admin/SlideNumber";
 
 export function LivePulseBadge({ label = "Real vaqt" }: { label?: string }) {
   return (
@@ -31,8 +31,6 @@ export function LiveMetricHero({
   todayDelta?: number;
   className?: string;
 }) {
-  const animated = useAnimatedNumber(value);
-
   const accents = {
     blue: {
       ring: "ring-blue-500/20",
@@ -77,7 +75,7 @@ export function LiveMetricHero({
           <p className="text-sm font-medium text-muted-foreground">{label}</p>
           {typeof todayDelta === "number" ? (
             <p className="mt-1 text-xs font-semibold text-emerald-600">
-              +{todayDelta} bugun
+              +<SlideNumber value={todayDelta} /> bugun
             </p>
           ) : null}
         </div>
@@ -86,7 +84,7 @@ export function LiveMetricHero({
         </span>
       </div>
       <p className="mt-5 font-heading text-5xl font-bold tabular-nums tracking-tight text-foreground sm:text-6xl lg:text-7xl">
-        {animated.toLocaleString()}
+        <SlideNumber value={value} />
       </p>
       {sublabel ? <p className="mt-2 text-sm text-muted-foreground">{sublabel}</p> : null}
     </div>

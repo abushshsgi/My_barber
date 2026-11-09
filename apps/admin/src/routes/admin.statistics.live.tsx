@@ -21,7 +21,7 @@ import {
   DualBarChart,
 } from "@/components/admin/StatsCharts";
 import { StatsPageHeader } from "@/components/admin/StatisticsShell";
-import { useAnimatedNumber } from "@/hooks/use-animated-number";
+import { SlideNumber } from "@/components/admin/SlideNumber";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/admin/statistics/live")({
@@ -67,7 +67,6 @@ function StatisticsLivePage() {
 
   const d = q.data;
   const isInitial = q.isPending && !d;
-  const todayAnimated = useAnimatedNumber(d?.summary.todaySignups ?? 0, 600);
 
   const feed = useMemo<FeedItem[]>(() => {
     if (!d) return [];
@@ -158,11 +157,12 @@ function StatisticsLivePage() {
               Bugun platformaga qo'shilgan
             </div>
             <p className="mt-2 font-heading text-6xl font-bold tabular-nums tracking-tight sm:text-7xl lg:text-8xl">
-              {isInitial ? "—" : todayAnimated.toLocaleString()}
+              {isInitial || !d ? "—" : <SlideNumber value={d.summary.todaySignups} />}
             </p>
             <p className="mt-2 text-sm text-muted-foreground">
-              Mijoz {d?.summary.todayClients ?? 0} · Sartarosh {d?.summary.todayBarbers ?? 0} · Salon{" "}
-              {d?.summary.todaySalons ?? 0}
+              Mijoz {isInitial || !d ? 0 : <SlideNumber value={d.summary.todayClients} />} · Sartarosh{" "}
+              {isInitial || !d ? 0 : <SlideNumber value={d.summary.todayBarbers} />} · Salon{" "}
+              {isInitial || !d ? 0 : <SlideNumber value={d.summary.todaySalons} />}
             </p>
           </div>
           <div className="flex flex-wrap gap-3">
@@ -342,7 +342,7 @@ function MiniStat({
     <div className="rounded-xl border border-border bg-background/80 px-4 py-3 backdrop-blur-sm">
       <p className="text-xs text-muted-foreground">{label}</p>
       <p className="mt-1 font-heading text-2xl font-bold tabular-nums">
-        {loading ? "—" : valueLabel ?? value?.toLocaleString() ?? "0"}
+        {loading ? "—" : valueLabel != null ? valueLabel : <SlideNumber value={value ?? 0} />}
       </p>
     </div>
   );
