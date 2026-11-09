@@ -189,3 +189,54 @@ class BroadcastCampaign(models.Model):
     class Meta:
         ordering = ["-created_at"]
 
+
+class SiteVisitor(models.Model):
+    """Saytga kirgan brauzer. visitor_key qurilmada saqlanadi."""
+
+    visitor_key = models.CharField(max_length=64, unique=True, db_index=True)
+    session_key = models.CharField(max_length=64, blank=True, default="")
+    user = models.ForeignKey(
+        "accounts.User",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="site_visits",
+    )
+    first_path = models.CharField(max_length=300, blank=True, default="")
+    last_path = models.CharField(max_length=300, blank=True, default="")
+    referrer = models.CharField(max_length=500, blank=True, default="")
+    language = models.CharField(max_length=32, blank=True, default="")
+    user_agent = models.CharField(max_length=255, blank=True, default="")
+    device_label = models.CharField(max_length=64, blank=True, default="")
+    ip_address = models.CharField(max_length=64, blank=True, default="")
+    visit_count = models.PositiveIntegerField(default=0)
+    pageview_count = models.PositiveIntegerField(default=0)
+    click_count = models.PositiveIntegerField(default=0)
+    first_seen = models.DateTimeField(auto_now_add=True, db_index=True)
+    last_seen = models.DateTimeField(auto_now=True, db_index=True)
+
+    class Meta:
+        ordering = ["-last_seen"]
+
+
+class SiteVisitEvent(models.Model):
+    class Kind(models.TextChoices):
+        PAGE = "page", "Page"
+        CLICK = "click", "Click"
+
+    visitor = models.ForeignKey(
+        SiteVisitor,
+        on_delete=models.CASCADE,
+        related_name="events",
+    )
+    kind = models.CharField(max_length=16, choices=Kind.choices, db_index=True)
+    path = models.CharField(max_length=300, blank=True, default="")
+    label = models.CharField(max_length=120, blank=True, default="")
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["visitor", "-created_at"], name="site_evt_vis_created_idx"),
+        ]
+

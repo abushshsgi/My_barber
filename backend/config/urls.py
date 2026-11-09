@@ -70,6 +70,7 @@ from control_panel.statistics_views import (
     AdminStatisticsUsersView,
     AdminStatisticsWalletView,
 )
+from control_panel.visitor_views import AdminSiteVisitorsView, TelemetryCollectView
 from agents.views import (
     AdminAgentAylanmaHubView,
     AdminAgentHubView,
@@ -444,6 +445,8 @@ api_routes = [
     path("admin/statistics/overview/", AdminStatisticsOverviewView.as_view()),
     path("admin/statistics/revenue/", AdminStatisticsRevenueView.as_view()),
     path("admin/statistics/users/", AdminStatisticsUsersView.as_view()),
+    path("admin/statistics/visitors/", AdminSiteVisitorsView.as_view()),
+    path("telemetry/collect/", TelemetryCollectView.as_view()),
     path("admin/statistics/salons/", AdminStatisticsSalonsView.as_view()),
     path("admin/statistics/wallet/", AdminStatisticsWalletView.as_view()),
     path("admin/statistics/bookings/", AdminStatisticsBookingsView.as_view()),
