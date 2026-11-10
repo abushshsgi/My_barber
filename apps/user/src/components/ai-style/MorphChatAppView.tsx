@@ -34,6 +34,7 @@ type ChatMsg = {
   id: string;
   role: "user" | "assistant";
   content: string;
+  streaming?: boolean;
   hairstyles?: ChatHairstyleCard[];
   blocks?: import("@/lib/api/ai").ChatContentBlock[];
 };
@@ -505,13 +506,15 @@ export function MorphChatAppView({
       </header>
       <div className="no-scrollbar min-h-0 flex-1 overflow-y-auto py-3">
         {messages.map((msg) => {
-          if (msg.role === "assistant" && msg.id === "pending" && !msg.content && !msg.blocks?.length) {
+          const pending =
+            msg.role === "assistant" && Boolean(msg.streaming) && !msg.content && !msg.blocks?.length;
+          if (pending) {
             return (
               <div key={msg.id} className="px-4 py-2">
-                <span className="inline-flex gap-1 rounded-full bg-black/5 px-3 py-2 dark:bg-white/10">
-                  <span className="size-1.5 animate-bounce rounded-full bg-current [animation-delay:0ms]" />
-                  <span className="size-1.5 animate-bounce rounded-full bg-current [animation-delay:140ms]" />
-                  <span className="size-1.5 animate-bounce rounded-full bg-current [animation-delay:280ms]" />
+                <span className="inline-flex gap-1.5 rounded-[20px] border border-black/10 bg-white px-4 py-3.5 dark:border-white/15 dark:bg-[#1C1C1C]">
+                  <span className="size-1.5 animate-bounce rounded-full bg-[#111111]/55 [animation-delay:0ms] dark:bg-white/85" />
+                  <span className="size-1.5 animate-bounce rounded-full bg-[#111111]/55 [animation-delay:140ms] dark:bg-white/85" />
+                  <span className="size-1.5 animate-bounce rounded-full bg-[#111111]/55 [animation-delay:280ms] dark:bg-white/85" />
                 </span>
               </div>
             );
@@ -526,12 +529,18 @@ export function MorphChatAppView({
             );
           }
           const rendered = visualBlocks(msg.content, msg.blocks, msg.hairstyles);
+          const streaming = Boolean(msg.streaming) && Boolean(msg.content || msg.blocks?.length);
           return (
             <div key={msg.id} className="mb-4 px-4 text-base leading-6">
               {rendered.length ? (
                 <ChatContentBlocks blocks={rendered} onOpenHairstyle={openStyle} />
               ) : (
-                <p className="whitespace-pre-wrap">{msg.content}</p>
+                <p className="whitespace-pre-wrap">
+                  {msg.content}
+                  {streaming ? (
+                    <span className="ml-0.5 inline-block h-[1.1em] w-[2px] animate-pulse bg-[#111111]/70 align-[-0.1em] dark:bg-white/80" />
+                  ) : null}
+                </p>
               )}
             </div>
           );

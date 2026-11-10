@@ -1,6 +1,5 @@
 import type { FaceShapeKey, HairTypeKey } from "@/components/ai-style/ai-style-shared";
 import type { AgeGroup } from "@/lib/age-groups";
-import type { ExplorePersonaId } from "@/lib/explore-personas";
 import { apiJson } from "./client";
 
 export type ApiHairstyleGalleryItem = {
@@ -29,7 +28,7 @@ export type ApiHairstyle = {
 export async function fetchHairstyles(
   audience?: "men" | "women",
   ageGroup?: AgeGroup | null,
-  personaId?: ExplorePersonaId,
+  personaId?: string | null,
 ): Promise<ApiHairstyle[]> {
   const params = new URLSearchParams();
   if (audience) params.set("audience", audience);
@@ -42,7 +41,7 @@ export async function fetchHairstyles(
 export async function fetchHairstyleById(
   styleId: string,
   ageGroup?: AgeGroup | null,
-  personaId?: ExplorePersonaId,
+  personaId?: string | null,
 ): Promise<ApiHairstyle> {
   const params = new URLSearchParams();
   if (ageGroup) params.set("age_group", ageGroup);

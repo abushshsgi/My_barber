@@ -97,7 +97,9 @@ export function SubscriptionsScreen({ navigation }: Props) {
     : shopPlans;
   const selectedUpgrade =
     upgradeChoices.find((plan) => plan.code === pickedUpgrade) ??
-    upgradeChoices.find((plan) => plan.code === nextCode) ??
+    (me?.has_active
+      ? upgradeChoices.find((plan) => plan.code === nextCode)
+      : upgradeChoices.find((plan) => plan.code === "starter")) ??
     upgradeChoices[0] ??
     null;
   useFocusEffect(

@@ -76,6 +76,7 @@ import { Route as AiStyleCareProductsRouteImport } from './routes/ai-style_.care
 import { Route as BookingBarberBarberIdRouteImport } from './routes/booking.barber.$barberId'
 import { Route as DevExploreGenIndexRouteImport } from './routes/dev.explore-gen.index'
 import { Route as DevExploreGenAssetsRouteImport } from './routes/dev.explore-gen.assets'
+import { Route as DevExploreGenGirlsRouteImport } from './routes/dev.explore-gen.girls'
 import { Route as ExploreStyleIdTryRouteImport } from './routes/explore_.$styleId_.try'
 import { Route as MorfAiLookStyleIdRouteImport } from './routes/morf-ai.look.$styleId'
 import { Route as MorfAiShareShareIdRouteImport } from './routes/morf-ai.share.$shareId'
@@ -417,6 +418,11 @@ const DevExploreGenAssetsRoute = DevExploreGenAssetsRouteImport.update({
   path: '/assets',
   getParentRoute: () => DevExploreGenRoute,
 } as any)
+const DevExploreGenGirlsRoute = DevExploreGenGirlsRouteImport.update({
+  id: '/girls',
+  path: '/girls',
+  getParentRoute: () => DevExploreGenRoute,
+} as any)
 const ExploreStyleIdTryRoute = ExploreStyleIdTryRouteImport.update({
   id: '/explore_/$styleId_/try',
   path: '/explore/$styleId/try',
@@ -511,6 +517,7 @@ export interface FileRoutesByFullPath {
   '/ai-style/care/products': typeof AiStyleCareProductsRoute
   '/booking/barber/$barberId': typeof BookingBarberBarberIdRoute
   '/dev/explore-gen/assets': typeof DevExploreGenAssetsRoute
+  '/dev/explore-gen/girls': typeof DevExploreGenGirlsRoute
   '/explore/$styleId/try': typeof ExploreStyleIdTryRoute
   '/morf-ai/look/$styleId': typeof MorfAiLookStyleIdRoute
   '/morf-ai/share/$shareId': typeof MorfAiShareShareIdRoute
@@ -584,6 +591,7 @@ export interface FileRoutesByTo {
   '/ai-style/care/products': typeof AiStyleCareProductsRoute
   '/booking/barber/$barberId': typeof BookingBarberBarberIdRoute
   '/dev/explore-gen/assets': typeof DevExploreGenAssetsRoute
+  '/dev/explore-gen/girls': typeof DevExploreGenGirlsRoute
   '/explore/$styleId/try': typeof ExploreStyleIdTryRoute
   '/morf-ai/look/$styleId': typeof MorfAiLookStyleIdRoute
   '/morf-ai/share/$shareId': typeof MorfAiShareShareIdRoute
@@ -659,6 +667,7 @@ export interface FileRoutesById {
   '/ai-style_/care_/products': typeof AiStyleCareProductsRoute
   '/booking/barber/$barberId': typeof BookingBarberBarberIdRoute
   '/dev/explore-gen/assets': typeof DevExploreGenAssetsRoute
+  '/dev/explore-gen/girls': typeof DevExploreGenGirlsRoute
   '/explore_/$styleId_/try': typeof ExploreStyleIdTryRoute
   '/morf-ai/look/$styleId': typeof MorfAiLookStyleIdRoute
   '/morf-ai/share/$shareId': typeof MorfAiShareShareIdRoute
@@ -735,6 +744,7 @@ export interface FileRouteTypes {
     | '/ai-style/care/products'
     | '/booking/barber/$barberId'
     | '/dev/explore-gen/assets'
+    | '/dev/explore-gen/girls'
     | '/explore/$styleId/try'
     | '/morf-ai/look/$styleId'
     | '/morf-ai/share/$shareId'
@@ -808,6 +818,7 @@ export interface FileRouteTypes {
     | '/ai-style/care/products'
     | '/booking/barber/$barberId'
     | '/dev/explore-gen/assets'
+    | '/dev/explore-gen/girls'
     | '/explore/$styleId/try'
     | '/morf-ai/look/$styleId'
     | '/morf-ai/share/$shareId'
@@ -882,6 +893,7 @@ export interface FileRouteTypes {
     | '/ai-style_/care_/products'
     | '/booking/barber/$barberId'
     | '/dev/explore-gen/assets'
+    | '/dev/explore-gen/girls'
     | '/explore_/$styleId_/try'
     | '/morf-ai/look/$styleId'
     | '/morf-ai/share/$shareId'
@@ -1430,6 +1442,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DevExploreGenAssetsRouteImport
       parentRoute: typeof DevExploreGenRoute
     }
+    '/dev/explore-gen/girls': {
+      id: '/dev/explore-gen/girls'
+      path: '/girls'
+      fullPath: '/dev/explore-gen/girls'
+      preLoaderRoute: typeof DevExploreGenGirlsRouteImport
+      parentRoute: typeof DevExploreGenRoute
+    }
     '/explore_/$styleId_/try': {
       id: '/explore_/$styleId_/try'
       path: '/explore/$styleId/try'
@@ -1503,11 +1522,13 @@ const StoriesRouteWithChildren =
 
 interface DevExploreGenRouteChildren {
   DevExploreGenAssetsRoute: typeof DevExploreGenAssetsRoute
+  DevExploreGenGirlsRoute: typeof DevExploreGenGirlsRoute
   DevExploreGenIndexRoute: typeof DevExploreGenIndexRoute
 }
 
 const DevExploreGenRouteChildren: DevExploreGenRouteChildren = {
   DevExploreGenAssetsRoute: DevExploreGenAssetsRoute,
+  DevExploreGenGirlsRoute: DevExploreGenGirlsRoute,
   DevExploreGenIndexRoute: DevExploreGenIndexRoute,
 }
 

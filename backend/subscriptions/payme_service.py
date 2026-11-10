@@ -480,7 +480,11 @@ def reconcile_pending_payme(user: User) -> None:
     Har bir profil ochilishida Payme ga yopishmaydi: foydalanuvchiga 20 soniyada bir marta,
     faqat oxirgi 6 soatdagi bitta kutilayotgan chek.
     """
-    if not cache.add(f"payme-reconcile:{user.pk}", 1, timeout=20):
+    try:
+        if not cache.add(f"payme-reconcile:{user.pk}", 1, timeout=20):
+            return
+    except Exception:
+        logger.warning("payme reconcile cache skip user=%s", user.pk, exc_info=True)
         return
     cutoff = timezone.now() - timedelta(hours=6)
     payment = (

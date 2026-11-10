@@ -162,6 +162,11 @@ export function useMorphLimitGate() {
     [refreshMe, showLimit],
   );
 
+  const invalidateUsage = useCallback(() => {
+    void qc.invalidateQueries({ queryKey: ["subscriptions"] });
+    void refreshMe().catch(() => undefined);
+  }, [qc, refreshMe]);
+
   return {
     open,
     setOpen,
@@ -174,9 +179,6 @@ export function useMorphLimitGate() {
     ensureChat,
     ensureVoice,
     openFromApiLimit,
-    invalidateUsage: () => {
-      void qc.invalidateQueries({ queryKey: ["subscriptions"] });
-      void refreshMe().catch(() => undefined);
-    },
+    invalidateUsage,
   };
 }

@@ -5,6 +5,7 @@ import { GestureHandlerRootView, ScrollView } from "react-native-gesture-handler
 import {
   ActivityIndicator,
   Alert,
+  Linking,
   Pressable,
   Share,
   StyleSheet,
@@ -18,6 +19,7 @@ import { useTranslation } from "react-i18next";
 import { useShellNavigation } from "../../lib/shell-nav";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { safeBottom, safeTop } from "../../lib/safe-area";
+import { TELEGRAM_SUPPORT_HANDLE, TELEGRAM_SUPPORT_URL } from "../../lib/support-contact";
 import type { MorphAiPrivacyDataCounts, MorphChatLimits } from "../../api/ai";
 import { UsageBar, UsageMeter } from "../../components/morph/UsageMeter";
 import { TelegramAppearancePanel } from "../../components/morph/TelegramAppearancePanel";
@@ -885,6 +887,12 @@ export function MorphChatSettingsScreen({
                     icon="help-circle"
                     title={t("chat.settings.helpCenter")}
                     onPress={() => openPage("help")}
+                  />
+                  <SettingsItem
+                    icon="paper-plane"
+                    title={t("chat.settings.telegramSupport")}
+                    subtitle={TELEGRAM_SUPPORT_HANDLE}
+                    onPress={() => void Linking.openURL(TELEGRAM_SUPPORT_URL)}
                     last
                   />
                 </SettingsSection>

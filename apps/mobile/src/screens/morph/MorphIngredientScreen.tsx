@@ -51,6 +51,7 @@ import {
   pickProductLabelFromGallery,
 } from "../../lib/product-label";
 import { playBarcodeBeep, primeBarcodeBeep } from "../../lib/barcode-beep";
+import { trackMobileEvent } from "../../lib/analytics";
 import { toDataUrl } from "../../lib/selfie";
 import { writeAppShell, writeLastShellTab } from "../../lib/app-shell";
 import { useShellNavigation } from "../../lib/shell-nav";
@@ -387,12 +388,14 @@ export function MorphIngredientScreen({ navigation }: Props) {
     setInMyProducts(false);
     setPreview(null);
     try {
+      trackMobileEvent("barcode_scan_started");
       await ensureHairProfile();
       const lookup = await fetchCareProductByBarcode(code, {
         condition: quiz.condition,
         texture: quiz.texture,
         color_status: quiz.colorStatus,
       });
+      trackMobileEvent("barcode_scan_completed");
       const analysis = barcodeLookupToIngredientScan(lookup);
       if (!lookup.found) {
         analysis.readable = false;

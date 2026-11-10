@@ -37,6 +37,8 @@ import { ChatContentBlocks } from "@/components/ai-style/ChatContentBlocks";
 import type { ChatHairAnswers } from "@/components/ai-style/ChatHairQuiz";
 import { MorphChatAppView } from "@/components/ai-style/MorphChatAppView";
 import { cardsFromBlocks, historyStyleRefs, visualBlocks } from "@/lib/chat-blocks";
+import { createPacedWriter } from "@/lib/chat-pace";
+import { matchReplyHairstyles } from "@/lib/chat-style-match";
 import { getHairstyleImageUrl } from "@/lib/hairstyles/catalog";
 import { useHairCareProfile } from "@/hooks/use-hair-care-profile";
 import {
@@ -55,6 +57,7 @@ type ChatMsg = {
   id: string;
   role: "user" | "assistant";
   content: string;
+  streaming?: boolean;
   hairstyles?: ChatHairstyleCard[];
   blocks?: ChatContentBlock[];
 };
@@ -77,7 +80,14 @@ function newId() {
 }
 
 function keepMessage(message: ChatMsg) {
+  if (message.streaming && !message.content?.trim() && !message.blocks?.length) return false;
   return Boolean(message.content?.trim() || message.blocks?.length || message.hairstyles?.length);
+}
+
+function persistable(messages: ChatMsg[]): ChatMsg[] {
+  return messages
+    .filter(keepMessage)
+    .map(({ streaming: _ignored, ...rest }) => rest);
 }
 
 function titleFromMessages(messages: ChatMsg[], fallback: string) {
@@ -282,6 +292,8 @@ export function MorphAiChatPage() {
   const listRef = useRef<HTMLDivElement>(null);
   const stickToBottom = useRef(true);
   const activeThreadIdRef = useRef("");
+  const messagesRef = useRef<ChatMsg[]>([]);
+  const sendingRef = useRef(false);
   const booted = useRef(false);
   const alive = useRef(true);
 
@@ -342,15 +354,20 @@ export function MorphAiChatPage() {
   }, [activeThreadId]);
 
   useEffect(() => {
-    if (!hydrated || !activeThreadId) return;
+    messagesRef.current = messages;
+  }, [messages]);
+
+  useEffect(() => {
+    if (!hydrated || !activeThreadId || sending) return;
     const fallback = t("aiStylePage.chat.untitled");
+    const snapshot = persistable(messages);
     setThreads((prev) => {
-      const next = upsertThread(prev, activeThreadId, messages, fallback);
+      const next = upsertThread(prev, activeThreadId, snapshot, fallback);
       saveLocalThreads(next);
       return next;
     });
     rememberActiveId(activeThreadId);
-  }, [hydrated, messages, activeThreadId, t]);
+  }, [hydrated, messages, activeThreadId, sending, t]);
 
   useEffect(() => {
     const el = listRef.current;
@@ -384,8 +401,10 @@ export function MorphAiChatPage() {
   const send = useCallback(
     async (raw?: string, assumeHair?: ChatHairAnswers) => {
       const trimmed = (raw ?? input).trim();
-      if (!trimmed || sending) return null;
+      if (!trimmed || sending || sendingRef.current) return null;
+      sendingRef.current = true;
       if (!hasValidUserSession()) {
+        sendingRef.current = false;
         const redirectTo =
           typeof window === "undefined"
             ? undefined
@@ -402,21 +421,33 @@ export function MorphAiChatPage() {
       }
       const hair = assumeHair ?? (hairQ.data?.complete ? hairQ.data : null);
       if (!hair) {
-        if (!raw) setInput("");
+        setInput("");
         setHairDraft(trimmed);
         setChatOpen(true);
+        sendingRef.current = false;
         return null;
       }
       setChatOpen(true);
       setSendError(null);
       const allowed = await gate.ensureChat();
-      if (!allowed) return null;
+      if (!allowed) {
+        sendingRef.current = false;
+        if (!raw) setInput(trimmed);
+        return null;
+      }
 
       const prefs = readMorphAiPrefs();
+      let threadId = activeThreadIdRef.current;
+      if (!threadId) {
+        threadId = newId();
+        activeThreadIdRef.current = threadId;
+        setActiveThreadId(threadId);
+      }
+
       const userMsg: ChatMsg = { id: newId(), role: "user", content: trimmed };
       const history = prefs.privacyLocalOnly
         ? []
-        : messages.slice(-24).map((m) => {
+        : persistable(messagesRef.current).slice(-24).map((m) => {
             const styles = historyStyleRefs(m);
             return {
               role: m.role,
@@ -425,31 +456,40 @@ export function MorphAiChatPage() {
             };
           });
       const persist = shouldPersistChatToServer(prefs);
-      const threadId = activeThreadIdRef.current || newId();
-      if (!activeThreadIdRef.current) {
-        activeThreadIdRef.current = threadId;
-        setActiveThreadId(threadId);
-      }
-      const paint = (updater: (prev: ChatMsg[]) => ChatMsg[]) => {
+
+      const assistantMsg: ChatMsg = {
+        id: newId(),
+        role: "assistant",
+        content: "",
+        streaming: true,
+      };
+
+      const paint = (next: ChatMsg[]) => {
+        messagesRef.current = next;
         if (activeThreadIdRef.current === threadId) {
-          setMessages(updater);
+          setMessages(next);
           return;
         }
+        const fallback = t("aiStylePage.chat.untitled");
         setThreads((prev) => {
-          const current = prev.find((thread) => thread.id === threadId);
-          const next = upsertThread(
-            prev,
-            threadId,
-            updater(current?.messages ?? []),
-            t("aiStylePage.chat.untitled"),
-          );
-          saveLocalThreads(next);
-          return next;
+          const merged = upsertThread(prev, threadId, persistable(next), fallback);
+          saveLocalThreads(merged);
+          return merged;
         });
       };
-      if (!raw) setInput("");
+
+      setInput("");
       setSending(true);
-      paint((prev) => [...prev, userMsg, { id: "pending", role: "assistant", content: "" }]);
+      paint([...persistable(messagesRef.current), userMsg, assistantMsg]);
+
+      const writer = createPacedWriter((text) => {
+        if (activeThreadIdRef.current !== threadId) return;
+        paint(
+          messagesRef.current.map((m) =>
+            m.id === assistantMsg.id ? { ...m, content: text, streaming: true } : m,
+          ),
+        );
+      });
 
       try {
         const payload = {
@@ -468,54 +508,83 @@ export function MorphAiChatPage() {
               : {}),
           },
         };
-        let reply = "";
         let limits: MorphChatLimits;
         let hairstyles: ChatHairstyleCard[] | undefined;
         let blocks: ChatContentBlock[] | undefined;
         const liveBlocks: ChatContentBlock[] = [];
+        const pace = !raw;
         stickToBottom.current = true;
-        if (prefs.streaming && !raw) {
-          const res = await streamMorphChatMessage(
-            payload,
-            (chunk) => {
-              reply += chunk;
-              paint((prev) => prev.map((m) => (m.id === "pending" ? { ...m, content: reply } : m)));
-            },
-            (block) => {
-              liveBlocks.push(block);
-              const next = [...liveBlocks];
-              paint((prev) => prev.map((m) => (m.id === "pending" ? { ...m, blocks: next } : m)));
-            },
-          );
-          reply = res.reply || reply;
-          limits = res.limits;
-          blocks = res.blocks?.length ? res.blocks : liveBlocks.length ? liveBlocks : undefined;
-          hairstyles = res.hairstyles?.length ? res.hairstyles : cardsFromBlocks(blocks);
+
+        const res =
+          prefs.streaming && pace
+            ? await streamMorphChatMessage(
+                payload,
+                (chunk) => writer.append(chunk),
+                (block) => {
+                  liveBlocks.push(block);
+                  if (activeThreadIdRef.current !== threadId) return;
+                  paint(
+                    messagesRef.current.map((m) =>
+                      m.id === assistantMsg.id
+                        ? { ...m, blocks: [...liveBlocks], streaming: true }
+                        : m,
+                    ),
+                  );
+                },
+              )
+            : await sendMorphChatMessage(payload);
+
+        blocks = res.blocks?.length ? res.blocks : liveBlocks.length ? liveBlocks : undefined;
+        hairstyles = res.hairstyles?.length ? res.hairstyles : cardsFromBlocks(blocks);
+
+        let finalText = res.reply || "";
+        if (pace && prefs.streaming) {
+          writer.replace(finalText);
+          if (!blocks?.length && !hairstyles?.length && finalText) {
+            hairstyles = await matchReplyHairstyles(finalText, trimmed);
+          }
+          if ((blocks?.length || hairstyles?.length) && activeThreadIdRef.current === threadId) {
+            paint(
+              messagesRef.current.map((m) =>
+                m.id === assistantMsg.id
+                  ? {
+                      ...m,
+                      ...(hairstyles?.length ? { hairstyles } : {}),
+                      ...(blocks?.length ? { blocks } : {}),
+                      streaming: true,
+                    }
+                  : m,
+              ),
+            );
+          }
+          finalText = (await writer.finish()) || finalText;
         } else {
-          const res = await sendMorphChatMessage(payload);
-          reply = res.reply;
-          limits = res.limits;
-          blocks = res.blocks;
-          hairstyles = res.hairstyles?.length ? res.hairstyles : cardsFromBlocks(blocks);
+          writer.cancel();
+          finalText = res.reply;
         }
-        paint((prev) =>
-          prev.map((m) =>
-            m.id === "pending"
-              ? {
-                  id: newId(),
-                  role: "assistant",
-                  content: reply,
-                  ...(hairstyles?.length ? { hairstyles } : {}),
-                  ...(blocks?.length ? { blocks } : {}),
-                }
-              : m,
+
+        const doneMsg: ChatMsg = {
+          id: assistantMsg.id,
+          role: "assistant",
+          content: finalText,
+          ...(hairstyles?.length ? { hairstyles } : {}),
+          ...(blocks?.length ? { blocks } : {}),
+        };
+        paint(
+          persistable(messagesRef.current.map((m) => (m.id === assistantMsg.id ? doneMsg : m))),
+        );
+        limits = res.limits;
+        applyLimits(limits);
+        gate.invalidateUsage();
+        return finalText;
+      } catch (err) {
+        writer.cancel();
+        paint(
+          persistable(messagesRef.current).filter(
+            (m) => m.id !== userMsg.id && m.id !== assistantMsg.id,
           ),
         );
-        applyLimits(limits);
-        return reply;
-      } catch (err) {
-        paint((prev) => prev.filter((m) => m.id !== "pending" && m.id !== userMsg.id));
-        if (!raw) setInput(trimmed);
+        setInput(trimmed);
         if (isMorphPlanLimitError(err)) {
           await gate.openFromApiLimit(raw ? "voice" : "chat");
           return null;
@@ -536,10 +605,12 @@ export function MorphAiChatPage() {
         }
         return null;
       } finally {
+        writer.cancel();
         setSending(false);
+        sendingRef.current = false;
       }
     },
-    [applyLimits, gate, hairQ.data, input, messages, navigate, sending, t],
+    [applyLimits, gate, hairQ.data, input, navigate, sending, t],
   );
 
   const openThread = useCallback((id: string) => {
@@ -575,15 +646,17 @@ export function MorphAiChatPage() {
       : planRemaining;
   const chatLocked = !morphChatCanSend(gate.me?.usage, gate.me, remaining);
 
+  const { invalidateUsage } = gate;
+
   useEffect(() => {
     if (!loggedIn) return;
-    void gate.invalidateUsage();
+    void invalidateUsage();
     void fetchMorphChatLimits()
       .then((data) => {
         if (alive.current) applyLimits(data);
       })
       .catch(() => undefined);
-  }, [applyLimits, gate, loggedIn]);
+  }, [applyLimits, invalidateUsage, loggedIn]);
 
   const mobileChat = (
     <MorphChatAppView
@@ -713,7 +786,7 @@ export function MorphAiChatPage() {
                     {rendered.length ? (
                       <ChatContentBlocks blocks={rendered} />
                     ) : (
-                      msg.content || (msg.id === "pending" ? "…" : "")
+                      msg.content || (msg.streaming && !msg.content ? "…" : "")
                     )}
                   </div>
                   );

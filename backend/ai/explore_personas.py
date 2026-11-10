@@ -278,7 +278,7 @@ def static_persona_style_image_path(*, audience: str, persona_id: str, slug: str
 
 def list_explore_personas(audience: str = "men") -> list[dict]:
     from ai.explore_persona_labels import persona_display_label
-    from ai.explore_published import explore_asset_available
+    from ai.explore_published import explore_asset_available, resolve_explore_asset_url
 
     if audience == "women":
         order = ("leyla", "sofia", "mila")
@@ -296,7 +296,12 @@ def list_explore_personas(audience: str = "men") -> list[dict]:
             {
                 **persona,
                 "label": persona_display_label(pid),
-                "reference_url": static_persona_ref_image_path(audience=audience, persona_id=pid),
+                "reference_url": resolve_explore_asset_url(
+                    audience=audience,
+                    persona_id=pid,
+                    slug="reference",
+                    view="front",
+                ),
             }
         )
     return rows

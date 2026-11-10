@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
+  Linking,
   Platform,
   Pressable,
   ScrollView,
@@ -29,6 +30,7 @@ import {
   scale,
   verticalScale,
 } from "../../utils/responsive";
+import { TELEGRAM_SUPPORT_HANDLE, TELEGRAM_SUPPORT_URL } from "../../lib/support-contact";
 
 type Props = NativeStackScreenProps<ProfileStackParamList, "HelpCenter">;
 
@@ -134,6 +136,17 @@ export function HelpCenterScreen({ navigation }: Props) {
           showsVerticalScrollIndicator={false}
         >
           <Text style={styles.lead}>{t("help.lead")}</Text>
+
+          <Pressable
+            onPress={() => void Linking.openURL(TELEGRAM_SUPPORT_URL)}
+            style={({ pressed }) => [styles.card, styles.telegramRow, pressed && styles.pressed]}
+          >
+            <Ionicons name="paper-plane" size={18} color="#2AABEE" />
+            <View style={{ flex: 1 }}>
+              <Text style={styles.q}>{t("help.telegram")}</Text>
+              <Text style={styles.a}>{TELEGRAM_SUPPORT_HANDLE}</Text>
+            </View>
+          </Pressable>
 
           <Text style={styles.group}>{t("help.faqTitle")}</Text>
           <View style={styles.card}>
@@ -354,6 +367,13 @@ const styles = StyleSheet.create({
     borderRadius: moderateScale(16),
     overflow: "hidden",
     marginBottom: verticalScale(20),
+  },
+  telegramRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: moderateScale(12),
+    paddingHorizontal: scale(16),
+    paddingVertical: verticalScale(14),
   },
   row: {
     flexDirection: "row",

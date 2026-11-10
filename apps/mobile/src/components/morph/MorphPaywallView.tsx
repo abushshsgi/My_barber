@@ -3,6 +3,7 @@ import { StatusBar } from "expo-status-bar";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
+  Linking,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -25,6 +26,7 @@ import { useMorphAppearance } from "../../lib/MorphAppearanceContext";
 import { pickFeatureLabel, pickPlanName } from "../../lib/plan-labels";
 import type { PaywallReason } from "../../lib/morph-return";
 import { pickPaywallHero } from "../../lib/paywall-copy";
+import { TELEGRAM_SUPPORT_URL } from "../../lib/support-contact";
 import { morphFont } from "../../theme/morph-font";
 import {
   fontSize,
@@ -106,18 +108,16 @@ export function MorphPaywallView({
 
   useEffect(() => {
     if (selected && cards.some((p) => p.code === selected)) return;
-    const preferPro =
-      reason === "pro"
-        ? cards.find((p) => p.code === "pro" && isPlanUpgrade(p.code, activeCode))?.code
-        : null;
+    const starter = cards.find(
+      (p) => p.code === "starter" && isPlanUpgrade(p.code, activeCode),
+    )?.code;
     const next =
-      preferPro ||
-      cards.find((p) => isPlanUpgrade(p.code, activeCode) && p.highlight)?.code ||
+      starter ||
       cards.find((p) => isPlanUpgrade(p.code, activeCode))?.code ||
       cards[0]?.code ||
       null;
     if (next !== selected) setSelected(next);
-  }, [activeCode, cards, reason, selected]);
+  }, [activeCode, cards, selected]);
 
   const selectedPlan = cards.find((p) => p.code === selected) ?? cards[0] ?? null;
   const canBuy = Boolean(
@@ -325,6 +325,14 @@ export function MorphPaywallView({
               <Ionicons name="arrow-forward" size={18} color={pal.bg} />
             </>
           )}
+        </Pressable>
+        <Pressable
+          onPress={() => void Linking.openURL(TELEGRAM_SUPPORT_URL)}
+          style={styles.skipBtn}
+        >
+          <Text style={[styles.skipText, { color: pal.muted }]}>
+            {t("morph.paywall.askSupport")}
+          </Text>
         </Pressable>
         {onOpenReferral ? (
           <Pressable onPress={onOpenReferral} style={styles.skipBtn}>

@@ -8,7 +8,7 @@ import { mapApiHairstyle, type HairstyleEntry } from "@/lib/hairstyles/catalog";
 export function hairstylesQueryKey(
   audience?: AudienceFilter,
   ageGroup?: string | null,
-  personaId?: ExplorePersonaId | null,
+  personaId?: string | null,
 ) {
   if (!audience || audience === "all") {
     return ["hairstyles", "all", ageGroup ?? "any", personaId ?? "none"] as const;
@@ -29,7 +29,7 @@ type UseHairstylesOptions = {
 
 export function useHairstyles(
   audience?: AudienceFilter,
-  personaId?: ExplorePersonaId | null,
+  personaId?: string | null,
   options?: UseHairstylesOptions,
 ) {
   const profileAgeGroup = useUserAgeGroup();

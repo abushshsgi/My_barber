@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState, type ReactNode } from "react"
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
+  Linking,
   Platform,
   Pressable,
   ScrollView,
@@ -25,6 +26,7 @@ import {
   scale,
   verticalScale,
 } from "../../utils/responsive";
+import { TELEGRAM_SUPPORT_HANDLE, TELEGRAM_SUPPORT_URL } from "../../lib/support-contact";
 
 const CARD = "#1C1C1E";
 const LINE = "rgba(84, 84, 88, 0.65)";
@@ -281,6 +283,16 @@ export function MorphHelpCenterView({
 
   return (
     <>
+      <Pressable
+        onPress={() => void Linking.openURL(TELEGRAM_SUPPORT_URL)}
+        style={({ pressed }) => [styles.card, styles.telegramRow, pressed && { opacity: 0.85 }]}
+      >
+        <Ionicons name="paper-plane" size={18} color="#2AABEE" />
+        <View style={{ flex: 1 }}>
+          <Text style={styles.itemTitle}>{t("chat.support.telegram")}</Text>
+          <Text style={styles.itemSubtitle}>{TELEGRAM_SUPPORT_HANDLE}</Text>
+        </View>
+      </Pressable>
       <Section title={t("chat.support.faqTitle")}>
         <FaqList items={faq} />
       </Section>
@@ -477,6 +489,14 @@ const styles = StyleSheet.create({
     backgroundColor: CARD,
     borderRadius: moderateScale(16),
     overflow: "hidden",
+  },
+  telegramRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: moderateScale(12),
+    marginBottom: verticalScale(20),
+    paddingHorizontal: scale(16),
+    paddingVertical: verticalScale(14),
   },
   faqRow: {
     flexDirection: "row",

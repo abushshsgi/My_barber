@@ -5,6 +5,7 @@ import { MysaloonLogo } from "@/components/brand/MysaloonLogo";
 import { ExploreStyleGrid } from "@/components/explore/ExploreStyleGrid";
 import { ExplorePageToolbar } from "@/components/explore/ExplorePageToolbar";
 import { PersonaPicker } from "@/components/PersonaPicker";
+import { WomenPersonaPicker } from "@/components/WomenPersonaPicker";
 import { useExplorePageData } from "@/hooks/use-explore-page-data";
 import { DESKTOP_BAZAAR_INSET } from "@/lib/desktop-bazaar-layout";
 import { cn } from "@/lib/utils";
@@ -18,6 +19,9 @@ export function ExploreDesktopPage() {
     personaId,
     setPersonaId,
     menPersona,
+    womenPersonas,
+    womenPersonaId,
+    setWomenPersonaId,
     visibleList,
     isLoading,
     isError,
@@ -45,6 +49,12 @@ export function ExploreDesktopPage() {
           <div className="mt-6 space-y-4">
             {audience === "men" ? (
               <PersonaPicker value={personaId} onChange={setPersonaId} />
+            ) : audience === "women" ? (
+              <WomenPersonaPicker
+                personas={womenPersonas}
+                value={womenPersonaId}
+                onChange={setWomenPersonaId}
+              />
             ) : null}
             <ExplorePageToolbar styleCount={visibleList.length} ageGroup={ageGroup} />
           </div>
@@ -55,7 +65,7 @@ export function ExploreDesktopPage() {
 
       <ExploreStyleGrid
         items={visibleList}
-        personaKey={menPersona}
+        personaKey={audience === "women" ? womenPersonaId : menPersona}
         isLoading={isLoading}
         isError={isError}
         isRetrying={isRetrying}
