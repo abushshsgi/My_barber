@@ -76,6 +76,8 @@ class _Response:
     RUNWARE_TRYON_OVERFLOW_DEPTH="8",
     TRYON_PROVIDER_CONCURRENCY=8,
     MEDIA_URL="/media/",
+    TRYON_PROMPT_VERSION="v2",
+    RUNWARE_TRYON_DUAL_REFERENCE=False,
 )
 class RunwareTryOnTests(SimpleTestCase):
     def test_1024_is_inside_model_limits(self):
@@ -180,9 +182,10 @@ class RunwareTryOnTests(SimpleTestCase):
             "cost": 0.0012,
             "seed": 7,
         }
-        with patch(
+        catalog = _jpeg_bytes_color((40, 80, 120), (256, 256))
+        with override_settings(RUNWARE_TRYON_DUAL_REFERENCE=True), patch(
             "ai.services.runware_tryon.load_public_image",
-            return_value=("image/png", _jpeg_bytes()),
+            return_value=("image/png", catalog),
         ):
             result = generate_tryon_preview(
                 selfie_data_url=TINY_PNG,
@@ -196,7 +199,7 @@ class RunwareTryOnTests(SimpleTestCase):
         task = infer.call_args.args[0]
         refs = task["inputs"]["referenceImages"]
         self.assertEqual(task["model"], "runware:400@6")
-        self.assertEqual(len(refs), 1)
+        self.assertEqual(len(refs), 2)
         self.assertTrue(all(item.startswith("data:image/jpeg;base64,") for item in refs))
         self.assertNotIn("seedImage", task)
         self.assertNotIn("strength", task)
@@ -214,9 +217,10 @@ class RunwareTryOnTests(SimpleTestCase):
         self.assertGreaterEqual(len(task["negativePrompt"]), 2)
         prompt = task["positivePrompt"].lower()
         self.assertIn("reference image 1", prompt)
-        self.assertNotIn("reference image 2", prompt)
-        self.assertIn("critical identity preservation", prompt)
+        self.assertIn("reference image 2", prompt)
+        self.assertIn("identity-preserving hairstyle transformation", prompt)
         self.assertIn("critical original hair color preservation", prompt)
+        self.assertIn("selected hairstyle lock", prompt)
         self.assertIn("mid fade", prompt)
         self.assertIn("change only the hairstyle", prompt)
         self.assertTrue(result.preview_image.startswith("/media/ai-style/tryon-results/"))
@@ -227,6 +231,71 @@ class RunwareTryOnTests(SimpleTestCase):
         self.assertFalse(result.tokens_estimated)
         self.assertGreaterEqual(result.latency_ms, 0)
         download.assert_called_once_with("https://im.runware.ai/image/example.jpg")
+
+    def test_dual_reference_requires_resolvable_catalog_image(self):
+        from ai.services.runware_tryon import generate_tryon_preview
+
+        with override_settings(RUNWARE_TRYON_DUAL_REFERENCE=True), patch(
+            "ai.services.runware_tryon.load_public_image",
+            return_value=None,
+        ):
+            with self.assertRaises(AiStyleError) as ctx:
+                generate_tryon_preview(
+                    selfie_data_url=TINY_PNG,
+                    audience="men",
+                    slug="mid-fade",
+                    title="Mid Fade",
+                    reference_image_url="/hairstyles/men/missing.webp",
+                )
+        self.assertEqual(ctx.exception.status, 400)
+        self.assertFalse(ctx.exception.retryable)
+
+    @patch("media_store.utils.save_media_bytes", return_value="stored.jpg")
+    @patch("ai.services.runware_tryon.download_image")
+    @patch("ai.services.runware_tryon.run_image_inference")
+    def test_dual_reference_order_selfie_then_catalog(self, infer, download, _save):
+        from ai.services.runware_tryon import generate_tryon_preview
+
+        selfie_raw = _jpeg_bytes_color((200, 100, 50), (64, 64))
+        catalog_raw = _jpeg_bytes_color((50, 100, 200), (128, 128))
+        import base64
+
+        selfie_url = "data:image/jpeg;base64," + base64.b64encode(selfie_raw).decode("ascii")
+        download.return_value = _jpeg_bytes()
+        infer.return_value = {
+            "imageURL": "https://im.runware.ai/image/example.jpg",
+            "cost": 0.001,
+        }
+        prepare_calls: list[bytes] = []
+
+        def _fake_load(url: str):
+            if "catalog" in url:
+                return ("image/jpeg", catalog_raw)
+            return None
+
+        original_prepare = __import__(
+            "ai.services.runware_tryon", fromlist=["prepare_selfie_bytes"]
+        ).prepare_selfie_bytes
+
+        def _track_prepare(raw: bytes, *, style_detail: str = ""):
+            prepared = original_prepare(raw, style_detail=style_detail)
+            prepare_calls.append(prepared.payload)
+            return prepared
+
+        with override_settings(RUNWARE_TRYON_DUAL_REFERENCE=True), patch(
+            "ai.services.runware_tryon.load_public_image",
+            side_effect=_fake_load,
+        ), patch("ai.services.runware_tryon.prepare_selfie_bytes", side_effect=_track_prepare):
+            generate_tryon_preview(
+                selfie_data_url=selfie_url,
+                audience="men",
+                slug="mid-fade",
+                title="Mid Fade",
+                reference_image_url="/hairstyles/men/catalog.webp",
+            )
+        refs = infer.call_args.args[0]["inputs"]["referenceImages"]
+        self.assertEqual(len(refs), 2)
+        self.assertEqual(len(prepare_calls), 2)
 
     @patch("media_store.utils.save_media_bytes", return_value="stored.jpg")
     @patch("ai.services.runware_tryon.download_image")

@@ -314,6 +314,15 @@ TRYON_DIAGNOSTICS = (
 )
 # Empty or 0 uses TRYON_PROVIDER_CONCURRENCY. Above that, new jobs start on a reserve model.
 RUNWARE_TRYON_OVERFLOW_DEPTH = os.environ.get("RUNWARE_TRYON_OVERFLOW_DEPTH", "").strip()
+# Try-On prompt pipeline: v2 = style lock + compact layers; legacy = pre-2026 long prompts.
+TRYON_PROMPT_VERSION = os.environ.get("TRYON_PROMPT_VERSION", "v2").strip().lower() or "v2"
+# Selfie + exact catalog reference (referenceImages[0]=user, [1]=hairstyle). Off = text-only style lock.
+RUNWARE_TRYON_DUAL_REFERENCE = os.environ.get("RUNWARE_TRYON_DUAL_REFERENCE", "true").strip().lower() in (
+    "1",
+    "true",
+    "yes",
+    "on",
+)
 
 # Morf AI kvota. Default o‘chiq — faqat lokal test uchun "true" qiling.
 MORPH_ENTITLEMENT_BYPASS = os.environ.get("MORPH_ENTITLEMENT_BYPASS", "false").lower() in (

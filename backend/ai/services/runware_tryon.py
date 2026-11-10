@@ -37,7 +37,9 @@ from .tryon_prompts import (
     NEGATIVE_PROMPT,
     NEGATIVE_PROMPT_MAX,
     build_tryon_prompt,
+    resolve_tryon_prompt_version,
 )
+from .tryon_quality import assess_tryon_quality
 
 logger = logging.getLogger(__name__)
 
@@ -501,6 +503,37 @@ def _output_size_for_bytes(raw: bytes, model: str) -> tuple[int, int]:
     return width, height
 
 
+def dual_reference_enabled() -> bool:
+    return _flag("RUNWARE_TRYON_DUAL_REFERENCE", True)
+
+
+def load_catalog_reference_bytes(reference_image_url: str | None) -> bytes:
+    """Load the Explore catalog portrait for referenceImages[1]. Fails if missing."""
+    url = str(reference_image_url or "").strip()
+    if not url:
+        raise AiStyleError(
+            "Tanlangan uslub uchun katalog rasmi topilmadi.",
+            400,
+            retryable=False,
+        )
+    loaded = load_public_image(url)
+    if not loaded:
+        raise AiStyleError(
+            "Tanlangan uslub uchun katalog rasmi yuklanmadi.",
+            400,
+            retryable=False,
+        )
+    _mime, raw = loaded
+    prepared = prepare_selfie_bytes(raw, style_detail="")
+    if not prepared.payload:
+        raise AiStyleError(
+            "Tanlangan uslub uchun katalog rasmi yuklanmadi.",
+            400,
+            retryable=False,
+        )
+    return prepared.payload
+
+
 def load_public_image(relative_url: str) -> tuple[str, bytes] | None:
     rel = (relative_url or "").lstrip("/")
     if not rel or ".." in rel.split("/"):
@@ -770,12 +803,16 @@ def _build_tryon_prompt(
     style_detail: str,
     selected_hair_color: str | None = None,
     include_catalog_image: bool = False,
+    audience: str | None = None,
+    slug: str | None = None,
 ) -> str:
     return build_tryon_prompt(
         title=title,
         style_detail=style_detail,
         selected_hair_color=selected_hair_color,
         include_catalog_image=include_catalog_image,
+        audience=audience,
+        slug=slug,
     )
 
 
@@ -1000,6 +1037,12 @@ def tryon_diagnostic_record(**fields: Any) -> dict[str, Any]:
         "quality_retries",
         "output_width",
         "output_height",
+        "prompt_version",
+        "qc_overall",
+        "qc_hair_band_change",
+        "qc_forehead_status",
+        "dual_reference",
+        "catalog_reference_attached",
     )
     record = {key: fields.get(key) for key in allowed}
     return record
@@ -1028,17 +1071,24 @@ def generate_tryon_preview(
     _mime, selfie = load_image_bytes(selfie_data_url)
     style_detail = style_detail_for(audience, slug)
     prepared = prepare_selfie_bytes(selfie, style_detail=style_detail)
-    images = [prepared.payload]
-    # inputs.referenceImages has no role field. A catalog portrait is another
-    # person, and FLUX.2 uses every reference as an identity source. The haircut
-    # is passed as text. reference_image_url is accepted and not uploaded.
-    if reference_image_url:
-        logger.debug("Catalog reference image omitted: no per-image role on runware:400@6")
+    include_catalog = False
+    images: list[bytes] = [prepared.payload]
+    if dual_reference_enabled():
+        catalog_bytes = load_catalog_reference_bytes(reference_image_url)
+        images = [prepared.payload, catalog_bytes]
+        include_catalog = True
+    elif reference_image_url:
+        logger.info(
+            "Catalog reference omitted: RUNWARE_TRYON_DUAL_REFERENCE is off slug=%s",
+            slug,
+        )
     prompt = _build_tryon_prompt(
         title=title,
         style_detail=style_detail,
         selected_hair_color=selected_hair_color,
-        include_catalog_image=False,
+        include_catalog_image=include_catalog,
+        audience=audience,
+        slug=slug,
     )
     width, height = _output_size_for_bytes(prepared.payload, resolved_tryon_model())
     try:
@@ -1079,7 +1129,9 @@ def generate_tryon_preview(
         cost=cost,
         estimated=estimated,
         latency_ms=latency_ms,
+        inference_images=images,
     )
+    qc = assess_tryon_quality(prepared.payload, jpeg, face_report=report)
     log_tryon_diagnostics(
         tryon_diagnostic_record(
             input_source=source_name or "unknown",
@@ -1104,6 +1156,12 @@ def generate_tryon_preview(
             quality_retries=quality_retries,
             output_width=width,
             output_height=height,
+            prompt_version=resolve_tryon_prompt_version(),
+            qc_overall=qc.get("overall"),
+            qc_hair_band_change=qc.get("hair_band_change_ratio"),
+            qc_forehead_status=qc.get("forehead_status"),
+            dual_reference=dual_reference_enabled(),
+            catalog_reference_attached=include_catalog,
         )
     )
     return _result(
@@ -1125,6 +1183,7 @@ def _preserve_and_maybe_retry(
     cost: Decimal,
     estimated: bool,
     latency_ms: int,
+    inference_images: list[bytes] | None = None,
 ) -> tuple[bytes, dict[str, Any], int, Decimal, bool, int, str]:
     """One optional regeneration. A failed retry keeps the safer of the two results."""
     restore_enabled = _flag("TRYON_FACE_RESTORE", True)
@@ -1138,11 +1197,12 @@ def _preserve_and_maybe_retry(
         logger.info("Quality retry skipped: safer prompt exceeds %s characters", PROMPT_MAX)
         return jpeg, report, retries, cost, estimated, latency_ms, model
 
+    ref_images = list(inference_images) if inference_images else [original]
     width, height = _output_size_for_bytes(original, model)
     try:
         second, second_cost, second_estimated, second_latency = _infer_edit(
             prompt=safer_prompt,
-            images=[original],
+            images=ref_images,
             model=model,
             width=width,
             height=height,

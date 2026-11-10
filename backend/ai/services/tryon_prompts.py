@@ -8,6 +8,10 @@ from __future__ import annotations
 
 import logging
 
+from django.conf import settings
+
+from .tryon_style_lock import format_style_lock, resolve_style_lock
+
 logger = logging.getLogger(__name__)
 
 POSITIVE_PROMPT_MAX = 10000
@@ -223,8 +227,6 @@ Maintain natural hair growth direction.
 
 Maintain realistic hair root placement.
 
-Maintain a believable natural hairline.
-
 Maintain realistic individual hair strands.
 
 Maintain physically plausible hair density.
@@ -429,7 +431,48 @@ Do not add a further dye, bleach, highlight, ombre, or balayage beyond the selec
 """
 
 NEGATIVE_PROMPT = """\
-different person, identity replacement, face swap, face regeneration, reconstructed face, altered identity, changed face shape, modified facial proportions, distorted forehead, changed eye shape, changed eye size, changed eye spacing, modified eyelids, changed eyebrows, different nose, altered nose bridge, modified nostrils, changed lips, altered mouth, different cheekbones, modified jawline, different chin, distorted ears, changed facial symmetry, changed skin tone, artificial skin, plastic skin, skin smoothing, face retouching, beauty filter, facial enhancement, excessive makeup, changed expression, different gaze, altered head position, changed apparent age, unwanted hair recoloring, changed original hair color, incorrect hair pigmentation, unwanted highlights, unwanted bleaching, unwanted ombre, artificial wig, fake hairline, unnatural roots, synthetic hair, plastic hair, unrealistic hair texture, repeated hair patterns, malformed curls, distorted bangs, floating hair, unrealistic hair density, blurry face, distorted anatomy, enlarged forehead, lowered hairline, moved hairline, stretched head, widened skull, stacked curls, oversized ringlets, wig cap, extra hair volume above the forehead, changed clothing, different background, modified lighting, incorrect shadows, cartoon, illustration, CGI, 3D render, oversharpening, oversmoothing, low-resolution artifacts, compression artifacts
+different person, copied reference model face, altered facial identity, changed facial proportions, distorted forehead anatomy, enlarged skull, artificial wig, floating hair, disconnected strands, excessive hair volume, unnatural curls, duplicated hairline, deformed ears, altered eyes, altered nose, changed mouth, plastic skin, excessive beauty retouching, cartoon appearance, CGI hair, unrealistic hair growth, incorrect hairstyle, unrelated haircut, changed clothing, changed background, face replacement artifacts, visible compositing seams, identity replacement, face swap, beauty filter, stacked curls, wig cap, changed original hair color, unwanted bleaching or ombre
+"""
+
+MASTER_HAIRSTYLE_TRANSFER_PROMPT = """\
+Perform a highly realistic, identity-preserving hairstyle transformation using two reference photographs.
+
+REFERENCE IMAGE 1 — ORIGINAL PERSON:
+This photograph is the primary and authoritative source for the final image.
+Preserve the original person's recognizable facial identity, facial geometry, forehead anatomy, eyes, eyebrows, nose, mouth, ears, skin texture, facial expression, head position, camera angle, clothing, background, and lighting.
+The final photograph must depict the same person in the same photographic environment.
+Do not redesign or beautify the person's face.
+Do not alter the skull proportions or underlying forehead geometry.
+
+REFERENCE IMAGE 2 — TARGET HAIRSTYLE:
+Use this photograph exclusively as the hairstyle design reference.
+Transfer the defining hairstyle characteristics onto the person from reference image 1.
+Match the selected hairstyle's overall silhouette, hair length, top volume, side length, hair direction, texture, curl pattern, fringe placement, fade or taper structure, and styling finish.
+Do not copy the person from reference image 2.
+Do not transfer their face, skin, clothing, expression, background, or camera perspective.
+
+HAIRSTYLE ADAPTATION:
+Adapt the hairstyle naturally to the original person's existing head anatomy.
+Preserve realistic scalp curvature and natural hair growth boundaries where compatible with the selected style.
+The hairstyle must look professionally cut and styled on the original person.
+Allow natural hair strands to overlap the forehead when required by the selected hairstyle.
+Do not reshape the underlying forehead, artificially enlarge the head, or create excessive hair volume.
+
+STYLE CONSISTENCY:
+The hairstyle must remain recognizable as the selected catalog hairstyle.
+Preserve its defining structure instead of creating a generic haircut.
+Do not replace a Pompadour with a Quiff, a Slick Back with a Curly Fringe, or a French Crop with an unrelated hairstyle.
+Do not invent an alternative hairstyle.
+
+PHOTOREALISM:
+Maintain natural photographic detail with believable strand structure, density, highlights, shadows, and growth direction.
+Hair-to-skin transitions must look natural.
+The result must resemble a real photograph after a professional salon appointment.
+
+FINAL OUTPUT:
+Return one realistic photograph of the original person with the selected reference hairstyle.
+The face must remain as consistent as technically possible with reference image 1.
+Only hairstyle-related regions should visibly change.
 """
 
 _RECOLOR_MARKERS = (
@@ -468,6 +511,40 @@ _CURLY_MARKERS = ("curl", "coil", "ringlet", "jingalak", "wavy", "wave")
 _STRAIGHT_MARKERS = ("straight", "silk", "blunt")
 _FADE_MARKERS = ("fade", "taper", "undercut")
 _SLICK_MARKERS = ("slick", "slicked", "pompadour")
+
+
+IDENTITY_V2_PROMPT = """\
+IDENTITY PRESERVATION (layer A):
+
+Reference image 1 is the uploaded user photograph — the only identity source.
+
+Keep the same person recognizable: face shape, forehead height and width, eyes, nose, mouth,
+jawline, skin tone, skin texture, apparent age, expression, gaze, head pose, and camera perspective.
+
+Do not face-swap, beautify, reshape features, or copy a catalog model.
+
+Only the hairstyle may change.
+"""
+
+PHOTOREALISM_V2_PROMPT = """\
+QUALITY (layer C):
+
+Photorealistic salon result: individual hair strands, natural lighting and shadows, believable density,
+no wig cap, no plastic hair, no stacked forehead curls, no artificial skin smoothing.
+Keep background, clothing, and scene lighting consistent with reference image 1.
+"""
+
+BACKGROUND_V2_PROMPT = """\
+Preserve original background, clothing, accessories, body pose, and scene lighting.
+Only the hairstyle is authorized to change.
+"""
+
+
+def resolve_tryon_prompt_version() -> str:
+    raw = str(getattr(settings, "TRYON_PROMPT_VERSION", "v2") or "v2").strip().lower()
+    if raw in ("legacy", "v1", "1"):
+        return "legacy"
+    return "v2"
 
 
 def style_guidance(title: str, style_detail: str) -> str:
@@ -518,34 +595,87 @@ def _assemble(sections: list[tuple[str, str, bool]], *, limit: int) -> str:
         )
 
 
+def _color_section(
+    *,
+    title: str,
+    style_detail: str,
+    selected_hair_color: str | None,
+) -> str:
+    explicit = " ".join(str(selected_hair_color or "").split())
+    if explicit:
+        return build_selected_hair_color_prompt(explicit)
+    if style_requests_recolor(title, style_detail):
+        return STYLE_COLOR_PROMPT
+    return ORIGINAL_HAIR_COLOR_PROMPT
+
+
 def build_tryon_prompt(
     *,
     title: str,
     style_detail: str,
     selected_hair_color: str | None = None,
     include_catalog_image: bool = False,
+    audience: str | None = None,
+    slug: str | None = None,
+    prompt_version: str | None = None,
 ) -> str:
     """Assemble the edit prompt. Contradictory color instructions are not combined."""
-    explicit = " ".join(str(selected_hair_color or "").split())
-    if explicit:
-        color_section = build_selected_hair_color_prompt(explicit)
-    elif style_requests_recolor(title, style_detail):
-        color_section = STYLE_COLOR_PROMPT
-    else:
-        color_section = ORIGINAL_HAIR_COLOR_PROMPT
-
-    catalog = f'Selected hairstyle structure: "{title}". {style_detail}'.strip()
+    version = (prompt_version or resolve_tryon_prompt_version()).strip().lower()
+    color_section = _color_section(
+        title=title,
+        style_detail=style_detail,
+        selected_hair_color=selected_hair_color,
+    )
     reference = REFERENCE_IMAGE_PROMPT if include_catalog_image else SELFIE_REFERENCE_PROMPT
+
+    if version == "legacy" or not slug:
+        catalog = f'Selected hairstyle structure: "{title}". {style_detail}'.strip()
+        sections = [
+            ("primary", _primary_task(title), False),
+            ("identity", IDENTITY_PRESERVATION_PROMPT, False),
+            ("anatomy", ANATOMY_ANCHOR_PROMPT, False),
+            ("hairstyle", HAIRSTYLE_TRANSFORMATION_PROMPT, False),
+            ("style", style_guidance(title, style_detail), False),
+            ("catalog", catalog, False),
+            ("color", color_section, False),
+            ("reference", reference, True),
+            ("photorealism", PHOTOREALISM_PROMPT, True),
+            ("background", BACKGROUND_PRESERVATION_PROMPT, True),
+        ]
+        return _assemble(sections, limit=POSITIVE_PROMPT_MAX)
+
+    aud = (audience or "men").strip().lower()
+    lock = resolve_style_lock(audience=aud, slug=slug, title=title)
+    style_lock = format_style_lock(lock, catalog_attached=include_catalog_image)
+    extra = style_guidance(title, style_detail)
+
+    if include_catalog_image:
+        sections = [
+            ("primary", _primary_task(title), False),
+            ("master", MASTER_HAIRSTYLE_TRANSFER_PROMPT, False),
+            ("anatomy", ANATOMY_ANCHOR_PROMPT, False),
+            ("style_lock", style_lock, False),
+            ("style", extra, True),
+            ("color", color_section, False),
+            ("photorealism", PHOTOREALISM_V2_PROMPT, True),
+            ("background", BACKGROUND_V2_PROMPT, True),
+        ]
+        return _assemble(sections, limit=POSITIVE_PROMPT_MAX)
+
+    reference_selfie = """\
+REFERENCE IMAGES:
+Reference image 1 is the user selfie (identity + original hair color + scene).
+No catalog model photograph is attached; hairstyle structure is defined in layer B below.
+Do not invent another person."""
     sections = [
         ("primary", _primary_task(title), False),
-        ("identity", IDENTITY_PRESERVATION_PROMPT, False),
+        ("identity", IDENTITY_V2_PROMPT, False),
         ("anatomy", ANATOMY_ANCHOR_PROMPT, False),
-        ("hairstyle", HAIRSTYLE_TRANSFORMATION_PROMPT, False),
-        ("style", style_guidance(title, style_detail), False),
-        ("catalog", catalog, False),
+        ("style_lock", style_lock, False),
+        ("style", extra, True),
         ("color", color_section, False),
-        ("reference", reference, True),
-        ("photorealism", PHOTOREALISM_PROMPT, True),
-        ("background", BACKGROUND_PRESERVATION_PROMPT, True),
+        ("reference", reference_selfie, True),
+        ("photorealism", PHOTOREALISM_V2_PROMPT, True),
+        ("background", BACKGROUND_V2_PROMPT, True),
     ]
     return _assemble(sections, limit=POSITIVE_PROMPT_MAX)
