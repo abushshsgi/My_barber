@@ -1,5 +1,5 @@
-# Review-only snippet for www.mysaloon.uz — do not apply without approval.
-# Goal: cache public hashed assets + proxy media/API with sane TTL (no shared cache for private try-on).
+# DEPRECATED — merged into deploy/vps/nginx/mysaloon-user.conf (gzip + public static Cache-Control).
+# Keep proxy_cache at the edge only after proxy_cache_path is configured; private /media must stay uncached.
 
 # Inside the TLS server { } for mysaloon.uz, before `location /`:
 

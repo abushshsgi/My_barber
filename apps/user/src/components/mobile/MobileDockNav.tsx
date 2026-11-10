@@ -169,10 +169,14 @@ export function MobileDockNav({ unreadCount: _unreadCount = 0 }: Props) {
           >
             <span className="grid size-[clamp(34px,10vw,42px)] place-items-center overflow-hidden rounded-full bg-white shadow-[0_2px_10px_rgba(0,0,0,0.16)] ring-2 ring-white">
               <img
-                src="/mysaloon-app-icon.png"
+                src="/icon-192.png"
                 alt=""
+                width={42}
+                height={42}
                 className="size-full object-cover"
                 draggable={false}
+                loading="lazy"
+                decoding="async"
               />
             </span>
           </button>

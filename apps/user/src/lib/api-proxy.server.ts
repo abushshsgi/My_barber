@@ -128,7 +128,15 @@ export async function maybeProxyApi(request: Request): Promise<Response | null> 
       });
     }
 
-    // Vercel serverless: upstream.body stream ko‘pincha bo‘sh qaytadi — buffer majburiy.
+    // Nitro (VPS): stream bodies when available — lower TTFB and memory for /media and Pexels.
+    if (upstream.body) {
+      return new Response(upstream.body, {
+        status: upstream.status,
+        statusText: upstream.statusText,
+        headers: outHeaders,
+      });
+    }
+
     const body = await upstream.arrayBuffer();
     return new Response(body, {
       status: upstream.status,
