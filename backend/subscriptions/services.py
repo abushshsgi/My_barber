@@ -834,6 +834,12 @@ def activate_subscription(
         )
     # Yangi yoki yuqori tarif — oldingi (bepul/starter/plus) hisoblagich yangi limitni yemaydi.
     reset_usage_for_plan(user, plan_code)
+    try:
+        from analytics.hooks import note_subscription_activated
+
+        note_subscription_activated(sub.pk)
+    except Exception:
+        logger.exception("analytics activation hook failed")
     return sub
 
 

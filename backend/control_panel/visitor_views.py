@@ -16,6 +16,9 @@ from rest_framework.views import APIView
 from accounts.models import User
 from accounts.permissions import IsAdmin
 
+from analytics.attribution import apply_attribution, clean_utm
+from analytics.ingest import touch_session
+
 from .models import SiteVisitEvent, SiteVisitor
 
 _KEY_RE = re.compile(r"^[A-Za-z0-9_-]{8,64}$")
@@ -100,6 +103,7 @@ class TelemetryCollectView(APIView):
         ua = _clip(request.META.get("HTTP_USER_AGENT"), 255)
         language = _clip(request.META.get("HTTP_ACCEPT_LANGUAGE"), 32).split(",")[0]
         referrer = _clip(body.get("referrer") or request.META.get("HTTP_REFERER"), 500)
+        utm = clean_utm(body.get("utm"))
         ip = _client_ip(request)
         user = _linked_user(request)
 
@@ -116,6 +120,7 @@ class TelemetryCollectView(APIView):
                 "device_label": _device_label(ua),
                 "ip_address": ip,
                 "user": user,
+                "linked_at": now if user else None,
             },
         )
 
@@ -139,13 +144,13 @@ class TelemetryCollectView(APIView):
                 visitor.device_label = _device_label(ua)
             if ip:
                 visitor.ip_address = ip
-            if user and visitor.user_id != user.id:
+            if user and visitor.user_id is None:
                 visitor.user = user
+                visitor.linked_at = now
             visitor.pageview_count += pageviews
             visitor.click_count += clicks
             visitor.last_seen = now
-            visitor.save(
-                update_fields=[
+            update_fields = [
                     "session_key",
                     "visit_count",
                     "last_path",
@@ -156,16 +161,34 @@ class TelemetryCollectView(APIView):
                     "device_label",
                     "ip_address",
                     "user",
+                    "linked_at",
                     "pageview_count",
                     "click_count",
                     "last_seen",
                 ]
-            )
+            update_fields.extend(apply_attribution(visitor, utm=utm, referrer=referrer, created=False))
+            visitor.save(update_fields=list(dict.fromkeys(update_fields)))
         else:
+            extra = apply_attribution(visitor, utm=utm, referrer=referrer, created=True)
             if pageviews or clicks:
                 visitor.pageview_count = pageviews
                 visitor.click_count = clicks
-                visitor.save(update_fields=["pageview_count", "click_count"])
+                extra.extend(["pageview_count", "click_count"])
+            if extra:
+                visitor.save(update_fields=list(dict.fromkeys(extra)))
+
+        try:
+            touch_session(
+                visitor,
+                session_key,
+                user=user,
+                pageviews=pageviews,
+                landing_path=events[0]["path"] if events else "",
+                referrer=referrer,
+                user_agent=ua,
+            )
+        except Exception:
+            pass
 
         if events:
             SiteVisitEvent.objects.bulk_create(

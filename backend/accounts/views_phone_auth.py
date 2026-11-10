@@ -354,4 +354,10 @@ class PhoneVerifyView(APIView):
         from wallet.services.wallet_service import WalletService
 
         WalletService.ensure_wallet(user)
+        try:
+            from analytics.hooks import link_request_visitor
+
+            link_request_visitor(request, user)
+        except Exception:
+            pass
         return Response(_auth_success_body(user, is_new=is_new, request=request))

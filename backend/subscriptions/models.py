@@ -149,6 +149,14 @@ class SubscriptionPayment(models.Model):
     checkout_url = models.TextField(blank=True, default="")
     metadata = models.JSONField(default=dict, blank=True)
     paid_at = models.DateTimeField(null=True, blank=True)
+    visitor_key = models.CharField(max_length=64, blank=True, default="")
+    session_key = models.CharField(max_length=64, blank=True, default="")
+    redirect_attempted_at = models.DateTimeField(null=True, blank=True)
+    last_verified_at = models.DateTimeField(null=True, blank=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
+    failure_reason = models.CharField(max_length=255, blank=True, default="")
+    outcome_source = models.CharField(max_length=16, blank=True, default="")
+    abandoned_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True, db_index=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -160,6 +168,10 @@ class SubscriptionPayment(models.Model):
                 condition=~models.Q(payme_receipt_id=""),
                 name="uniq_subscription_payme_receipt_id",
             ),
+        ]
+        indexes = [
+            models.Index(fields=["status", "paid_at"], name="subpay_status_paid_idx"),
+            models.Index(fields=["status", "created_at"], name="subpay_status_created_idx"),
         ]
 
     def __str__(self) -> str:
@@ -296,7 +308,7 @@ class FlashTryonPass(models.Model):
 
     class Meta:
         indexes = [
-            models.Index(fields=["status", "expires_at"]),
+            models.Index(fields=["status", "expires_at"], name="subscriptio_status_7f0a1d_idx"),
         ]
 
     def __str__(self) -> str:

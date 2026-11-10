@@ -57,6 +57,34 @@ class PaymePaymentError(PaymeError):
     """Biznes qoidasi: summa, holat yoki takroriy aktivatsiya."""
 
 
+def _attach_attempt_keys(payment: SubscriptionPayment, request) -> None:
+    try:
+        from analytics.hooks import visitor_keys_from_request
+
+        visitor_key, session_key = visitor_keys_from_request(request)
+    except Exception:
+        logger.exception("analytics visitor keys failed")
+        return
+    fields = []
+    if visitor_key and not payment.visitor_key:
+        payment.visitor_key = visitor_key
+        fields.append("visitor_key")
+    if session_key and not payment.session_key:
+        payment.session_key = session_key
+        fields.append("session_key")
+    if fields:
+        payment.save(update_fields=fields + ["updated_at"])
+
+
+def _note_transition(payment: SubscriptionPayment, previous_status: str, new_status: str) -> None:
+    try:
+        from analytics.hooks import note_payment_transition
+
+        note_payment_transition(payment, previous_status, new_status)
+    except Exception:
+        logger.exception("analytics payment hook failed")
+
+
 def _account_order_id(receipt: dict) -> str:
     account = receipt.get("account")
     if isinstance(account, list):
@@ -225,6 +253,7 @@ def start_payme_checkout(
         meta["return_url"] = origin
         reusable.metadata = meta
         reusable.save(update_fields=["checkout_url", "metadata", "updated_at"])
+        _attach_attempt_keys(reusable, request)
         return serialize_payme_payment(reusable)
 
     from subscriptions.payment import build_subscription_order_id
@@ -283,6 +312,12 @@ def start_payme_checkout(
         },
         request=request,
     )
+    try:
+        from analytics.hooks import attach_payment_context
+
+        attach_payment_context(payment, request)
+    except Exception:
+        logger.exception("analytics checkout hook failed")
     return serialize_payme_payment(payment)
 
 
@@ -296,13 +331,20 @@ def sync_payme_payment(*, user: User, order_id: str, request=None) -> Subscripti
     if not payment:
         raise PaymePaymentError("Payme to'lovi topilmadi.")
 
+    previous_status = payment.status
     if (payment.plan_code or "") == "flash" and payment.status == SubscriptionPayment.Status.PAID:
         from subscriptions.flash_tryon import flash_payment_settled
 
         if flash_payment_settled(payment):
+            payment.last_verified_at = timezone.now()
+            payment.save(update_fields=["last_verified_at", "updated_at"])
+            _note_transition(payment, previous_status, payment.status)
             return payment
 
     if payment.status == SubscriptionPayment.Status.PAID and payment.subscription_id:
+        payment.last_verified_at = timezone.now()
+        payment.save(update_fields=["last_verified_at", "updated_at"])
+        _note_transition(payment, previous_status, payment.status)
         return payment
 
     receipt_id = (payment.payme_receipt_id or "").strip()
@@ -353,11 +395,17 @@ def sync_payme_payment(*, user: User, order_id: str, request=None) -> Subscripti
 
     if mapped == SubscriptionPayment.Status.PAID:
         if payment.status == SubscriptionPayment.Status.PAID and payment.subscription_id:
-            payment.save(update_fields=["payme_state", "metadata", "updated_at"])
+            payment.last_verified_at = timezone.now()
+            payment.save(update_fields=["payme_state", "metadata", "last_verified_at", "updated_at"])
+            _note_transition(payment, previous_status, payment.status)
             return payment
         payment.status = SubscriptionPayment.Status.PAID
         payment.transaction_id = receipt_id[:128]
         payment.paid_at = timezone.now()
+        payment.last_verified_at = payment.paid_at
+        payment.completed_at = payment.paid_at
+        payment.outcome_source = "provider"
+        payment.abandoned_at = None
         payment.save(
             update_fields=[
                 "status",
@@ -365,9 +413,14 @@ def sync_payme_payment(*, user: User, order_id: str, request=None) -> Subscripti
                 "paid_at",
                 "payme_state",
                 "metadata",
+                "last_verified_at",
+                "completed_at",
+                "outcome_source",
+                "abandoned_at",
                 "updated_at",
             ]
         )
+        _note_transition(payment, previous_status, payment.status)
         if (payment.plan_code or "") == "flash":
             from subscriptions.flash_tryon import grant_flash_after_payme
 
@@ -403,7 +456,21 @@ def sync_payme_payment(*, user: User, order_id: str, request=None) -> Subscripti
         return payment
 
     payment.status = mapped
-    payment.save(update_fields=["status", "payme_state", "metadata", "updated_at"])
+    payment.last_verified_at = timezone.now()
+    terminal = {
+        SubscriptionPayment.Status.FAILED,
+        SubscriptionPayment.Status.CANCELLED,
+        SubscriptionPayment.Status.EXPIRED,
+        SubscriptionPayment.Status.REFUNDED,
+    }
+    extra = ["status", "payme_state", "metadata", "last_verified_at", "updated_at"]
+    if mapped in terminal and mapped != previous_status:
+        payment.completed_at = payment.last_verified_at
+        payment.outcome_source = "provider"
+        payment.abandoned_at = None
+        extra.extend(["completed_at", "outcome_source", "abandoned_at"])
+    payment.save(update_fields=extra)
+    _note_transition(payment, previous_status, payment.status)
     return payment
 
 

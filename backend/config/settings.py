@@ -98,6 +98,7 @@ INSTALLED_APPS = [
     "rest_framework_simplejwt",
     "django_filters",
     "control_panel.apps.ControlPanelConfig",
+    "analytics.apps.AnalyticsConfig",
     "accounts",
     "barbers.apps.BarbersConfig",
     "salons.apps.SalonsConfig",
@@ -520,6 +521,14 @@ PAYME_IKPU_CODE = os.environ.get("PAYME_IKPU_CODE", "").strip()
 PAYME_PACKAGE_CODE = os.environ.get("PAYME_PACKAGE_CODE", "").strip()
 PAYME_VAT_PERCENT = os.environ.get("PAYME_VAT_PERCENT", "").strip()
 PAYME_RECEIPT_TTL_MINUTES = int(os.environ.get("PAYME_RECEIPT_TTL_MINUTES", "60"))
+ANALYTICS_SESSION_IDLE_MINUTES = int(os.environ.get("ANALYTICS_SESSION_IDLE_MINUTES", "30"))
+ANALYTICS_FUNNEL_WINDOW_DAYS = int(os.environ.get("ANALYTICS_FUNNEL_WINDOW_DAYS", "7"))
+ANALYTICS_ABANDON_AFTER_MINUTES = int(os.environ.get("ANALYTICS_ABANDON_AFTER_MINUTES", str(24 * 60)))
+ANALYTICS_EVENT_RETENTION_DAYS = int(os.environ.get("ANALYTICS_EVENT_RETENTION_DAYS", "180"))
+ANALYTICS_MIN_SAMPLE = int(os.environ.get("ANALYTICS_MIN_SAMPLE", "30"))
+ANALYTICS_CACHE_SECONDS = int(os.environ.get("ANALYTICS_CACHE_SECONDS", "30"))
+ANALYTICS_REALTIME_CACHE_SECONDS = int(os.environ.get("ANALYTICS_REALTIME_CACHE_SECONDS", "10"))
+ANALYTICS_INGEST_PER_MINUTE = int(os.environ.get("ANALYTICS_INGEST_PER_MINUTE", "120"))
 # Google Play Billing huquqiy tasdiq bo'lmaguncha Android tashqi AI obuna checkout yopiq.
 GOOGLE_PLAY_AI_IAP_ELIGIBLE = os.environ.get("GOOGLE_PLAY_AI_IAP_ELIGIBLE", "").lower() in (
     "1",

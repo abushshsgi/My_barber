@@ -252,6 +252,13 @@ from ai.assets_studio_views import (
     AssetsStudioSelectView,
     AssetsStudioStatusView,
 )
+from ai.girl_models_views import (
+    GirlModelsDownloadView,
+    GirlModelsGenerateView,
+    GirlModelsLikeView,
+    GirlModelsPublishView,
+    GirlModelsStatusView,
+)
 from ai.admin_views import (
     AdminMorphAiAnalyticsView,
     AdminMorphAiBudgetView,
@@ -442,6 +449,7 @@ router.register(r"barber/promos", MyBarberPromoViewSet, basename="barber-promos"
 router.register(r"barber/support", MyBarberSupportTicketViewSet, basename="barber-support")
 # Shared API routes (mounted at both /api/v1/ and /api/ for compatibility).
 api_routes = [
+    path("", include("analytics.urls")),
     path("admin/stats/", AdminStatsView.as_view()),
     path("admin/statistics/live/", AdminStatisticsLiveView.as_view()),
     path("admin/statistics/referral-tryon/", AdminReferralTryonView.as_view()),
@@ -654,6 +662,11 @@ api_routes = [
     path("ai/dev/explore-gen/assets/generate/", AssetsStudioGenerateView.as_view()),
     path("ai/dev/explore-gen/assets/select/", AssetsStudioSelectView.as_view()),
     path("ai/dev/explore-gen/assets/download/", AssetsStudioDownloadView.as_view()),
+    path("ai/dev/explore-gen/girls/", GirlModelsStatusView.as_view()),
+    path("ai/dev/explore-gen/girls/generate/", GirlModelsGenerateView.as_view()),
+    path("ai/dev/explore-gen/girls/like/", GirlModelsLikeView.as_view()),
+    path("ai/dev/explore-gen/girls/publish/", GirlModelsPublishView.as_view()),
+    path("ai/dev/explore-gen/girls/download/", GirlModelsDownloadView.as_view()),
     path("explore/personas/", ExplorePersonaListView.as_view()),
     path("hairstyles/", HairstyleListView.as_view()),
     path("hairstyles/<str:style_id>/", HairstyleDetailView.as_view()),

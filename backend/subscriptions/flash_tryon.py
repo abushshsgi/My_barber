@@ -314,6 +314,12 @@ def start_flash_checkout(*, user: User, return_url: str, request=None) -> dict:
         checkout_url=checkout_url,
         metadata={"sandbox": True, "flash": True, "images": 1, "return_url": origin},
     )
+    try:
+        from analytics.hooks import attach_payment_context
+
+        attach_payment_context(payment, request)
+    except Exception:
+        pass
     if row is None:
         try:
             row = FlashTryonPass.objects.create(
