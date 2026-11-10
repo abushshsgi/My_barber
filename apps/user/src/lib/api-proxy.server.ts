@@ -57,10 +57,25 @@ const PUBLIC_GET_CACHE_SECONDS = 60;
 const PUBLIC_HAIRSTYLE_CACHE_SECONDS = 120;
 const PUBLIC_MEDIA_CACHE_SECONDS = 60 * 60 * 24 * 7;
 
+const PRIVATE_MEDIA_PREFIXES = [
+  "/media/wallet/",
+  "/media/ai-style/tryon-results/",
+  "/media/ai-style/generations/",
+  "/media/ai-style/uploads/",
+] as const;
+
+function isPrivateMediaPath(pathname: string): boolean {
+  return PRIVATE_MEDIA_PREFIXES.some((prefix) => pathname.startsWith(prefix));
+}
+
 /** Ommaviy GET — brauzer/CDN qisqa (API) yoki uzoq (media) keshlaydi. */
 function applyPublicCacheHeaders(request: Request, pathname: string, headers: Headers): void {
   if (request.method !== "GET" && request.method !== "HEAD") return;
   if (pathname.startsWith("/media/") || pathname.startsWith("/covers/pexels/")) {
+    if (pathname.startsWith("/media/") && isPrivateMediaPath(pathname)) {
+      headers.set("Cache-Control", "private, max-age=3600");
+      return;
+    }
     headers.set("Cache-Control", `public, max-age=${PUBLIC_MEDIA_CACHE_SECONDS}, immutable`);
     return;
   }

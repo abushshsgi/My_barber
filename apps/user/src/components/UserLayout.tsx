@@ -71,6 +71,11 @@ export function UserLayout({ children }: { children: React.ReactNode }) {
 
   useReleaseStuckDocumentScroll(pathname);
 
+  useEffect(() => {
+    if (!flags.isMorphType) return;
+    void import("@fontsource-variable/jost");
+  }, [flags.isMorphType]);
+
   if (isAuth) {
     return (
       <div

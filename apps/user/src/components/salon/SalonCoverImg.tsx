@@ -22,6 +22,7 @@ export function SalonCoverImg({ src, seed: _seed, category: _category, onError, 
 
   return (
     <img
+      decoding="async"
       {...props}
       src={current}
       onError={(event) => {

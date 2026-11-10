@@ -80,9 +80,23 @@ const TREND_PHOTO_IDS = [
   3992868, 3992869, 3992870, 3992871,
 ] as const;
 
+function pexelsWidthBucket(width: number): number {
+  if (width <= 480) return 480;
+  if (width <= 640) return 640;
+  if (width <= 720) return 720;
+  if (width <= 960) return 960;
+  return 1200;
+}
+
 export function pexelsCoverUrl(photoId: number, width = 560): string {
-  const w = width >= 800 ? 1200 : 800;
+  const w = pexelsWidthBucket(width);
   return resolveMediaUrl(`/covers/pexels/${photoId}?w=${w}`) ?? `/covers/pexels/${photoId}?w=${w}`;
+}
+
+const PEXELS_WIDTHS = [480, 640, 720, 960, 1200] as const;
+
+export function pexelsCoverSrcSet(photoId: number): string {
+  return PEXELS_WIDTHS.map((w) => `${pexelsCoverUrl(photoId, w)} ${w}w`).join(", ");
 }
 
 const TREND_COVERS: Record<string, string> = Object.fromEntries(
@@ -105,8 +119,16 @@ const AI_STYLE_HERO: Record<string, string> = {
   "hero-women": "/ai-style/hero-women.png",
 };
 
-export function getAiStyleHeroUrl(seed: string): string {
-  return AI_STYLE_HERO[seed] ?? AI_STYLE_HERO["hero-men"];
+export function getAiStyleHeroUrl(seed: string, width = 720): string {
+  const w = width >= 1000 ? 1080 : 720;
+  if (seed === "hero-women") return `/ai-style/hero-women-${w}.webp`;
+  if (seed === "hero-men") return `/ai-style/hero-men-${w}.webp`;
+  return `/ai-style/hero-men-${w}.webp`;
+}
+
+export function getAiStyleHeroSrcSet(seed: string): string {
+  const base = seed === "hero-women" ? "hero-women" : "hero-men";
+  return `/ai-style/${base}-720.webp 720w, /ai-style/${base}-1080.webp 1080w`;
 }
 
 export { PLACEHOLDER_SALON };

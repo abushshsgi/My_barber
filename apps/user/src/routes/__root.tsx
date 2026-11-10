@@ -1,7 +1,6 @@
 import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import "@fontsource-variable/space-grotesk";
-import "@fontsource-variable/jost";
 import "../i18n/config";
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -29,17 +28,6 @@ import { ExternalBrowserPrompt } from "../components/ExternalBrowserPrompt";
 import { FirstVisitOnboarding } from "../components/first-visit/FirstVisitOnboarding";
 import { MaintenanceBanner } from "../components/MaintenanceBanner";
 import { FirebaseInit } from "../components/FirebaseInit";
-import { GA_ENABLED, GA_MEASUREMENT_ID } from "../lib/ga";
-
-const GA_BOOTSTRAP = GA_ENABLED
-  ? `
-window.dataLayer = window.dataLayer || [];
-function gtag(){dataLayer.push(arguments);}
-gtag('js', new Date());
-gtag('config', '${GA_MEASUREMENT_ID}');
-`.trim()
-  : "";
-
 function NotFoundComponent() {
   const { t } = useTranslation();
   return (
@@ -159,9 +147,13 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
-      { httpEquiv: "Cache-Control", content: "no-cache, no-store, must-revalidate" },
-      { httpEquiv: "Pragma", content: "no-cache" },
-      { httpEquiv: "Expires", content: "0" },
+      ...(import.meta.env.DEV
+        ? ([
+            { httpEquiv: "Cache-Control", content: "no-cache, no-store, must-revalidate" },
+            { httpEquiv: "Pragma", content: "no-cache" },
+            { httpEquiv: "Expires", content: "0" },
+          ] as const)
+        : []),
       { name: "theme-color", content: "#ffffff" },
       { title: "mysaloon.uz — Online salon bron qilish" },
       {
@@ -185,15 +177,6 @@ function RootShell({ children }: { children: React.ReactNode }) {
         <HeadContent />
         <script dangerouslySetInnerHTML={{ __html: APPEARANCE_BOOT_SCRIPT }} />
         <script dangerouslySetInnerHTML={{ __html: CLIENT_BOOT_SCRIPT }} />
-        {GA_ENABLED ? (
-          <>
-            <script
-              async
-              src={`https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`}
-            />
-            <script dangerouslySetInnerHTML={{ __html: GA_BOOTSTRAP }} />
-          </>
-        ) : null}
       </head>
       <body>
         <MaintenanceBanner />

@@ -22,8 +22,7 @@ import {
 import type { ExplorePersonaId } from "@/lib/explore-personas";
 import type { Audience } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
-
-const TRY_ON_HERO = "/ai-style/try-on-selfie-hero.png";
+import { TryOnHeroImage } from "@/components/ai-style/TryOnHeroImage";
 const UPLOAD_PANEL_HEIGHT = 236;
 const UPLOAD_HISTORY_REVEAL_RATIO = 0.48;
 
@@ -115,11 +114,7 @@ function TryOnHero() {
 
   return (
     <div className="relative h-full w-full overflow-hidden bg-[#f6f3f0]">
-      <img
-        src={TRY_ON_HERO}
-        alt=""
-        className="absolute inset-0 h-full w-full object-cover object-top"
-      />
+      <TryOnHeroImage className="absolute inset-0 h-full w-full object-cover object-top [&_img]:h-full [&_img]:w-full [&_img]:object-cover [&_img]:object-top" />
       <div
         aria-hidden
         className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_bottom,rgba(0,0,0,0.55)_0%,rgba(0,0,0,0.2)_28%,rgba(255,255,255,0.55)_58%,#ffffff_78%)]"

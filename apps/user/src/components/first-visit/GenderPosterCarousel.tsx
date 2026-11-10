@@ -71,11 +71,19 @@ export function GenderPosterCarousel({
 
   useEffect(() => {
     const srcs = [posters.women.src, posters.men.src, ...preload];
-    for (const src of srcs) {
-      const img = new Image();
-      img.decoding = "async";
-      img.src = src;
+    const warm = () => {
+      for (const src of srcs) {
+        const img = new Image();
+        img.decoding = "async";
+        img.src = src;
+      }
+    };
+    if ("requestIdleCallback" in window) {
+      const id = window.requestIdleCallback(warm, { timeout: 4000 });
+      return () => window.cancelIdleCallback(id);
     }
+    const id = window.setTimeout(warm, 1500);
+    return () => window.clearTimeout(id);
   }, [posters, preload]);
 
   useEffect(() => {

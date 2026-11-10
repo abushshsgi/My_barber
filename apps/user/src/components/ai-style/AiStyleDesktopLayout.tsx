@@ -18,7 +18,7 @@ import { AiStyleResultsPage } from "@/components/ai-style/AiStyleResultsPage";
 import { FaceAnalysisRings } from "@/components/ai-style/FaceAnalysisRings";
 import { FaceAnalysisSummarySheet } from "@/components/ai-style/FaceAnalysisSummarySheet";
 import { AiStyleScanLine, GalleryValidatingHero } from "@/components/ai-style/AiStyleUi";
-import { getAiStyleHeroUrl } from "@/lib/cover-images";
+import { getAiStyleHeroSrcSet, getAiStyleHeroUrl } from "@/lib/cover-images";
 import { refreshAiStyleHistoryCache } from "@/lib/api";
 import { DESKTOP_VIEWPORT_BELOW_HEADER } from "@/lib/desktop-bazaar-layout";
 import {
@@ -145,8 +145,13 @@ function DesktopHeroCarousel({ audience }: { audience: AiStyleSplitLayoutProps["
       <AnimatePresence initial={false}>
         <motion.img
           key={`${audience}-${slides[index]}-${index}`}
-          src={getAiStyleHeroUrl(slides[index])}
+          src={getAiStyleHeroUrl(slides[index], 1080)}
+          srcSet={getAiStyleHeroSrcSet(slides[index])}
+          sizes="(max-width: 1280px) 50vw, 640px"
           alt=""
+          loading={index === 0 ? "eager" : "lazy"}
+          decoding="async"
+          fetchPriority={index === 0 ? "high" : "auto"}
           initial={{ opacity: 0, scale: 1.04 }}
           animate={{ opacity: 1, scale: 1.08 }}
           exit={{ opacity: 0 }}

@@ -64,6 +64,16 @@ export function resolveMediaUrl(path: string | null | undefined): string | null 
 /**
  * Look-share / Instagram POST uchun: nisbiy /media/… ni absolute URL ga aylantiradi.
  */
+/** Try-on history grid — `_card.webp` preview when full JPEG is stored under tryon-results. */
+export function tryOnCardImageUrl(path: string | null | undefined): string | null {
+  const raw = resolveMediaUrl(path) ?? path?.trim() ?? "";
+  if (!raw) return null;
+  if (!/\/ai-style\/tryon-results\/\d{4}\/\d{2}\/[a-f0-9]+\.jpg(?:\?.*)?$/i.test(raw)) {
+    return raw;
+  }
+  return raw.replace(/\.jpg(?:\?.*)?$/i, "_card.webp");
+}
+
 export function toShareImageSource(path: string | null | undefined): string {
   const resolved = resolveMediaUrl(path) ?? (path || "").trim();
   if (!resolved) return "";

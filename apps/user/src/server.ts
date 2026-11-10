@@ -5,6 +5,7 @@ import { consumeLastCapturedError } from "./lib/error-capture";
 import { renderErrorPage } from "./lib/error-page";
 import { injectMorphOgIntoHtml } from "./lib/morph-og-inject.server";
 import { injectSalonOgIntoHtml } from "./lib/salon-og-inject.server";
+import { applyStaticCacheHeaders } from "./lib/static-cache.server";
 
 type ServerEntry = {
   fetch: (request: Request, env: unknown, ctx: unknown) => Promise<Response> | Response;
@@ -44,7 +45,7 @@ export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
     try {
       const proxied = await maybeProxyApi(request);
-      if (proxied) return proxied;
+      if (proxied) return applyStaticCacheHeaders(request, proxied);
 
       const handler = await getServerEntry();
       let response = await handler.fetch(request, env, ctx);
@@ -57,7 +58,7 @@ export default {
         response = await injectMorphOgIntoHtml(response, pathname);
       }
 
-      return response;
+      return applyStaticCacheHeaders(request, response);
     } catch (error) {
       console.error(error);
       return new Response(renderErrorPage(), {

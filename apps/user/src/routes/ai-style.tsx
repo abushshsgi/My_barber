@@ -2,6 +2,7 @@ import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { trackEvent } from "@/lib/analytics";
 import { AiStyleFlow } from "@/components/ai-style/AiStyleFlow";
+import { TRY_ON_HERO_PRELOAD } from "@/components/ai-style/TryOnHeroImage";
 import { useExplorePersona } from "@/hooks/use-explore-persona";
 import { resolveAiStyleAudience, useAudience } from "@/hooks/use-audience";
 
@@ -23,6 +24,15 @@ export const Route = createFileRoute("/ai-style")({
     }
   },
   head: () => ({
+    links: [
+      {
+        rel: "preload",
+        href: TRY_ON_HERO_PRELOAD,
+        as: "image",
+        type: "image/webp",
+        fetchPriority: "high",
+      },
+    ],
     meta: [
       { title: "Morf AI — mysaloon.uz" },
       {

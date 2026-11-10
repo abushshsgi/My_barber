@@ -527,6 +527,24 @@ def _media_url(rel: str) -> str:
     return f"{base}{rel.lstrip('/')}"
 
 
+TRYON_CARD_MAX_EDGE = 512
+TRYON_CARD_WEBP_QUALITY = 82
+
+
+def _tryon_card_webp(raw_jpeg: bytes) -> bytes:
+    image = Image.open(BytesIO(raw_jpeg))
+    image = ImageOps.exif_transpose(image)
+    if image.mode != "RGB":
+        image = image.convert("RGB")
+    image.thumbnail((TRYON_CARD_MAX_EDGE, TRYON_CARD_MAX_EDGE), Image.Resampling.LANCZOS)
+    buffer = BytesIO()
+    image.save(buffer, format="WEBP", quality=TRYON_CARD_WEBP_QUALITY, method=4)
+    payload = buffer.getvalue()
+    if not payload:
+        raise ValueError("empty card webp")
+    return payload
+
+
 def store_tryon_jpeg(raw: bytes) -> str:
     """Save validated JPEG bytes in DatabaseMediaStorage (or the active storage)."""
     if not raw or not raw.startswith(b"\xff\xd8\xff"):
@@ -535,8 +553,15 @@ def store_tryon_jpeg(raw: bytes) -> str:
         raise AiStyleError("Natija rasmi juda katta.", 502, retryable=False)
     from media_store.utils import save_media_bytes
 
-    rel = f"ai-style/tryon-results/{timezone.now():%Y/%m}/{uuid.uuid4().hex}.jpg"
+    folder = f"ai-style/tryon-results/{timezone.now():%Y/%m}"
+    stem = uuid.uuid4().hex
+    rel = f"{folder}/{stem}.jpg"
     save_media_bytes(rel, raw, content_type="image/jpeg")
+    try:
+        card = _tryon_card_webp(raw)
+        save_media_bytes(f"{folder}/{stem}_card.webp", card, content_type="image/webp")
+    except Exception:
+        logger.debug("Try-on card preview skipped", exc_info=True)
     return _media_url(rel)
 
 

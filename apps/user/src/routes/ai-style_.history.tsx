@@ -12,7 +12,7 @@ import { createMorphAiLookShare } from "@/lib/api";
 import { shareAiStyleLink, downloadAiStyleImage } from "@/lib/ai-style-image";
 import { getActiveUserId } from "@/lib/face-profile";
 import { trackMorphShare } from "@/lib/ga";
-import { resolveMediaUrl, toShareImageSource } from "@/lib/media-url";
+import { resolveMediaUrl, toShareImageSource, tryOnCardImageUrl } from "@/lib/media-url";
 import { buildTelegramShareUrl, pickMorphShareText } from "@/lib/morph-share-copy";
 import { publicAppUrl } from "@/lib/public-origin";
 import {
@@ -85,12 +85,13 @@ function AiStyleHistoryPage() {
       if (seen.has(key)) continue;
       seen.add(key);
       const after = resolveMediaUrl(g.previewImage) ?? g.previewImage;
+      const thumb = tryOnCardImageUrl(after) ?? after;
       const before = g.beforeImage ? (resolveMediaUrl(g.beforeImage) ?? g.beforeImage) : undefined;
       unique.push({
         id: `gen-${g.id}`,
         styleId: g.styleId,
         title: g.title,
-        thumb: after,
+        thumb,
         before,
         after,
         at: g.createdAt,

@@ -8,7 +8,7 @@ import {
   CarouselItem,
   type CarouselApi,
 } from "@/components/ui/carousel";
-import { pexelsCoverUrl } from "@/lib/cover-images";
+import { PexelsBannerImage } from "@/components/home/PexelsBannerImage";
 import { cn } from "@/lib/utils";
 
 const AUTOPLAY_MS = 5000;
@@ -116,19 +116,16 @@ export function BazaarHeroBanner({ className }: Props) {
         className="h-[clamp(180px,22vw,280px)] w-full overflow-hidden rounded-2xl border border-border shadow-[0_10px_36px_rgba(15,15,15,0.08)] [&>div]:h-full"
       >
         <CarouselContent className="-ml-0 h-full">
-          {HERO_SLIDES.map((slide) => (
+          {HERO_SLIDES.map((slide, slideIndex) => (
             <CarouselItem key={`${slide.to}-${slide.titleKey}`} className="h-full pl-0">
               <Link
                 to={slide.to}
                 search={"search" in slide ? slide.search : undefined}
                 className="group relative block h-full min-h-[180px] w-full overflow-hidden"
               >
-                <img
-                  src={pexelsCoverUrl(slide.photoId, 1200)}
-                  alt=""
-                  loading="lazy"
-                  decoding="async"
-                  referrerPolicy="no-referrer"
+                <PexelsBannerImage
+                  photoId={slide.photoId}
+                  priority={slideIndex === 0}
                   className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
                 />
 

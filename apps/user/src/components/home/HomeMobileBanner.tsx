@@ -8,7 +8,7 @@ import {
   CarouselItem,
   type CarouselApi,
 } from "@/components/ui/carousel";
-import { pexelsCoverUrl } from "@/lib/cover-images";
+import { PexelsBannerImage } from "@/components/home/PexelsBannerImage";
 import { cn } from "@/lib/utils";
 
 const AUTOPLAY_MS = 4500;
@@ -94,19 +94,16 @@ export function HomeMobileBanner() {
         className="w-full overflow-hidden rounded-2xl"
       >
         <CarouselContent className="-ml-0">
-          {BANNER_SLIDES.map((slide) => (
+          {BANNER_SLIDES.map((slide, slideIndex) => (
             <CarouselItem key={`${slide.to}-${slide.titleKey}`} className="pl-0">
               <Link
                 to={slide.to}
                 search={"search" in slide ? slide.search : undefined}
                 className="group relative block aspect-[2.15/1] w-full overflow-hidden bg-muted md:aspect-[2.6/1] md:max-h-[300px]"
               >
-                <img
-                  src={pexelsCoverUrl(slide.photoId, 900)}
-                  alt=""
-                  loading="lazy"
-                  decoding="async"
-                  referrerPolicy="no-referrer"
+                <PexelsBannerImage
+                  photoId={slide.photoId}
+                  priority={slideIndex === 0}
                   className="absolute inset-0 size-full object-cover transition duration-500 group-active:scale-[1.03]"
                 />
                 <div className="absolute inset-0 bg-gradient-to-r from-black/75 via-black/40 to-black/15" />
