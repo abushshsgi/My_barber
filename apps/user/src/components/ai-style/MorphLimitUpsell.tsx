@@ -364,6 +364,13 @@ function MorphPaywallBody({
               ))}
             </ul>
           </article>
+        ) : kind === "chat" && me?.has_active ? (
+          <p className="py-6 px-2 text-center text-sm leading-relaxed text-[#737373]">
+            {t("morph.paywall.chatMonthlyExhausted", {
+              defaultValue:
+                "Oylik chat tokenlari tugadi. Yangi oy boshlanganda limit yangilanadi — yoki qo'llab-quvvatlashga yozing.",
+            })}
+          </p>
         ) : (
           <p className="py-6 text-center text-sm text-[#737373]">
             {t("profile.highestPlan", { defaultValue: "Siz Pro tarifidasiz — bu eng yuqori reja." })}

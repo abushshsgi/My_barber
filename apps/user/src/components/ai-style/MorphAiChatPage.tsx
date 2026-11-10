@@ -24,6 +24,7 @@ import { useMorphLimitGate } from "@/hooks/use-morph-limit-gate";
 import { hasValidUserSession } from "@/lib/api/client";
 import { buildAuthReturnPath } from "@/lib/require-auth";
 import {
+  fetchMorphChatLimits,
   fetchMorphChatThreads,
   sendMorphChatMessage,
   streamMorphChatMessage,
@@ -43,7 +44,11 @@ import {
   readMorphAiPrefs,
   shouldPersistChatToServer,
 } from "@/lib/morf-ai-prefs";
-import { isMorphPlanLimitError, MorphHairProfileRequiredError } from "@/lib/morph-plan-limit";
+import {
+  isMorphPlanLimitError,
+  MorphHairProfileRequiredError,
+  morphChatCanSend,
+} from "@/lib/morph-plan-limit";
 import { cn } from "@/lib/utils";
 
 type ChatMsg = {
@@ -564,15 +569,21 @@ export function MorphAiChatPage() {
   const usedPct = chatUsagePct(limits);
   const planRemaining = gate.me?.usage?.morph_chat_tokens_remaining;
   const snapshotRemaining = limits?.token_remaining ?? limits?.daily_remaining;
-  const remaining = typeof planRemaining === "number" ? planRemaining : snapshotRemaining;
-  const chatLocked =
-    (typeof remaining === "number" && remaining < 200) ||
-    gate.me?.access?.morph_chat_allowed === false;
+  const remaining =
+    typeof snapshotRemaining === "number"
+      ? Math.max(snapshotRemaining, planRemaining ?? 0)
+      : planRemaining;
+  const chatLocked = !morphChatCanSend(gate.me?.usage, gate.me, remaining);
 
   useEffect(() => {
     if (!loggedIn) return;
-    void gate.ensureChat();
-  }, [gate.ensureChat, loggedIn]);
+    void gate.invalidateUsage();
+    void fetchMorphChatLimits()
+      .then((data) => {
+        if (alive.current) applyLimits(data);
+      })
+      .catch(() => undefined);
+  }, [applyLimits, gate, loggedIn]);
 
   const mobileChat = (
     <MorphChatAppView

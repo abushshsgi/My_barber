@@ -23,6 +23,7 @@ from subscriptions.services import (
     cancel_user_subscription,
     chat_token_snapshot,
     check_morph_entitlement,
+    current_period_bounds,
     checkout_plan_error,
     deactivate_subscription,
     expire_if_needed,
@@ -235,6 +236,27 @@ class SubscriptionServiceTests(TestCase):
         snap = chat_token_snapshot(self.user)
         self.assertEqual(snap["morph_chat_tokens_limit"], 150_000)
         record_morph_chat_tokens(user=self.user, tokens=10_000)
+        self.assertIsNone(check_morph_entitlement(user=self.user, kind="chat"))
+
+    def test_empty_usage_plan_code_resets_when_subscription_active(self):
+        from subscriptions.models import SubscriptionUsagePeriod
+
+        activate_subscription(
+            user=self.user,
+            plan_code=PLAN_PRO,
+            source=UserSubscription.Source.ADMIN,
+            price_uzs=Decimal("0"),
+        )
+        start, end = current_period_bounds()
+        SubscriptionUsagePeriod.objects.filter(user=self.user).update(
+            plan_code="",
+            morph_chat_tokens_used=9_500,
+            morph_ai_used=3,
+        )
+        snap = chat_token_snapshot(self.user)
+        self.assertEqual(snap["morph_chat_tokens_limit"], 500_000)
+        self.assertEqual(snap["morph_chat_tokens_used"], 0)
+        self.assertEqual(snap["morph_chat_tokens_remaining"], 500_000)
         self.assertIsNone(check_morph_entitlement(user=self.user, kind="chat"))
 
     def test_matching_plan_code_but_old_usage_resets(self):

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# VPS da frontendlarni yangilaydi. api.mysaloon.uz Railway da qoladi.
+# VPS da frontendlarni yangilaydi. API ham VPS (mysaloon.service).
 # Ishlatish (serverda): sudo bash deploy/vps/deploy-frontends.sh [auto|all|user|admin|barber]
 set -euo pipefail
 

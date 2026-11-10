@@ -105,7 +105,8 @@ export function useMorphLimitGate() {
     async (opts?: EnsureOpts): Promise<boolean> => {
       try {
         const data = await refreshMe();
-        if (data.access?.morph_chat_allowed === false || morphChatTokensBlocked(data.usage)) {
+        if (data.access?.morph_chat_allowed === true) return true;
+        if (data.access?.morph_chat_allowed === false || morphChatTokensBlocked(data.usage, data)) {
           if (!opts?.silent) showLimit("chat", data);
           return false;
         }
@@ -126,7 +127,7 @@ export function useMorphLimitGate() {
           if (!opts?.silent) showLimit("voice", data);
           return false;
         }
-        if (morphChatTokensBlocked(data.usage)) {
+        if (morphChatTokensBlocked(data.usage, data)) {
           if (!opts?.silent) showLimit("chat", data);
           return false;
         }

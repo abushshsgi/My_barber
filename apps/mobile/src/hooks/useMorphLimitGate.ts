@@ -42,11 +42,14 @@ export function useMorphLimitGate() {
       }
 
       if (kind === "chat") {
-        const remaining = latest?.usage?.morph_chat_tokens_remaining;
-        if (typeof remaining === "number" && remaining < 200) {
-          return { ok: false, reason: "limit" };
+        if (latest?.access?.morph_chat_allowed === true) {
+          return { ok: true };
         }
         if (latest?.access?.morph_chat_allowed === false) {
+          return { ok: false, reason: "limit" };
+        }
+        const remaining = latest?.usage?.morph_chat_tokens_remaining;
+        if (typeof remaining === "number" && remaining < 200) {
           return { ok: false, reason: "limit" };
         }
         return { ok: true };

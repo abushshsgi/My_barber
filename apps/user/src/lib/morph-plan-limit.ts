@@ -56,11 +56,27 @@ export function morphStudioUsageBlocked(usage: SubscriptionUsage): boolean {
   return usage.morph_studio_remaining <= 0 || usage.morph_studio_used >= limit;
 }
 
-export function morphChatTokensBlocked(usage: SubscriptionUsage): boolean {
+export function morphChatTokensBlocked(
+  usage: SubscriptionUsage,
+  me?: SubscriptionMe | null,
+): boolean {
+  if (me?.access?.morph_chat_allowed === true) return false;
   const limit = usage.morph_chat_tokens_limit;
   if (limit == null) return false;
-  if (limit <= 0) return true;
+  if (limit <= 0) return !(me?.has_active === true);
   return (usage.morph_chat_tokens_remaining ?? 0) < 200;
+}
+
+export function morphChatCanSend(
+  usage: SubscriptionUsage | undefined,
+  me?: SubscriptionMe | null,
+  liveRemaining?: number | null,
+): boolean {
+  if (me?.access?.morph_chat_allowed === true) return true;
+  if (me?.access?.morph_chat_allowed === false) return false;
+  if (typeof liveRemaining === "number") return liveRemaining >= 200;
+  if (!usage) return true;
+  return !morphChatTokensBlocked(usage, me);
 }
 
 /** Try-on: obuna kvotasi yoki referal krediti. */

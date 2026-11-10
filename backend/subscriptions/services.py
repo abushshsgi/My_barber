@@ -376,6 +376,17 @@ def _quota_int(quota: dict[str, Any], key: str) -> int:
         return 0
 
 
+def _monthly_chat_token_limit(sub: UserSubscription) -> int:
+    """Faol obuna uchun oylik chat limiti — katalog asosiy, 0 bo‘lsa plan zaxira."""
+    limit = _quota_int(quota_for_subscription(sub), "morph_chat_tokens_monthly")
+    if limit > 0:
+        return limit
+    plan = get_plan(sub.plan_code)
+    if plan:
+        return max(0, int(plan.get("morph_chat_tokens_monthly") or FREE_MORPH_CHAT_TOKENS))
+    return FREE_MORPH_CHAT_TOKENS
+
+
 def _usage_predates_plan(usage: SubscriptionUsagePeriod, sub: UserSubscription) -> bool:
     """Hisoblagich shu obuna boshlanishidan oldin yig'ilgan."""
     started = sub.starts_at
@@ -401,11 +412,12 @@ def align_usage_to_plan(user: User, sub: UserSubscription) -> SubscriptionUsageP
         )
         current = (usage.plan_code or "").strip().lower()
         predates = _usage_predates_plan(usage, sub)
+        free_to_paid = current in ("", PLAN_FREE) and code not in ("", PLAN_FREE)
         # Tarif kodi yozilgan bo‘lsa ham, hisoblagich obuna boshlanishidan oldingi
         # bo‘lsa — yangi tarif kvotasini yemasin.
-        if current == code and code and not predates:
+        if current == code and code and not predates and not free_to_paid:
             return usage
-        reset = bool(current and current != code) or predates
+        reset = bool(current and current != code) or predates or free_to_paid
         fields = ["plan_code", "updated_at"]
         if reset:
             usage.morph_ai_used = 0
@@ -453,7 +465,7 @@ def chat_token_limit_for_user(user: User) -> int:
     sub = get_active_subscription(user)
     if not sub:
         return FREE_MORPH_CHAT_TOKENS
-    return _quota_int(quota_for_subscription(sub), "morph_chat_tokens_monthly")
+    return _monthly_chat_token_limit(sub)
 
 
 def _free_chat_tokens_used(user: User) -> int:
@@ -499,7 +511,7 @@ def chat_token_snapshot(user: User) -> dict[str, Any]:
     sub = get_active_subscription(user)
     if sub:
         usage = align_usage_to_plan(user, sub)
-        limit = _quota_int(quota_for_subscription(sub), "morph_chat_tokens_monthly")
+        limit = _monthly_chat_token_limit(sub)
         used = int(usage.morph_chat_tokens_used or 0)
         period = "month"
     else:
