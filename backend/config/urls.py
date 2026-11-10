@@ -252,13 +252,6 @@ from ai.assets_studio_views import (
     AssetsStudioSelectView,
     AssetsStudioStatusView,
 )
-from ai.girl_models_views import (
-    GirlModelsDownloadView,
-    GirlModelsGenerateView,
-    GirlModelsLikeView,
-    GirlModelsPublishView,
-    GirlModelsStatusView,
-)
 from ai.admin_views import (
     AdminMorphAiAnalyticsView,
     AdminMorphAiBudgetView,
@@ -662,11 +655,6 @@ api_routes = [
     path("ai/dev/explore-gen/assets/generate/", AssetsStudioGenerateView.as_view()),
     path("ai/dev/explore-gen/assets/select/", AssetsStudioSelectView.as_view()),
     path("ai/dev/explore-gen/assets/download/", AssetsStudioDownloadView.as_view()),
-    path("ai/dev/explore-gen/girls/", GirlModelsStatusView.as_view()),
-    path("ai/dev/explore-gen/girls/generate/", GirlModelsGenerateView.as_view()),
-    path("ai/dev/explore-gen/girls/like/", GirlModelsLikeView.as_view()),
-    path("ai/dev/explore-gen/girls/publish/", GirlModelsPublishView.as_view()),
-    path("ai/dev/explore-gen/girls/download/", GirlModelsDownloadView.as_view()),
     path("explore/personas/", ExplorePersonaListView.as_view()),
     path("hairstyles/", HairstyleListView.as_view()),
     path("hairstyles/<str:style_id>/", HairstyleDetailView.as_view()),
