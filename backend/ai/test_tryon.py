@@ -15,7 +15,11 @@ class StylePromptTests(SimpleTestCase):
         self.assertEqual(style_detail_for("women", "unknown"), "unknown")
 
 
-@override_settings(RUNWARE_API_KEY="", TRYON_PROVIDER="runware")
+@override_settings(
+    RUNWARE_API_KEY="",
+    TRYON_PROVIDER="runware",
+    RUNWARE_TRYON_DUAL_REFERENCE=False,
+)
 class TryOnServiceTests(SimpleTestCase):
     def test_requires_runware_key(self):
         from ai.services.runware_tryon import generate_tryon_preview
