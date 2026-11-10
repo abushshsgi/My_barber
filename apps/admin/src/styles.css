@@ -190,3 +190,55 @@
   animation: admin-slot-leave 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
   pointer-events: none;
 }
+
+@keyframes ax-enter {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes ax-tick {
+  from {
+    opacity: 0.4;
+    transform: translateY(5px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes ax-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+
+.ax-enter {
+  animation: ax-enter 220ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.ax-tick {
+  animation: ax-tick 280ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.ax-pulse {
+  animation: ax-pulse 1.8s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ax-enter,
+  .ax-tick,
+  .ax-pulse {
+    animation: none;
+  }
+}

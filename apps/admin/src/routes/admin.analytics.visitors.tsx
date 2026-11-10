@@ -1,7 +1,19 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
-import { StatsPageHeader } from "@/components/admin/StatisticsShell";
-import { AnalyticsKpiCard, Limitations, PeriodBar, useAnalyticsPeriod } from "@/components/admin/RevenueAnalytics";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { Limitations, useAnalyticsPeriod } from "@/components/admin/RevenueAnalytics";
+import {
+  AnalyticsError,
+  AnalyticsSkeleton,
+  FetchBar,
+  SectionIntro,
+  errorText,
+} from "@/components/admin/analytics-shell";
+import {
+  MetricBand,
+  SeriesExplorer,
+  metricFromKpi,
+  ownedSeries,
+} from "@/components/admin/analytics-blocks";
 import { fetchAnalyticsVisitors } from "@/lib/revenue-analytics";
 
 export const Route = createFileRoute("/admin/analytics/visitors")({
@@ -13,20 +25,34 @@ function VisitorsPage() {
   const query = useQuery({
     queryKey: ["analytics", "visitors", period.query],
     queryFn: () => fetchAnalyticsVisitors(period.query),
+    placeholderData: keepPreviousData,
   });
+  const data = query.data;
+  if (query.isPending && !data) return <AnalyticsSkeleton rows={1} />;
+  if (query.isError)
+    return <AnalyticsError message={errorText(query.error)} onRetry={() => void query.refetch()} />;
+  if (!data) return null;
+  const metrics = data.kpis.map((kpi) => metricFromKpi(kpi, ownedSeries(kpi, data.kpis)));
   return (
-    <div className="space-y-6">
-      <StatsPageHeader
-        title="Tashrif buyuruvchilar"
-        description={query.data?.total_basis === "sessions" ? "Jami tashrif sessiyalar bo'yicha." : "Sessiya tarixi yo'q, jami noyob odamlar bilan bir xil."}
+    <div
+      className={query.isPlaceholderData ? "space-y-5 opacity-80 transition-opacity" : "space-y-5"}
+    >
+      <FetchBar active={query.isFetching} />
+      <SectionIntro
+        title="Tashriflar"
+        description={
+          data.total_basis === "sessions"
+            ? "Jami tashrif sessiyalar bo'yicha."
+            : "Sessiya tarixi yo'q, jami noyob odamlar bilan bir xil."
+        }
       />
-      <PeriodBar preset={period.preset} start={period.start} end={period.end} onPreset={period.setPreset} onStart={period.setStart} onEnd={period.setEnd} />
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        {(query.data?.kpis ?? []).map((kpi) => (
-          <AnalyticsKpiCard key={kpi.key} kpi={kpi} />
-        ))}
-      </div>
-      <Limitations items={query.data?.limitations} />
+      <MetricBand metrics={metrics} />
+      <SeriesExplorer
+        kpis={data.kpis}
+        title="Kunlik noyob tashrif"
+        description="Barcha tashrif KPI lari shu kunlik qatorni ulashadi."
+      />
+      <Limitations items={data.limitations} />
     </div>
   );
 }

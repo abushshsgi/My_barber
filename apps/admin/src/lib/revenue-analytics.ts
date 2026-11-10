@@ -32,9 +32,18 @@ export type AnalyticsPeriod = {
   label: string;
   previous_label: string;
   comparison: string;
+  start?: string;
+  end?: string;
+  previous_start?: string;
+  previous_end?: string;
 };
 
-export function analyticsQuery(preset: string, start = "", end = "", extra: Record<string, string> = {}) {
+export function analyticsQuery(
+  preset: string,
+  start = "",
+  end = "",
+  extra: Record<string, string> = {},
+) {
   const params = new URLSearchParams({ preset, ...extra });
   if (preset === "custom") {
     if (start) params.set("start", start);
@@ -85,7 +94,9 @@ export function fetchAnalyticsUsers(query: string) {
 }
 
 export function fetchAnalyticsJourney(id: string, page: number) {
-  return apiJson<JourneyResponse>(`/api/v1/admin/analytics/users/${encodeURIComponent(id)}/journey/?page=${page}`);
+  return apiJson<JourneyResponse>(
+    `/api/v1/admin/analytics/users/${encodeURIComponent(id)}/journey/?page=${page}`,
+  );
 }
 
 export type OverviewResponse = {
@@ -95,6 +106,29 @@ export type OverviewResponse = {
   diagnostics: { id: string; message: string; sample_size: number }[];
   limitations: string[];
   tracking_since: string | null;
+  visitors?: {
+    unique_visitors: number;
+    registered_users: number;
+    registration_conversion: number | null;
+    new_visitors?: number;
+    returning_visitors?: number;
+    page_views?: number;
+    sessions?: number | null;
+    bounce_rate?: number | null;
+    engagement_rate?: number | null;
+  };
+  payments?: {
+    attempts: number;
+    successful: number;
+    failed: number;
+    cancelled: number;
+    pending: number;
+    abandoned: number;
+    expired: number;
+    success_rate: number | null;
+    confirmed_revenue_uzs: number;
+    redirect_attempted: number;
+  };
   traffic_days: {
     today: number;
     yesterday: number;
@@ -133,6 +167,7 @@ export type FunnelResponse = {
   stages: FunnelStage[];
   limitations: string[];
   tracking_since: string | null;
+  period?: AnalyticsPeriod;
 };
 
 export type StageResponse = {
@@ -143,6 +178,7 @@ export type StageResponse = {
 };
 
 export type PaymentsResponse = {
+  period?: AnalyticsPeriod;
   kpis: AnalyticsKpi[];
   rates: {
     success_rate: number | null;
@@ -262,7 +298,12 @@ export type JourneyResponse = {
   subscribe_clicks: number;
   payment_attempts: number;
   successful_payments: number;
-  subscription: { status: string; plan_code: string; ends_at: string | null; price_uzs: number } | null;
+  subscription: {
+    status: string;
+    plan_code: string;
+    ends_at: string | null;
+    price_uzs: number;
+  } | null;
   confirmed_spend_uzs: number;
   count: number;
   page: number;

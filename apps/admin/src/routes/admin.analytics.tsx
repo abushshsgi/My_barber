@@ -1,4 +1,6 @@
 import { createFileRoute, Outlet } from "@tanstack/react-router";
+import { AnalyticsChrome } from "@/components/admin/analytics-shell";
+import { AnalyticsPeriodProvider } from "@/components/admin/RevenueAnalytics";
 
 export const Route = createFileRoute("/admin/analytics")({
   component: AnalyticsLayout,
@@ -6,8 +8,10 @@ export const Route = createFileRoute("/admin/analytics")({
 
 function AnalyticsLayout() {
   return (
-    <div className="mx-auto max-w-[1400px] space-y-6 p-4 sm:p-6 lg:p-8">
-      <Outlet />
-    </div>
+    <AnalyticsPeriodProvider>
+      <AnalyticsChrome>
+        <Outlet />
+      </AnalyticsChrome>
+    </AnalyticsPeriodProvider>
   );
 }
