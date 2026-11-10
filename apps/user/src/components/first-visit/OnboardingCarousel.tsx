@@ -1,9 +1,11 @@
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { OnboardingSlide } from "@/components/first-visit/OnboardingSlide";
-
-const EASE = [0.22, 1, 0.36, 1] as const;
-const SLIDE_SECONDS = 0.68;
+import {
+  FIRST_VISIT_SLIDE_MOTION_CLASS,
+  firstVisitSlideTransition,
+  firstVisitSlideVariants,
+} from "@/components/first-visit/first-visit-motion";
 
 type Props = {
   activeMainSlide: 0 | 1 | 2;
@@ -19,41 +21,30 @@ export function OnboardingCarousel({
   onSkip,
 }: Props) {
   const reduced = useReducedMotion();
-  const direction = useRef(1);
+  const directionRef = useRef(1);
+  const [slideDirection, setSlideDirection] = useState(1);
 
   const forward = () => {
-    direction.current = 1;
+    directionRef.current = 1;
+    setSlideDirection(1);
     if (activeMainSlide === 2) onComplete();
     else onContinue();
   };
 
   return (
-    <div className="absolute inset-0">
-      <AnimatePresence initial={false} custom={direction.current}>
+    <div className="absolute inset-0 overflow-hidden">
+      <AnimatePresence initial={false} mode="wait" custom={slideDirection}>
         <motion.div
           key={activeMainSlide}
           data-testid="first-visit-slide"
           data-slide={activeMainSlide}
-          className="absolute inset-0"
-          custom={direction.current}
-          variants={{
-            enter: (dir: number) => ({
-              opacity: 0,
-              x: dir * (reduced ? 0 : 56),
-              scale: reduced ? 1 : 0.97,
-            }),
-            center: { opacity: 1, x: 0, scale: 1, pointerEvents: "auto" },
-            exit: (dir: number) => ({
-              opacity: 0,
-              x: dir * (reduced ? 0 : -36),
-              scale: reduced ? 1 : 0.98,
-              pointerEvents: "none",
-            }),
-          }}
+          className={`absolute inset-0 ${FIRST_VISIT_SLIDE_MOTION_CLASS}`}
+          custom={slideDirection}
+          variants={firstVisitSlideVariants(reduced)}
           initial={reduced ? false : "enter"}
           animate="center"
           exit="exit"
-          transition={{ duration: reduced ? 0 : SLIDE_SECONDS, ease: EASE }}
+          transition={firstVisitSlideTransition(reduced)}
         >
           <OnboardingSlide
             index={activeMainSlide}

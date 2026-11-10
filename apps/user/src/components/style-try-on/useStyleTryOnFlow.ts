@@ -7,6 +7,7 @@ import { isMorphPlanLimitError } from "@/lib/morph-plan-limit";
 import { refreshMorphAiGenerationsCache, saveMorphAiGeneration } from "@/lib/morf-ai-gallery";
 import { markMorphAiOnboarded } from "@/lib/morf-ai-session";
 import { prepareSelfieDataUrl, readFileAsDataUrl, validateSelfieFile } from "@/lib/selfie-image";
+import { yieldToPaint } from "@/lib/yield-to-paint";
 import { useActionAuth } from "@/hooks/use-action-auth";
 
 type UseStyleTryOnFlowOptions = {
@@ -152,6 +153,7 @@ export function useStyleTryOnFlow({
     setPreparing(true);
     setError(null);
     setTryOnPreview(null);
+    await yieldToPaint();
     try {
       const prepared = await prepareSelfieDataUrl(dataUrl, { checkQuality: true });
       inputSourceRef.current = source;

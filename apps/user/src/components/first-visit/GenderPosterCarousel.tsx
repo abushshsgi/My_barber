@@ -1,12 +1,16 @@
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
+import {
+  FIRST_VISIT_SLIDE_MOTION_CLASS,
+  FIRST_VISIT_SLIDE_MS,
+  firstVisitSlideTransition,
+  firstVisitSlideVariants,
+} from "@/components/first-visit/first-visit-motion";
 import type { OnboardingGender } from "@/lib/first-visit-onboarding";
 
 const ART_WIDTH = 576;
 const ART_HEIGHT = 1024;
 const SWIPE_THRESHOLD = 48;
-const SLIDE_EASE = [0.22, 1, 0.36, 1] as const;
-const SLIDE_SECONDS = 0.72;
 
 /** Same fitted 9:16 frame as the first onboarding poster. */
 const POSTER_FRAME = {
@@ -79,13 +83,14 @@ export function GenderPosterCarousel({
       skipFocus.current = false;
       return;
     }
-    const frame = window.requestAnimationFrame(() => {
+    const delay = reduced ? 0 : FIRST_VISIT_SLIDE_MS;
+    const timer = window.setTimeout(() => {
       document
         .querySelector<HTMLElement>(`[data-testid="${testId}"] [data-testid="first-visit-next"]`)
         ?.focus();
-    });
-    return () => window.cancelAnimationFrame(frame);
-  }, [index, testId]);
+    }, delay);
+    return () => window.clearTimeout(timer);
+  }, [index, testId, reduced]);
 
   const goTo = (next: number) => {
     if (next === index || next < 0 || next >= ORDER.length) return;
@@ -158,31 +163,18 @@ export function GenderPosterCarousel({
           goTo(index + (event.key === "ArrowRight" ? 1 : -1));
         }}
       >
-        <AnimatePresence initial={false} custom={direction}>
+        <AnimatePresence initial={false} mode="wait" custom={direction}>
           <motion.div
             key={gender}
             data-testid={`${testId}-${gender}`}
-            className="absolute inset-0 flex items-center justify-center overflow-hidden"
+            className={`absolute inset-0 flex items-center justify-center overflow-hidden ${FIRST_VISIT_SLIDE_MOTION_CLASS}`}
             style={{ containerType: "size" }}
             custom={direction}
-            variants={{
-              enter: (dir: number) => ({
-                x: reduced ? 0 : dir > 0 ? "100%" : "-100%",
-                opacity: reduced ? 1 : 0,
-                scale: reduced ? 1 : 0.96,
-              }),
-              center: { x: 0, opacity: 1, scale: 1, pointerEvents: "auto" },
-              exit: (dir: number) => ({
-                x: reduced ? 0 : dir > 0 ? "-28%" : "28%",
-                opacity: reduced ? 1 : 0,
-                scale: reduced ? 1 : 0.98,
-                pointerEvents: "none",
-              }),
-            }}
+            variants={firstVisitSlideVariants(reduced)}
             initial={reduced ? false : "enter"}
             animate="center"
             exit="exit"
-            transition={{ duration: reduced ? 0 : SLIDE_SECONDS, ease: SLIDE_EASE }}
+            transition={firstVisitSlideTransition(reduced)}
           >
             <div
               className="@container relative max-h-full min-h-0 w-auto max-w-full shrink-0"

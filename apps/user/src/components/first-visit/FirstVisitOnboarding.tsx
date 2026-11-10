@@ -1,10 +1,16 @@
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useEffect, useRef } from "react";
 import { OnboardingCarousel } from "@/components/first-visit/OnboardingCarousel";
 import { slideTitle } from "@/components/first-visit/first-visit-copy";
+import {
+  FIRST_VISIT_EASE,
+  FIRST_VISIT_SLIDE_MS,
+} from "@/components/first-visit/first-visit-motion";
 import { useOnboarding } from "@/components/first-visit/useOnboarding";
 
 export function FirstVisitOnboarding() {
   const flow = useOnboarding();
+  const reduced = useReducedMotion();
   const rootRef = useRef<HTMLDivElement>(null);
   const title = slideTitle(flow.activeMainSlide);
 
@@ -28,7 +34,8 @@ export function FirstVisitOnboarding() {
         )
         ?.focus();
     };
-    const frame = window.requestAnimationFrame(focusPrimary);
+    const focusDelay = reduced ? 0 : FIRST_VISIT_SLIDE_MS;
+    const focusTimer = window.setTimeout(focusPrimary, focusDelay);
 
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key !== "Tab" || !rootRef.current) return;
@@ -52,37 +59,42 @@ export function FirstVisitOnboarding() {
 
     document.addEventListener("keydown", onKeyDown);
     return () => {
-      window.cancelAnimationFrame(frame);
+      window.clearTimeout(focusTimer);
       document.removeEventListener("keydown", onKeyDown);
     };
-  }, [flow.open, flow.activeMainSlide]);
-
-  if (!flow.open) return null;
+  }, [flow.open, flow.activeMainSlide, reduced]);
 
   return (
-    <div
-      ref={rootRef}
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="first-visit-title"
-      data-testid="first-visit-onboarding"
-      className="fixed inset-0 z-[400] h-screen overflow-hidden overscroll-none bg-[#f4ecff]"
-      style={{ height: "100dvh" }}
-    >
-      <style>
-        {`html[data-first-visit-open], html[data-first-visit-open] body { overflow: hidden !important; }`}
-      </style>
-      <div className="absolute inset-0">
-        <h2 id="first-visit-title" className="sr-only">
-          {title}
-        </h2>
-        <OnboardingCarousel
-          activeMainSlide={flow.activeMainSlide}
-          onContinue={flow.continueSlide}
-          onComplete={flow.complete}
-          onSkip={flow.skip}
-        />
-      </div>
-    </div>
+    <AnimatePresence>
+      {flow.open ? (
+        <motion.div
+          ref={rootRef}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="first-visit-title"
+          data-testid="first-visit-onboarding"
+          className="fixed inset-0 z-[400] h-screen overflow-hidden overscroll-none bg-[#f4ecff]"
+          style={{ height: "100dvh" }}
+          initial={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: reduced ? 0 : 0.32, ease: FIRST_VISIT_EASE }}
+        >
+          <style>
+            {`html[data-first-visit-open], html[data-first-visit-open] body { overflow: hidden !important; }`}
+          </style>
+          <div className="absolute inset-0">
+            <h2 id="first-visit-title" className="sr-only">
+              {title}
+            </h2>
+            <OnboardingCarousel
+              activeMainSlide={flow.activeMainSlide}
+              onContinue={flow.continueSlide}
+              onComplete={flow.complete}
+              onSkip={flow.skip}
+            />
+          </div>
+        </motion.div>
+      ) : null}
+    </AnimatePresence>
   );
 }

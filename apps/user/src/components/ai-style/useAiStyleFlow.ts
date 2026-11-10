@@ -18,6 +18,7 @@ import { markMorphAiOnboarded } from "@/lib/morf-ai-session";
 import type { ExplorePersonaId } from "@/lib/explore-personas";
 import { detectFaceMetricsFromDataUrl } from "@/components/ai-style/useFaceLandmarker";
 import { prepareSelfieDataUrl, readFileAsDataUrl, validateSelfieFile } from "@/lib/selfie-image";
+import { yieldToPaint } from "@/lib/yield-to-paint";
 import {
   isMorphPlanLimitError,
   isMorphPlanLimitMessage,
@@ -128,6 +129,7 @@ export function useAiStyleFlow(options: UseAiStyleFlowOptions = {}) {
     setPreparingPreview(dataUrl);
     setPreparingPhoto(true);
     setError(null);
+    await yieldToPaint();
     try {
       const prepared = await prepareSelfieDataUrl(dataUrl, { checkQuality: true });
       const metricsFace = await Promise.race([

@@ -37,7 +37,7 @@ export function HomeMobilePage({ data }: Props) {
         <motion.div
           className="space-y-5 bg-white pb-4"
           variants={stagger}
-          initial="hidden"
+          initial={false}
           animate="show"
         >
           <MotionSection>

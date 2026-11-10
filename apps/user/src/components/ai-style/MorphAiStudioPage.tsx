@@ -57,6 +57,7 @@ import {
   type MorphStudioDraft,
 } from "@/lib/morf-ai-studio-session";
 import { prepareSelfieDataUrl, prepareSelfieFromFile } from "@/lib/selfie-image";
+import { yieldToPaint } from "@/lib/yield-to-paint";
 import { presentSelfieError } from "@/lib/selfie-normalize";
 import { isMorphPlanLimitError } from "@/lib/morph-plan-limit";
 import { cn } from "@/lib/utils";
@@ -140,6 +141,7 @@ export function MorphAiStudioPage() {
   const fileRef = useRef<HTMLInputElement>(null);
   const [cameraOpen, setCameraOpen] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [importingPhoto, setImportingPhoto] = useState(false);
   const [draftMeta, setDraftMeta] = useState<
     Pick<MorphStudioDraft, "styleId" | "styleTitle" | "source">
   >({});
@@ -391,7 +393,9 @@ export function MorphAiStudioPage() {
   };
 
   const onFile = async (file: File | null | undefined) => {
-    if (!file) return;
+    if (!file || importingPhoto) return;
+    setImportingPhoto(true);
+    await yieldToPaint();
     try {
       const prepared = await prepareSelfieFromFile(file, { checkQuality: true });
       persistStudioSelfie(prepared, "gallery");
@@ -403,6 +407,7 @@ export function MorphAiStudioPage() {
           : t("aiStylePage.studio.pickFailed"),
       );
     } finally {
+      setImportingPhoto(false);
       if (fileRef.current) fileRef.current.value = "";
     }
   };
@@ -459,7 +464,7 @@ export function MorphAiStudioPage() {
   const showPicker = !current || pickerOpen;
   const hasEdits = history.length > 1;
   const motionDur = reduceMotion ? 0 : undefined;
-  const busy = Boolean(loadingId);
+  const busy = Boolean(loadingId) || importingPhoto;
 
   return (
     <div className="relative flex min-h-[100dvh] flex-col overflow-x-hidden overflow-y-auto bg-[#070707] text-[#111111]">
@@ -1008,19 +1013,24 @@ export function MorphAiStudioPage() {
         onClose={() => setCameraOpen(false)}
         onCapture={(payload) => {
           setCameraOpen(false);
-          void prepareSelfieDataUrl(payload.dataUrl, { checkQuality: true })
-            .then((prepared) => {
+          setImportingPhoto(true);
+          void (async () => {
+            await yieldToPaint();
+            try {
+              const prepared = await prepareSelfieDataUrl(payload.dataUrl, { checkQuality: true });
               persistStudioSelfie(prepared, "camera_scan");
               selectImage(prepared, {
                 source: "camera",
                 styleTitle: "Studio",
                 beforeImage: prepared,
               });
-            })
-            .catch((error: unknown) => {
+            } catch (error: unknown) {
               const message = error instanceof Error ? error.message : t("aiStylePage.studio.pickFailed");
               toast.error(presentSelfieError(message, (key, fallback) => t(key, { defaultValue: fallback })));
-            });
+            } finally {
+              setImportingPhoto(false);
+            }
+          })();
         }}
       />
       <MorphLimitUpsell

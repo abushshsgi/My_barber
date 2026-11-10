@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import type { FaceShapeKey } from "@/components/ai-style/ai-style-shared";
 import { ensureCameraPermission } from "@/lib/native-camera";
 import { captureSelfieFrame } from "@/lib/selfie-image";
+import { yieldToPaint } from "@/lib/yield-to-paint";
 
 const FACE_CAMERA_ATTR = "data-face-camera";
 
@@ -64,6 +65,7 @@ export function AiStyleCamera({ open, onClose, onCapture }: Props) {
   onCaptureRef.current = onCapture;
 
   const [ready, setReady] = useState(false);
+  const [capturing, setCapturing] = useState(false);
   const [cameraError, setCameraError] = useState<string | null>(null);
 
   const handleClose = useCallback((event?: React.SyntheticEvent) => {
@@ -81,13 +83,16 @@ export function AiStyleCamera({ open, onClose, onCapture }: Props) {
     if (!video || video.videoWidth <= 0) return;
 
     capturingRef.current = true;
+    setCapturing(true);
     void captureSelfieFrame(video, streamRef.current)
-      .then((dataUrl) => {
+      .then(async (dataUrl) => {
+        await yieldToPaint();
         onCaptureRef.current({ dataUrl });
         handleClose();
       })
       .catch(() => {
         capturingRef.current = false;
+        setCapturing(false);
       });
   }, [handleClose]);
 
@@ -102,6 +107,7 @@ export function AiStyleCamera({ open, onClose, onCapture }: Props) {
     document.body.style.overflow = "hidden";
 
     setReady(false);
+    setCapturing(false);
     setCameraError(null);
     capturingRef.current = false;
 
@@ -208,18 +214,24 @@ export function AiStyleCamera({ open, onClose, onCapture }: Props) {
               className="pointer-events-none absolute inset-x-0 z-20 flex flex-col items-center gap-3 px-6 text-center"
               style={{ bottom: "max(2rem, env(safe-area-inset-bottom))" }}
             >
-              {!ready ? <Loader2 className="h-5 w-5 animate-spin text-white/70" /> : null}
+              {!ready || capturing ? (
+                <Loader2 className="h-5 w-5 animate-spin text-white/70" />
+              ) : null}
               <p className="text-sm font-medium text-white/90">
-                {ready ? t("aiStylePage.capturePhoto") : t("aiStylePage.scanLoading")}
+                {capturing
+                  ? t("aiStylePage.preparingPhoto", { defaultValue: "Rasm tayyorlanmoqda…" })
+                  : ready
+                    ? t("aiStylePage.capturePhoto")
+                    : t("aiStylePage.scanLoading")}
               </p>
-              {ready ? (
+              {ready && !capturing ? (
                 <p className="max-w-xs text-[12px] leading-snug text-white/75">
                   {t("aiStylePage.captureGuide")}
                 </p>
               ) : null}
               <button
                 type="button"
-                disabled={!ready}
+                disabled={!ready || capturing}
                 onClick={captureFrame}
                 onPointerDown={(event) => event.stopPropagation()}
                 className="pointer-events-auto grid size-[76px] place-items-center rounded-full border-[3px] border-white bg-white/15 shadow-[0_8px_28px_-8px_rgba(0,0,0,0.55)] transition active:scale-95 disabled:opacity-40"
