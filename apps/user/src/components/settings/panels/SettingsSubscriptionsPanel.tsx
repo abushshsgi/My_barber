@@ -10,6 +10,7 @@ import {
   useSubscriptionMe,
   useSubscriptionPlans,
 } from "@/hooks/use-subscription";
+import { trackEvent } from "@/lib/analytics";
 import { hasValidUserSession } from "@/lib/api/client";
 import { type SubscriptionPlan } from "@/lib/api/subscriptions";
 import { getPublicSiteOrigin } from "@/lib/public-origin";
@@ -144,6 +145,8 @@ export function SettingsSubscriptionsPanel() {
     if (me?.has_active && !isPlanUpgrade(planCode, activeCode)) return;
     if (!upgradeChoices.some((plan) => plan.code === planCode)) return;
     setBusyCode(planCode);
+    trackEvent("subscribe_clicked", { plan_code: planCode });
+    trackEvent("payment_initiated", { plan_code: planCode, provider: "payme" });
     try {
       const origin = typeof window !== "undefined" ? window.location.origin : getPublicSiteOrigin();
       const checkoutPromise = checkout.mutateAsync({
@@ -162,6 +165,7 @@ export function SettingsSubscriptionsPanel() {
       storePaymeOrder(res.order_id);
       markPaymeAwaitReturn();
       setPendingCode(null);
+      trackEvent("checkout_redirect_attempted", { order_id: res.order_id, plan_code: planCode });
       window.location.assign(res.checkout_url);
     } catch (error) {
       const raw = error instanceof Error ? error.message : t("subscriptions.genericError", { defaultValue: "Xatolik" });
@@ -275,7 +279,11 @@ export function SettingsSubscriptionsPanel() {
           <button
             type="button"
             disabled={isCancelled || busyCode === selected.code}
-            onClick={() => setPendingCode(selected.code)}
+            onClick={() => {
+              trackEvent("subscription_plan_selected", { plan_code: selected.code });
+              trackEvent("premium_offer_viewed", { plan_code: selected.code }, { dedupeKey: selected.code });
+              setPendingCode(selected.code);
+            }}
             className="mt-auto flex h-12 items-center justify-center gap-2 rounded-full bg-[var(--morph-fg,#111)] text-base font-extrabold text-[var(--morph-bg,#fff)] disabled:opacity-45"
           >
             {busyCode === selected.code ? (

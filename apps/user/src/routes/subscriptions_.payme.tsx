@@ -6,6 +6,7 @@ import {
   readStoredPaymeOrder,
 } from "@/components/subscriptions/PaymeCheckoutStatus";
 import { ProfileSubpageLayout } from "@/components/profile/ProfileSubpageLayout";
+import { trackEvent } from "@/lib/analytics";
 
 export const Route = createFileRoute("/subscriptions_/payme")({
   ssr: false,
@@ -22,7 +23,8 @@ function PaymeReturnPage() {
   const orderId = typeof window !== "undefined" ? readStoredPaymeOrder() : null;
   useEffect(() => {
     clearPaymeAwaitReturn();
-  }, []);
+    trackEvent("payme_return_viewed", { order_id: orderId || "" }, { dedupeKey: orderId || "return" });
+  }, [orderId]);
   return (
     <ProfileSubpageLayout
       title="To‘lov"

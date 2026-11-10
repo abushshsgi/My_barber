@@ -42,6 +42,10 @@ import {
   Droplets,
   CloudSun,
   Database,
+  Filter,
+  Route,
+  Activity,
+  Share2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { MysaloonLogo } from "@/components/brand/MysaloonLogo";
@@ -136,6 +140,23 @@ const SECTIONS: Section[] = [
       { to: "/admin/ledger", label: "ID / Hash qidiruv", icon: Fingerprint },
       { to: "/admin/statistics/wallet", label: "Hamyon oqimi", icon: Wallet },
       { to: "/admin/audit", label: "Audit log", icon: History },
+    ],
+  },
+  {
+    key: "analytics",
+    label: "Analitika",
+    icon: Activity,
+    matchPrefixes: ["/admin/analytics"],
+    items: [
+      { to: "/admin/analytics", label: "Umumiy analitika", icon: BarChart3 },
+      { to: "/admin/analytics/visitors", label: "Tashrif buyuruvchilar", icon: Users },
+      { to: "/admin/analytics/funnel", label: "Sotuv voronkasi", icon: Filter },
+      { to: "/admin/analytics/payments", label: "Payme to'lovlari", icon: CreditCard },
+      { to: "/admin/analytics/users", label: "Foydalanuvchi harakatlari", icon: Route },
+      { to: "/admin/analytics/ai", label: "AI statistikasi", icon: Sparkles },
+      { to: "/admin/analytics/sources", label: "Trafik manbalari", icon: Share2 },
+      { to: "/admin/analytics/revenue", label: "Daromad", icon: Banknote },
+      { to: "/admin/analytics/realtime", label: "Real vaqt", icon: Radio },
     ],
   },
   {

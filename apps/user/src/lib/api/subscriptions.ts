@@ -236,9 +236,14 @@ export async function checkoutSubscription(payload: {
   plan_code?: string;
   detail?: string;
 }> {
+  const { analyticsSessionId, analyticsVisitorId } = await import("@/lib/analytics");
   return apiJson("/api/v1/subscriptions/checkout/", {
     method: "POST",
-    body: JSON.stringify(payload),
+    body: JSON.stringify({
+      ...payload,
+      visitor_id: analyticsVisitorId(),
+      session_id: analyticsSessionId(),
+    }),
   });
 }
 
@@ -254,9 +259,14 @@ export async function checkoutFlashTryon(payload: {
   message?: string;
   detail?: string;
 }> {
+  const { analyticsSessionId, analyticsVisitorId } = await import("@/lib/analytics");
   return apiJson("/api/v1/subscriptions/flash-tryon/checkout/", {
     method: "POST",
-    body: JSON.stringify(payload),
+    body: JSON.stringify({
+      ...payload,
+      visitor_id: analyticsVisitorId(),
+      session_id: analyticsSessionId(),
+    }),
   });
 }
 

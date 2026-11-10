@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import type { CameraCapturePayload } from "@/components/ai-style/AiStyleCamera";
+import { trackEvent } from "@/lib/analytics";
 import { generateAiStyleTryOn, persistAiStyleHistory } from "@/lib/api";
 import type { ExplorePersonaId } from "@/lib/explore-personas";
 import { isMorphPlanLimitError } from "@/lib/morph-plan-limit";
@@ -96,6 +97,8 @@ export function useStyleTryOnFlow({
             throw new Error("__tryon_gate_blocked__");
           }
         }
+        trackEvent("ai_style_selected", { style_id: styleId, source });
+        trackEvent("ai_generation_requested", { style_id: styleId, source });
         const data = await generateAiStyleTryOn(dataUrl, styleId, personaId ?? undefined);
         return data.preview_image;
       })();
@@ -109,6 +112,7 @@ export function useStyleTryOnFlow({
       const preview = await run;
       setTryOnPreview(preview);
       if (!joinedExisting) {
+        trackEvent("ai_generation_completed", { style_id: styleId });
         persistExploreTryOnResult({
           styleId,
           styleTitle: titleRef.current,
@@ -128,6 +132,7 @@ export function useStyleTryOnFlow({
         setTryOnPreview(null);
         return;
       }
+      trackEvent("ai_generation_failed", { style_id: styleId });
       setError(e instanceof Error ? e.message : "Rasm yaratishda xatolik");
       setTryOnPreview(null);
     } finally {

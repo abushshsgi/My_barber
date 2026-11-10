@@ -15,6 +15,7 @@ import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as AdminAdminsRouteImport } from './routes/admin.admins'
 import { Route as AdminAgentsRouteImport } from './routes/admin.agents'
+import { Route as AdminAnalyticsRouteImport } from './routes/admin.analytics'
 import { Route as AdminAuditRouteImport } from './routes/admin.audit'
 import { Route as AdminAylanmaRouteImport } from './routes/admin.aylanma'
 import { Route as AdminBarbersRouteImport } from './routes/admin.barbers'
@@ -43,6 +44,15 @@ import { Route as AdminAgentsAylanmaRouteImport } from './routes/admin.agents.ay
 import { Route as AdminAgentsPayoutsRouteImport } from './routes/admin.agents.payouts'
 import { Route as AdminAgentsSalonsRouteImport } from './routes/admin.agents.salons'
 import { Route as AdminAgentsTeamRouteImport } from './routes/admin.agents.team'
+import { Route as AdminAnalyticsIndexRouteImport } from './routes/admin.analytics.index'
+import { Route as AdminAnalyticsAiRouteImport } from './routes/admin.analytics.ai'
+import { Route as AdminAnalyticsFunnelRouteImport } from './routes/admin.analytics.funnel'
+import { Route as AdminAnalyticsPaymentsRouteImport } from './routes/admin.analytics.payments'
+import { Route as AdminAnalyticsRealtimeRouteImport } from './routes/admin.analytics.realtime'
+import { Route as AdminAnalyticsRevenueRouteImport } from './routes/admin.analytics.revenue'
+import { Route as AdminAnalyticsSourcesRouteImport } from './routes/admin.analytics.sources'
+import { Route as AdminAnalyticsUsersRouteImport } from './routes/admin.analytics.users'
+import { Route as AdminAnalyticsVisitorsRouteImport } from './routes/admin.analytics.visitors'
 import { Route as AdminAylanmaIndexRouteImport } from './routes/admin.aylanma.index'
 import { Route as AdminBarbersBarberIdRouteImport } from './routes/admin.barbers.$barberId'
 import { Route as AdminBookingsBookingIdRouteImport } from './routes/admin.bookings.$bookingId'
@@ -53,10 +63,10 @@ import { Route as AdminFinanceDepositsStatsRouteImport } from './routes/admin.fi
 import { Route as AdminFinanceFrozenRouteImport } from './routes/admin.finance.frozen'
 import { Route as AdminFinanceGiftDesignsRouteImport } from './routes/admin.finance.gift-designs'
 import { Route as AdminFinanceGiftsRouteImport } from './routes/admin.finance.gifts'
+import { Route as AdminFinancePaymeRouteImport } from './routes/admin.finance.payme'
 import { Route as AdminFinancePayoutsRouteImport } from './routes/admin.finance.payouts'
 import { Route as AdminFinancePromotionsRouteImport } from './routes/admin.finance.promotions'
 import { Route as AdminFinanceQrPaymentsRouteImport } from './routes/admin.finance.qr-payments'
-import { Route as AdminFinancePaymeRouteImport } from './routes/admin.finance.payme'
 import { Route as AdminFinanceTransactionsRouteImport } from './routes/admin.finance.transactions'
 import { Route as AdminHisobRaqamIndexRouteImport } from './routes/admin.hisob-raqam.index'
 import { Route as AdminMorphAiIndexRouteImport } from './routes/admin.morph-ai.index'
@@ -98,6 +108,7 @@ import { Route as AdminSubscriptionsSubIdRouteImport } from './routes/admin.subs
 import { Route as AdminSupportTicketIdRouteImport } from './routes/admin.support.$ticketId'
 import { Route as AdminUsersUserIdRouteImport } from './routes/admin.users.$userId'
 import { Route as AdminUsersSignupsRouteImport } from './routes/admin.users.signups'
+import { Route as AdminAnalyticsUsersUserIdRouteImport } from './routes/admin.analytics.users.$userId'
 import { Route as AdminBarbersBarberIdIndexRouteImport } from './routes/admin.barbers.$barberId.index'
 import { Route as AdminBarbersBarberIdBookingsRouteImport } from './routes/admin.barbers.$barberId.bookings'
 import { Route as AdminBarbersBarberIdReviewsRouteImport } from './routes/admin.barbers.$barberId.reviews'
@@ -140,6 +151,11 @@ const AdminAdminsRoute = AdminAdminsRouteImport.update({
 const AdminAgentsRoute = AdminAgentsRouteImport.update({
   id: '/agents',
   path: '/agents',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminAnalyticsRoute = AdminAnalyticsRouteImport.update({
+  id: '/analytics',
+  path: '/analytics',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminAuditRoute = AdminAuditRouteImport.update({
@@ -282,6 +298,51 @@ const AdminAgentsTeamRoute = AdminAgentsTeamRouteImport.update({
   path: '/team',
   getParentRoute: () => AdminAgentsRoute,
 } as any)
+const AdminAnalyticsIndexRoute = AdminAnalyticsIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AdminAnalyticsRoute,
+} as any)
+const AdminAnalyticsAiRoute = AdminAnalyticsAiRouteImport.update({
+  id: '/ai',
+  path: '/ai',
+  getParentRoute: () => AdminAnalyticsRoute,
+} as any)
+const AdminAnalyticsFunnelRoute = AdminAnalyticsFunnelRouteImport.update({
+  id: '/funnel',
+  path: '/funnel',
+  getParentRoute: () => AdminAnalyticsRoute,
+} as any)
+const AdminAnalyticsPaymentsRoute = AdminAnalyticsPaymentsRouteImport.update({
+  id: '/payments',
+  path: '/payments',
+  getParentRoute: () => AdminAnalyticsRoute,
+} as any)
+const AdminAnalyticsRealtimeRoute = AdminAnalyticsRealtimeRouteImport.update({
+  id: '/realtime',
+  path: '/realtime',
+  getParentRoute: () => AdminAnalyticsRoute,
+} as any)
+const AdminAnalyticsRevenueRoute = AdminAnalyticsRevenueRouteImport.update({
+  id: '/revenue',
+  path: '/revenue',
+  getParentRoute: () => AdminAnalyticsRoute,
+} as any)
+const AdminAnalyticsSourcesRoute = AdminAnalyticsSourcesRouteImport.update({
+  id: '/sources',
+  path: '/sources',
+  getParentRoute: () => AdminAnalyticsRoute,
+} as any)
+const AdminAnalyticsUsersRoute = AdminAnalyticsUsersRouteImport.update({
+  id: '/users',
+  path: '/users',
+  getParentRoute: () => AdminAnalyticsRoute,
+} as any)
+const AdminAnalyticsVisitorsRoute = AdminAnalyticsVisitorsRouteImport.update({
+  id: '/visitors',
+  path: '/visitors',
+  getParentRoute: () => AdminAnalyticsRoute,
+} as any)
 const AdminAylanmaIndexRoute = AdminAylanmaIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -334,6 +395,11 @@ const AdminFinanceGiftsRoute = AdminFinanceGiftsRouteImport.update({
   path: '/gifts',
   getParentRoute: () => AdminFinanceRoute,
 } as any)
+const AdminFinancePaymeRoute = AdminFinancePaymeRouteImport.update({
+  id: '/payme',
+  path: '/payme',
+  getParentRoute: () => AdminFinanceRoute,
+} as any)
 const AdminFinancePayoutsRoute = AdminFinancePayoutsRouteImport.update({
   id: '/payouts',
   path: '/payouts',
@@ -347,11 +413,6 @@ const AdminFinancePromotionsRoute = AdminFinancePromotionsRouteImport.update({
 const AdminFinanceQrPaymentsRoute = AdminFinanceQrPaymentsRouteImport.update({
   id: '/qr-payments',
   path: '/qr-payments',
-  getParentRoute: () => AdminFinanceRoute,
-} as any)
-const AdminFinancePaymeRoute = AdminFinancePaymeRouteImport.update({
-  id: '/payme',
-  path: '/payme',
   getParentRoute: () => AdminFinanceRoute,
 } as any)
 const AdminFinanceTransactionsRoute =
@@ -563,6 +624,12 @@ const AdminUsersSignupsRoute = AdminUsersSignupsRouteImport.update({
   path: '/signups',
   getParentRoute: () => AdminUsersRoute,
 } as any)
+const AdminAnalyticsUsersUserIdRoute =
+  AdminAnalyticsUsersUserIdRouteImport.update({
+    id: '/$userId',
+    path: '/$userId',
+    getParentRoute: () => AdminAnalyticsUsersRoute,
+  } as any)
 const AdminBarbersBarberIdIndexRoute =
   AdminBarbersBarberIdIndexRouteImport.update({
     id: '/',
@@ -644,6 +711,7 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/admin/admins': typeof AdminAdminsRoute
   '/admin/agents': typeof AdminAgentsRouteWithChildren
+  '/admin/analytics': typeof AdminAnalyticsRouteWithChildren
   '/admin/audit': typeof AdminAuditRoute
   '/admin/aylanma': typeof AdminAylanmaRouteWithChildren
   '/admin/barbers': typeof AdminBarbersRouteWithChildren
@@ -672,6 +740,14 @@ export interface FileRoutesByFullPath {
   '/admin/agents/payouts': typeof AdminAgentsPayoutsRoute
   '/admin/agents/salons': typeof AdminAgentsSalonsRoute
   '/admin/agents/team': typeof AdminAgentsTeamRoute
+  '/admin/analytics/ai': typeof AdminAnalyticsAiRoute
+  '/admin/analytics/funnel': typeof AdminAnalyticsFunnelRoute
+  '/admin/analytics/payments': typeof AdminAnalyticsPaymentsRoute
+  '/admin/analytics/realtime': typeof AdminAnalyticsRealtimeRoute
+  '/admin/analytics/revenue': typeof AdminAnalyticsRevenueRoute
+  '/admin/analytics/sources': typeof AdminAnalyticsSourcesRoute
+  '/admin/analytics/users': typeof AdminAnalyticsUsersRouteWithChildren
+  '/admin/analytics/visitors': typeof AdminAnalyticsVisitorsRoute
   '/admin/barbers/$barberId': typeof AdminBarbersBarberIdRouteWithChildren
   '/admin/bookings/$bookingId': typeof AdminBookingsBookingIdRoute
   '/admin/finance/deposits': typeof AdminFinanceDepositsRoute
@@ -680,10 +756,10 @@ export interface FileRoutesByFullPath {
   '/admin/finance/frozen': typeof AdminFinanceFrozenRoute
   '/admin/finance/gift-designs': typeof AdminFinanceGiftDesignsRoute
   '/admin/finance/gifts': typeof AdminFinanceGiftsRoute
+  '/admin/finance/payme': typeof AdminFinancePaymeRoute
   '/admin/finance/payouts': typeof AdminFinancePayoutsRoute
   '/admin/finance/promotions': typeof AdminFinancePromotionsRoute
   '/admin/finance/qr-payments': typeof AdminFinanceQrPaymentsRoute
-  '/admin/finance/payme': typeof AdminFinancePaymeRoute
   '/admin/finance/transactions': typeof AdminFinanceTransactionsRoute
   '/admin/morph-ai/budget': typeof AdminMorphAiBudgetRoute
   '/admin/morph-ai/catalog': typeof AdminMorphAiCatalogRoute
@@ -721,6 +797,7 @@ export interface FileRoutesByFullPath {
   '/admin/users/$userId': typeof AdminUsersUserIdRoute
   '/admin/users/signups': typeof AdminUsersSignupsRoute
   '/admin/agents/': typeof AdminAgentsIndexRoute
+  '/admin/analytics/': typeof AdminAnalyticsIndexRoute
   '/admin/aylanma/': typeof AdminAylanmaIndexRoute
   '/admin/finance/': typeof AdminFinanceIndexRoute
   '/admin/hisob-raqam/': typeof AdminHisobRaqamIndexRoute
@@ -728,6 +805,7 @@ export interface FileRoutesByFullPath {
   '/admin/parvarish/': typeof AdminParvarishIndexRoute
   '/admin/payouts/': typeof AdminPayoutsIndexRoute
   '/admin/statistics/': typeof AdminStatisticsIndexRoute
+  '/admin/analytics/users/$userId': typeof AdminAnalyticsUsersUserIdRoute
   '/admin/barbers/$barberId/bookings': typeof AdminBarbersBarberIdBookingsRoute
   '/admin/barbers/$barberId/reviews': typeof AdminBarbersBarberIdReviewsRoute
   '/admin/barbers/$barberId/stats': typeof AdminBarbersBarberIdStatsRouteWithChildren
@@ -767,6 +845,14 @@ export interface FileRoutesByTo {
   '/admin/agents/payouts': typeof AdminAgentsPayoutsRoute
   '/admin/agents/salons': typeof AdminAgentsSalonsRoute
   '/admin/agents/team': typeof AdminAgentsTeamRoute
+  '/admin/analytics/ai': typeof AdminAnalyticsAiRoute
+  '/admin/analytics/funnel': typeof AdminAnalyticsFunnelRoute
+  '/admin/analytics/payments': typeof AdminAnalyticsPaymentsRoute
+  '/admin/analytics/realtime': typeof AdminAnalyticsRealtimeRoute
+  '/admin/analytics/revenue': typeof AdminAnalyticsRevenueRoute
+  '/admin/analytics/sources': typeof AdminAnalyticsSourcesRoute
+  '/admin/analytics/users': typeof AdminAnalyticsUsersRouteWithChildren
+  '/admin/analytics/visitors': typeof AdminAnalyticsVisitorsRoute
   '/admin/bookings/$bookingId': typeof AdminBookingsBookingIdRoute
   '/admin/finance/deposits': typeof AdminFinanceDepositsRoute
   '/admin/finance/deposits-overdue': typeof AdminFinanceDepositsOverdueRoute
@@ -774,10 +860,10 @@ export interface FileRoutesByTo {
   '/admin/finance/frozen': typeof AdminFinanceFrozenRoute
   '/admin/finance/gift-designs': typeof AdminFinanceGiftDesignsRoute
   '/admin/finance/gifts': typeof AdminFinanceGiftsRoute
+  '/admin/finance/payme': typeof AdminFinancePaymeRoute
   '/admin/finance/payouts': typeof AdminFinancePayoutsRoute
   '/admin/finance/promotions': typeof AdminFinancePromotionsRoute
   '/admin/finance/qr-payments': typeof AdminFinanceQrPaymentsRoute
-  '/admin/finance/payme': typeof AdminFinancePaymeRoute
   '/admin/finance/transactions': typeof AdminFinanceTransactionsRoute
   '/admin/morph-ai/budget': typeof AdminMorphAiBudgetRoute
   '/admin/morph-ai/catalog': typeof AdminMorphAiCatalogRoute
@@ -814,6 +900,7 @@ export interface FileRoutesByTo {
   '/admin/users/$userId': typeof AdminUsersUserIdRoute
   '/admin/users/signups': typeof AdminUsersSignupsRoute
   '/admin/agents': typeof AdminAgentsIndexRoute
+  '/admin/analytics': typeof AdminAnalyticsIndexRoute
   '/admin/aylanma': typeof AdminAylanmaIndexRoute
   '/admin/finance': typeof AdminFinanceIndexRoute
   '/admin/hisob-raqam': typeof AdminHisobRaqamIndexRoute
@@ -821,6 +908,7 @@ export interface FileRoutesByTo {
   '/admin/parvarish': typeof AdminParvarishIndexRoute
   '/admin/payouts': typeof AdminPayoutsIndexRoute
   '/admin/statistics': typeof AdminStatisticsIndexRoute
+  '/admin/analytics/users/$userId': typeof AdminAnalyticsUsersUserIdRoute
   '/admin/barbers/$barberId/bookings': typeof AdminBarbersBarberIdBookingsRoute
   '/admin/barbers/$barberId/reviews': typeof AdminBarbersBarberIdReviewsRoute
   '/admin/morph-ai/list/$kind': typeof AdminMorphAiListKindRoute
@@ -840,6 +928,7 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/admin/admins': typeof AdminAdminsRoute
   '/admin/agents': typeof AdminAgentsRouteWithChildren
+  '/admin/analytics': typeof AdminAnalyticsRouteWithChildren
   '/admin/audit': typeof AdminAuditRoute
   '/admin/aylanma': typeof AdminAylanmaRouteWithChildren
   '/admin/barbers': typeof AdminBarbersRouteWithChildren
@@ -868,6 +957,14 @@ export interface FileRoutesById {
   '/admin/agents/payouts': typeof AdminAgentsPayoutsRoute
   '/admin/agents/salons': typeof AdminAgentsSalonsRoute
   '/admin/agents/team': typeof AdminAgentsTeamRoute
+  '/admin/analytics/ai': typeof AdminAnalyticsAiRoute
+  '/admin/analytics/funnel': typeof AdminAnalyticsFunnelRoute
+  '/admin/analytics/payments': typeof AdminAnalyticsPaymentsRoute
+  '/admin/analytics/realtime': typeof AdminAnalyticsRealtimeRoute
+  '/admin/analytics/revenue': typeof AdminAnalyticsRevenueRoute
+  '/admin/analytics/sources': typeof AdminAnalyticsSourcesRoute
+  '/admin/analytics/users': typeof AdminAnalyticsUsersRouteWithChildren
+  '/admin/analytics/visitors': typeof AdminAnalyticsVisitorsRoute
   '/admin/barbers/$barberId': typeof AdminBarbersBarberIdRouteWithChildren
   '/admin/bookings/$bookingId': typeof AdminBookingsBookingIdRoute
   '/admin/finance/deposits': typeof AdminFinanceDepositsRoute
@@ -876,10 +973,10 @@ export interface FileRoutesById {
   '/admin/finance/frozen': typeof AdminFinanceFrozenRoute
   '/admin/finance/gift-designs': typeof AdminFinanceGiftDesignsRoute
   '/admin/finance/gifts': typeof AdminFinanceGiftsRoute
+  '/admin/finance/payme': typeof AdminFinancePaymeRoute
   '/admin/finance/payouts': typeof AdminFinancePayoutsRoute
   '/admin/finance/promotions': typeof AdminFinancePromotionsRoute
   '/admin/finance/qr-payments': typeof AdminFinanceQrPaymentsRoute
-  '/admin/finance/payme': typeof AdminFinancePaymeRoute
   '/admin/finance/transactions': typeof AdminFinanceTransactionsRoute
   '/admin/morph-ai/budget': typeof AdminMorphAiBudgetRoute
   '/admin/morph-ai/catalog': typeof AdminMorphAiCatalogRoute
@@ -917,6 +1014,7 @@ export interface FileRoutesById {
   '/admin/users/$userId': typeof AdminUsersUserIdRoute
   '/admin/users/signups': typeof AdminUsersSignupsRoute
   '/admin/agents/': typeof AdminAgentsIndexRoute
+  '/admin/analytics/': typeof AdminAnalyticsIndexRoute
   '/admin/aylanma/': typeof AdminAylanmaIndexRoute
   '/admin/finance/': typeof AdminFinanceIndexRoute
   '/admin/hisob-raqam/': typeof AdminHisobRaqamIndexRoute
@@ -924,6 +1022,7 @@ export interface FileRoutesById {
   '/admin/parvarish/': typeof AdminParvarishIndexRoute
   '/admin/payouts/': typeof AdminPayoutsIndexRoute
   '/admin/statistics/': typeof AdminStatisticsIndexRoute
+  '/admin/analytics/users/$userId': typeof AdminAnalyticsUsersUserIdRoute
   '/admin/barbers/$barberId/bookings': typeof AdminBarbersBarberIdBookingsRoute
   '/admin/barbers/$barberId/reviews': typeof AdminBarbersBarberIdReviewsRoute
   '/admin/barbers/$barberId/stats': typeof AdminBarbersBarberIdStatsRouteWithChildren
@@ -946,6 +1045,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/admin/admins'
     | '/admin/agents'
+    | '/admin/analytics'
     | '/admin/audit'
     | '/admin/aylanma'
     | '/admin/barbers'
@@ -974,6 +1074,14 @@ export interface FileRouteTypes {
     | '/admin/agents/payouts'
     | '/admin/agents/salons'
     | '/admin/agents/team'
+    | '/admin/analytics/ai'
+    | '/admin/analytics/funnel'
+    | '/admin/analytics/payments'
+    | '/admin/analytics/realtime'
+    | '/admin/analytics/revenue'
+    | '/admin/analytics/sources'
+    | '/admin/analytics/users'
+    | '/admin/analytics/visitors'
     | '/admin/barbers/$barberId'
     | '/admin/bookings/$bookingId'
     | '/admin/finance/deposits'
@@ -982,10 +1090,10 @@ export interface FileRouteTypes {
     | '/admin/finance/frozen'
     | '/admin/finance/gift-designs'
     | '/admin/finance/gifts'
+    | '/admin/finance/payme'
     | '/admin/finance/payouts'
     | '/admin/finance/promotions'
     | '/admin/finance/qr-payments'
-    | '/admin/finance/payme'
     | '/admin/finance/transactions'
     | '/admin/morph-ai/budget'
     | '/admin/morph-ai/catalog'
@@ -1023,6 +1131,7 @@ export interface FileRouteTypes {
     | '/admin/users/$userId'
     | '/admin/users/signups'
     | '/admin/agents/'
+    | '/admin/analytics/'
     | '/admin/aylanma/'
     | '/admin/finance/'
     | '/admin/hisob-raqam/'
@@ -1030,6 +1139,7 @@ export interface FileRouteTypes {
     | '/admin/parvarish/'
     | '/admin/payouts/'
     | '/admin/statistics/'
+    | '/admin/analytics/users/$userId'
     | '/admin/barbers/$barberId/bookings'
     | '/admin/barbers/$barberId/reviews'
     | '/admin/barbers/$barberId/stats'
@@ -1069,6 +1179,14 @@ export interface FileRouteTypes {
     | '/admin/agents/payouts'
     | '/admin/agents/salons'
     | '/admin/agents/team'
+    | '/admin/analytics/ai'
+    | '/admin/analytics/funnel'
+    | '/admin/analytics/payments'
+    | '/admin/analytics/realtime'
+    | '/admin/analytics/revenue'
+    | '/admin/analytics/sources'
+    | '/admin/analytics/users'
+    | '/admin/analytics/visitors'
     | '/admin/bookings/$bookingId'
     | '/admin/finance/deposits'
     | '/admin/finance/deposits-overdue'
@@ -1076,10 +1194,10 @@ export interface FileRouteTypes {
     | '/admin/finance/frozen'
     | '/admin/finance/gift-designs'
     | '/admin/finance/gifts'
+    | '/admin/finance/payme'
     | '/admin/finance/payouts'
     | '/admin/finance/promotions'
     | '/admin/finance/qr-payments'
-    | '/admin/finance/payme'
     | '/admin/finance/transactions'
     | '/admin/morph-ai/budget'
     | '/admin/morph-ai/catalog'
@@ -1116,6 +1234,7 @@ export interface FileRouteTypes {
     | '/admin/users/$userId'
     | '/admin/users/signups'
     | '/admin/agents'
+    | '/admin/analytics'
     | '/admin/aylanma'
     | '/admin/finance'
     | '/admin/hisob-raqam'
@@ -1123,6 +1242,7 @@ export interface FileRouteTypes {
     | '/admin/parvarish'
     | '/admin/payouts'
     | '/admin/statistics'
+    | '/admin/analytics/users/$userId'
     | '/admin/barbers/$barberId/bookings'
     | '/admin/barbers/$barberId/reviews'
     | '/admin/morph-ai/list/$kind'
@@ -1141,6 +1261,7 @@ export interface FileRouteTypes {
     | '/auth'
     | '/admin/admins'
     | '/admin/agents'
+    | '/admin/analytics'
     | '/admin/audit'
     | '/admin/aylanma'
     | '/admin/barbers'
@@ -1169,6 +1290,14 @@ export interface FileRouteTypes {
     | '/admin/agents/payouts'
     | '/admin/agents/salons'
     | '/admin/agents/team'
+    | '/admin/analytics/ai'
+    | '/admin/analytics/funnel'
+    | '/admin/analytics/payments'
+    | '/admin/analytics/realtime'
+    | '/admin/analytics/revenue'
+    | '/admin/analytics/sources'
+    | '/admin/analytics/users'
+    | '/admin/analytics/visitors'
     | '/admin/barbers/$barberId'
     | '/admin/bookings/$bookingId'
     | '/admin/finance/deposits'
@@ -1177,10 +1306,10 @@ export interface FileRouteTypes {
     | '/admin/finance/frozen'
     | '/admin/finance/gift-designs'
     | '/admin/finance/gifts'
+    | '/admin/finance/payme'
     | '/admin/finance/payouts'
     | '/admin/finance/promotions'
     | '/admin/finance/qr-payments'
-    | '/admin/finance/payme'
     | '/admin/finance/transactions'
     | '/admin/morph-ai/budget'
     | '/admin/morph-ai/catalog'
@@ -1218,6 +1347,7 @@ export interface FileRouteTypes {
     | '/admin/users/$userId'
     | '/admin/users/signups'
     | '/admin/agents/'
+    | '/admin/analytics/'
     | '/admin/aylanma/'
     | '/admin/finance/'
     | '/admin/hisob-raqam/'
@@ -1225,6 +1355,7 @@ export interface FileRouteTypes {
     | '/admin/parvarish/'
     | '/admin/payouts/'
     | '/admin/statistics/'
+    | '/admin/analytics/users/$userId'
     | '/admin/barbers/$barberId/bookings'
     | '/admin/barbers/$barberId/reviews'
     | '/admin/barbers/$barberId/stats'
@@ -1288,6 +1419,13 @@ declare module '@tanstack/react-router' {
       path: '/agents'
       fullPath: '/admin/agents'
       preLoaderRoute: typeof AdminAgentsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/analytics': {
+      id: '/admin/analytics'
+      path: '/analytics'
+      fullPath: '/admin/analytics'
+      preLoaderRoute: typeof AdminAnalyticsRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/audit': {
@@ -1486,6 +1624,69 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminAgentsTeamRouteImport
       parentRoute: typeof AdminAgentsRoute
     }
+    '/admin/analytics/': {
+      id: '/admin/analytics/'
+      path: '/'
+      fullPath: '/admin/analytics/'
+      preLoaderRoute: typeof AdminAnalyticsIndexRouteImport
+      parentRoute: typeof AdminAnalyticsRoute
+    }
+    '/admin/analytics/ai': {
+      id: '/admin/analytics/ai'
+      path: '/ai'
+      fullPath: '/admin/analytics/ai'
+      preLoaderRoute: typeof AdminAnalyticsAiRouteImport
+      parentRoute: typeof AdminAnalyticsRoute
+    }
+    '/admin/analytics/funnel': {
+      id: '/admin/analytics/funnel'
+      path: '/funnel'
+      fullPath: '/admin/analytics/funnel'
+      preLoaderRoute: typeof AdminAnalyticsFunnelRouteImport
+      parentRoute: typeof AdminAnalyticsRoute
+    }
+    '/admin/analytics/payments': {
+      id: '/admin/analytics/payments'
+      path: '/payments'
+      fullPath: '/admin/analytics/payments'
+      preLoaderRoute: typeof AdminAnalyticsPaymentsRouteImport
+      parentRoute: typeof AdminAnalyticsRoute
+    }
+    '/admin/analytics/realtime': {
+      id: '/admin/analytics/realtime'
+      path: '/realtime'
+      fullPath: '/admin/analytics/realtime'
+      preLoaderRoute: typeof AdminAnalyticsRealtimeRouteImport
+      parentRoute: typeof AdminAnalyticsRoute
+    }
+    '/admin/analytics/revenue': {
+      id: '/admin/analytics/revenue'
+      path: '/revenue'
+      fullPath: '/admin/analytics/revenue'
+      preLoaderRoute: typeof AdminAnalyticsRevenueRouteImport
+      parentRoute: typeof AdminAnalyticsRoute
+    }
+    '/admin/analytics/sources': {
+      id: '/admin/analytics/sources'
+      path: '/sources'
+      fullPath: '/admin/analytics/sources'
+      preLoaderRoute: typeof AdminAnalyticsSourcesRouteImport
+      parentRoute: typeof AdminAnalyticsRoute
+    }
+    '/admin/analytics/users': {
+      id: '/admin/analytics/users'
+      path: '/users'
+      fullPath: '/admin/analytics/users'
+      preLoaderRoute: typeof AdminAnalyticsUsersRouteImport
+      parentRoute: typeof AdminAnalyticsRoute
+    }
+    '/admin/analytics/visitors': {
+      id: '/admin/analytics/visitors'
+      path: '/visitors'
+      fullPath: '/admin/analytics/visitors'
+      preLoaderRoute: typeof AdminAnalyticsVisitorsRouteImport
+      parentRoute: typeof AdminAnalyticsRoute
+    }
     '/admin/aylanma/': {
       id: '/admin/aylanma/'
       path: '/'
@@ -1556,6 +1757,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminFinanceGiftsRouteImport
       parentRoute: typeof AdminFinanceRoute
     }
+    '/admin/finance/payme': {
+      id: '/admin/finance/payme'
+      path: '/payme'
+      fullPath: '/admin/finance/payme'
+      preLoaderRoute: typeof AdminFinancePaymeRouteImport
+      parentRoute: typeof AdminFinanceRoute
+    }
     '/admin/finance/payouts': {
       id: '/admin/finance/payouts'
       path: '/payouts'
@@ -1575,13 +1783,6 @@ declare module '@tanstack/react-router' {
       path: '/qr-payments'
       fullPath: '/admin/finance/qr-payments'
       preLoaderRoute: typeof AdminFinanceQrPaymentsRouteImport
-      parentRoute: typeof AdminFinanceRoute
-    }
-    '/admin/finance/payme': {
-      id: '/admin/finance/payme'
-      path: '/payme'
-      fullPath: '/admin/finance/payme'
-      preLoaderRoute: typeof AdminFinancePaymeRouteImport
       parentRoute: typeof AdminFinanceRoute
     }
     '/admin/finance/transactions': {
@@ -1871,6 +2072,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminUsersSignupsRouteImport
       parentRoute: typeof AdminUsersRoute
     }
+    '/admin/analytics/users/$userId': {
+      id: '/admin/analytics/users/$userId'
+      path: '/$userId'
+      fullPath: '/admin/analytics/users/$userId'
+      preLoaderRoute: typeof AdminAnalyticsUsersUserIdRouteImport
+      parentRoute: typeof AdminAnalyticsUsersRoute
+    }
     '/admin/barbers/$barberId/': {
       id: '/admin/barbers/$barberId/'
       path: '/'
@@ -1987,6 +2195,45 @@ const AdminAgentsRouteWithChildren = AdminAgentsRoute._addFileChildren(
   AdminAgentsRouteChildren,
 )
 
+interface AdminAnalyticsUsersRouteChildren {
+  AdminAnalyticsUsersUserIdRoute: typeof AdminAnalyticsUsersUserIdRoute
+}
+
+const AdminAnalyticsUsersRouteChildren: AdminAnalyticsUsersRouteChildren = {
+  AdminAnalyticsUsersUserIdRoute: AdminAnalyticsUsersUserIdRoute,
+}
+
+const AdminAnalyticsUsersRouteWithChildren =
+  AdminAnalyticsUsersRoute._addFileChildren(AdminAnalyticsUsersRouteChildren)
+
+interface AdminAnalyticsRouteChildren {
+  AdminAnalyticsAiRoute: typeof AdminAnalyticsAiRoute
+  AdminAnalyticsFunnelRoute: typeof AdminAnalyticsFunnelRoute
+  AdminAnalyticsPaymentsRoute: typeof AdminAnalyticsPaymentsRoute
+  AdminAnalyticsRealtimeRoute: typeof AdminAnalyticsRealtimeRoute
+  AdminAnalyticsRevenueRoute: typeof AdminAnalyticsRevenueRoute
+  AdminAnalyticsSourcesRoute: typeof AdminAnalyticsSourcesRoute
+  AdminAnalyticsUsersRoute: typeof AdminAnalyticsUsersRouteWithChildren
+  AdminAnalyticsVisitorsRoute: typeof AdminAnalyticsVisitorsRoute
+  AdminAnalyticsIndexRoute: typeof AdminAnalyticsIndexRoute
+}
+
+const AdminAnalyticsRouteChildren: AdminAnalyticsRouteChildren = {
+  AdminAnalyticsAiRoute: AdminAnalyticsAiRoute,
+  AdminAnalyticsFunnelRoute: AdminAnalyticsFunnelRoute,
+  AdminAnalyticsPaymentsRoute: AdminAnalyticsPaymentsRoute,
+  AdminAnalyticsRealtimeRoute: AdminAnalyticsRealtimeRoute,
+  AdminAnalyticsRevenueRoute: AdminAnalyticsRevenueRoute,
+  AdminAnalyticsSourcesRoute: AdminAnalyticsSourcesRoute,
+  AdminAnalyticsUsersRoute: AdminAnalyticsUsersRouteWithChildren,
+  AdminAnalyticsVisitorsRoute: AdminAnalyticsVisitorsRoute,
+  AdminAnalyticsIndexRoute: AdminAnalyticsIndexRoute,
+}
+
+const AdminAnalyticsRouteWithChildren = AdminAnalyticsRoute._addFileChildren(
+  AdminAnalyticsRouteChildren,
+)
+
 interface AdminAylanmaRouteChildren {
   AdminAylanmaIndexRoute: typeof AdminAylanmaIndexRoute
 }
@@ -2063,10 +2310,10 @@ interface AdminFinanceRouteChildren {
   AdminFinanceFrozenRoute: typeof AdminFinanceFrozenRoute
   AdminFinanceGiftDesignsRoute: typeof AdminFinanceGiftDesignsRoute
   AdminFinanceGiftsRoute: typeof AdminFinanceGiftsRoute
+  AdminFinancePaymeRoute: typeof AdminFinancePaymeRoute
   AdminFinancePayoutsRoute: typeof AdminFinancePayoutsRoute
   AdminFinancePromotionsRoute: typeof AdminFinancePromotionsRoute
   AdminFinanceQrPaymentsRoute: typeof AdminFinanceQrPaymentsRoute
-  AdminFinancePaymeRoute: typeof AdminFinancePaymeRoute
   AdminFinanceTransactionsRoute: typeof AdminFinanceTransactionsRoute
   AdminFinanceIndexRoute: typeof AdminFinanceIndexRoute
 }
@@ -2078,10 +2325,10 @@ const AdminFinanceRouteChildren: AdminFinanceRouteChildren = {
   AdminFinanceFrozenRoute: AdminFinanceFrozenRoute,
   AdminFinanceGiftDesignsRoute: AdminFinanceGiftDesignsRoute,
   AdminFinanceGiftsRoute: AdminFinanceGiftsRoute,
+  AdminFinancePaymeRoute: AdminFinancePaymeRoute,
   AdminFinancePayoutsRoute: AdminFinancePayoutsRoute,
   AdminFinancePromotionsRoute: AdminFinancePromotionsRoute,
   AdminFinanceQrPaymentsRoute: AdminFinanceQrPaymentsRoute,
-  AdminFinancePaymeRoute: AdminFinancePaymeRoute,
   AdminFinanceTransactionsRoute: AdminFinanceTransactionsRoute,
   AdminFinanceIndexRoute: AdminFinanceIndexRoute,
 }
@@ -2307,6 +2554,7 @@ const AdminUsersRouteWithChildren = AdminUsersRoute._addFileChildren(
 interface AdminRouteChildren {
   AdminAdminsRoute: typeof AdminAdminsRoute
   AdminAgentsRoute: typeof AdminAgentsRouteWithChildren
+  AdminAnalyticsRoute: typeof AdminAnalyticsRouteWithChildren
   AdminAuditRoute: typeof AdminAuditRoute
   AdminAylanmaRoute: typeof AdminAylanmaRouteWithChildren
   AdminBarbersRoute: typeof AdminBarbersRouteWithChildren
@@ -2335,6 +2583,7 @@ interface AdminRouteChildren {
 const AdminRouteChildren: AdminRouteChildren = {
   AdminAdminsRoute: AdminAdminsRoute,
   AdminAgentsRoute: AdminAgentsRouteWithChildren,
+  AdminAnalyticsRoute: AdminAnalyticsRouteWithChildren,
   AdminAuditRoute: AdminAuditRoute,
   AdminAylanmaRoute: AdminAylanmaRouteWithChildren,
   AdminBarbersRoute: AdminBarbersRouteWithChildren,

@@ -1,5 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
+import { trackEvent } from "@/lib/analytics";
 import { ProfileSubpageLayout } from "@/components/profile/ProfileSubpageLayout";
 import { SettingsSubscriptionsPanel } from "@/components/settings/panels/SettingsSubscriptionsPanel";
 import { parseSubscriptionsSearch } from "@/lib/subscriptions-nav";
@@ -20,6 +22,9 @@ function SubscriptionsPage() {
   const { t } = useTranslation();
   const search = Route.useSearch();
   const backTo = search.returnTo || "/profile";
+  useEffect(() => {
+    trackEvent("premium_page_viewed", {}, { dedupeKey: "subscriptions" });
+  }, []);
 
   return (
     <ProfileSubpageLayout

@@ -1,4 +1,6 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
+import { useEffect } from "react";
+import { trackEvent } from "@/lib/analytics";
 import { AiStyleFlow } from "@/components/ai-style/AiStyleFlow";
 import { useExplorePersona } from "@/hooks/use-explore-persona";
 import { resolveAiStyleAudience, useAudience } from "@/hooks/use-audience";
@@ -36,6 +38,9 @@ function AiStylePage() {
   const { audience, profileDefault } = useAudience();
   const { personaId } = useExplorePersona();
   const styleAudience = resolveAiStyleAudience(profileDefault, audience);
+  useEffect(() => {
+    trackEvent("ai_tryon_opened", {}, { dedupeKey: "ai-style" });
+  }, []);
 
   return <AiStyleFlow audience={styleAudience} menPersonaId={personaId} />;
 }

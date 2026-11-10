@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { trackEvent } from "@/lib/analytics";
 import { analyzeAiStyle, generateAiStyleTryOn, persistAiStyleHistory } from "@/lib/api";
 import type { CameraCapturePayload } from "@/components/ai-style/AiStyleCamera";
 import {
@@ -319,6 +320,8 @@ export function useAiStyleFlow(options: UseAiStyleFlowOptions = {}) {
               throw new Error("__tryon_gate_blocked__");
             }
           }
+          trackEvent("ai_style_selected", { style_id: styleId, source });
+          trackEvent("ai_generation_requested", { style_id: styleId, source });
           const data = await generateAiStyleTryOn(photo, styleId, effectivePersona);
           return data.preview_image;
         })();
@@ -332,6 +335,7 @@ export function useAiStyleFlow(options: UseAiStyleFlowOptions = {}) {
         setTryOnByStyle((prev) => ({ ...prev, [cacheKey]: previewImage }));
         setTryOnLoadingId(null);
         if (!joinedExisting) {
+          trackEvent("ai_generation_completed", { style_id: styleId });
           const resolvedTitle =
             title ?? result?.suggestions.find((s) => s.id === styleId)?.title ?? styleId;
           // Server try-on tugaganda historyga yozadi — remote POST qilmaslik (duplicate).
@@ -359,6 +363,7 @@ export function useAiStyleFlow(options: UseAiStyleFlowOptions = {}) {
           onPlanLimit?.();
           return;
         }
+        trackEvent("ai_generation_failed", { style_id: styleId });
         setError(formatAiRequestError(e, "Rasm yaratishda xatolik"));
       } finally {
         if (!joinedExisting) tryOnInFlight.delete(flightKey);

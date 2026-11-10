@@ -15,6 +15,7 @@ import { markPaymeAwaitReturn, storePaymeOrder } from "@/components/subscription
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useSubscriptionCheckout, useSubscriptionPlans } from "@/hooks/use-subscription";
 import { hasValidUserSession } from "@/lib/api/client";
+import { trackEvent } from "@/lib/analytics";
 import { checkoutFlashTryon } from "@/lib/api/subscriptions";
 import type { MorphLimitKind } from "@/lib/morph-plan-limit";
 import type { SubscriptionMe, SubscriptionPlan } from "@/lib/api/subscriptions";
@@ -206,6 +207,8 @@ function MorphPaywallBody({
     }
     if (flashLeft > 0 && flashLeft < 60) return;
     setFlashBusy(true);
+    trackEvent("subscribe_clicked", { plan_code: "flash" });
+    trackEvent("payment_initiated", { plan_code: "flash", provider: "payme" });
     try {
       const origin = typeof window !== "undefined" ? window.location.origin : getPublicSiteOrigin();
       const res = await checkoutFlashTryon({ return_url: `${origin}/subscriptions/payme` });
@@ -215,6 +218,7 @@ function MorphPaywallBody({
       }
       storePaymeOrder(res.order_id);
       markPaymeAwaitReturn();
+      trackEvent("checkout_redirect_attempted", { order_id: res.order_id, plan_code: "flash" });
       window.location.assign(res.checkout_url);
     } catch (error) {
       const raw = error instanceof Error ? error.message : t("subscriptions.genericError");
@@ -231,6 +235,8 @@ function MorphPaywallBody({
       return;
     }
     setBusy(true);
+    trackEvent("subscribe_clicked", { plan_code: selected.code });
+    trackEvent("payment_initiated", { plan_code: selected.code, provider: "payme" });
     try {
       const origin = typeof window !== "undefined" ? window.location.origin : getPublicSiteOrigin();
       const res = await checkout.mutateAsync({
@@ -245,6 +251,7 @@ function MorphPaywallBody({
       storePaymeOrder(res.order_id);
       markPaymeAwaitReturn();
       setPayOpen(false);
+      trackEvent("checkout_redirect_attempted", { order_id: res.order_id, plan_code: selected.code });
       window.location.assign(res.checkout_url);
     } catch (error) {
       const raw =
@@ -263,6 +270,8 @@ function MorphPaywallBody({
       void navigate({ to: "/auth", search: { redirect: "/ai-style" } });
       return;
     }
+    trackEvent("premium_offer_viewed", { plan_code: selected.code }, { dedupeKey: selected.code });
+    trackEvent("subscription_plan_selected", { plan_code: selected.code });
     setPayOpen(true);
   };
 

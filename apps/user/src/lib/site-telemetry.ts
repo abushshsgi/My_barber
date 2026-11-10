@@ -1,5 +1,6 @@
 import { API_BASE, getUserAccessToken } from "@/lib/api/client";
 import { resolveFetchBase } from "@/lib/api/base-url";
+import { currentUtm } from "@/lib/analytics";
 
 const VISITOR_KEY = "mysaloon_visitor_id";
 const SESSION_KEY = "mysaloon_session_id";
@@ -57,6 +58,7 @@ export async function flushSiteTelemetry(): Promise<void> {
     visitor_id: storageId(window.localStorage, VISITOR_KEY),
     session_id: storageId(window.sessionStorage, SESSION_KEY),
     referrer: document.referrer || "",
+    utm: currentUtm(),
     events,
   });
   const headers: Record<string, string> = {

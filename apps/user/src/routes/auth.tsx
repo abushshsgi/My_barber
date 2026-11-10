@@ -27,6 +27,7 @@ import {
   verifyPhoneCode,
 } from "@/lib/api";
 import { getLastPhone, setSession } from "@/lib/auth";
+import { trackEvent } from "@/lib/analytics";
 import { trackAuthFunnel, trackAuthSuccess } from "@/lib/ga";
 import { clearQueryClientCache } from "@/lib/query-client";
 import { getStoredOtpCooldownSeconds, storeOtpCooldown } from "@/lib/otp-cooldown";
@@ -200,6 +201,7 @@ function Auth() {
   ) => {
     authCompleted.current = true;
     trackAuthSuccess({ isNewUser: Boolean(data.is_new_user), method });
+    trackEvent(data.is_new_user ? "registration_completed" : "login_completed", { method });
     clearStashedReferralCode();
     clearStashedBarberInviteCode();
     setSession(data.access, data.refresh, data.user, data.session_id);
