@@ -15,6 +15,7 @@ import { useExplorePersona } from "@/hooks/use-explore-persona";
 import { useHairstyle } from "@/hooks/use-hairstyles";
 import { getHairstyleImageUrl } from "@/lib/hairstyles/catalog";
 import { isMorphPlanLimitMessage } from "@/lib/morph-plan-limit";
+import { presentSelfieError } from "@/lib/selfie-normalize";
 import { markMorphAiOnboarded } from "@/lib/morf-ai-session";
 import { loadSavedAiStyleIds, removeSavedAiStyle, saveAiStyle } from "@/lib/saved-ai-styles";
 import type { ExplorePersonaId } from "@/lib/explore-personas";
@@ -155,8 +156,8 @@ export function AiStyleFlow({ audience, menPersonaId: menPersonaIdProp, focusSty
       void limitGate.openFromApiLimit("tryon");
       return;
     }
-    toast.error(error);
-  }, [error, limitGate]);
+    toast.error(presentSelfieError(error, (key, fallback) => t(key, { defaultValue: fallback })));
+  }, [error, limitGate, t]);
 
   useEffect(() => {
     if (done) {

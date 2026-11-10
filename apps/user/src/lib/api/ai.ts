@@ -184,10 +184,16 @@ export async function generateAiStyleTryOn(
   image: string,
   styleId: string,
   personaId?: ExplorePersonaId,
+  inputSource?: "camera" | "gallery",
 ): Promise<AiStyleTryOnResponse> {
   const res = await apiFetch("/api/v1/ai/style-tryon/", {
     method: "POST",
-    body: JSON.stringify({ image, style_id: styleId, persona: personaId }),
+    body: JSON.stringify({
+      image,
+      style_id: styleId,
+      persona: personaId,
+      ...(inputSource ? { input_source: inputSource } : {}),
+    }),
   });
   const body = (await res.json().catch(() => null)) as
     AiStyleTryOnResponse | AiStyleTryOnJobResponse | { detail?: string; code?: string } | null;

@@ -57,6 +57,7 @@ import {
   type MorphStudioDraft,
 } from "@/lib/morf-ai-studio-session";
 import { prepareSelfieDataUrl, prepareSelfieFromFile } from "@/lib/selfie-image";
+import { presentSelfieError } from "@/lib/selfie-normalize";
 import { isMorphPlanLimitError } from "@/lib/morph-plan-limit";
 import { cn } from "@/lib/utils";
 
@@ -392,12 +393,15 @@ export function MorphAiStudioPage() {
   const onFile = async (file: File | null | undefined) => {
     if (!file) return;
     try {
-      const dataUrl = await prepareSelfieFromFile(file);
-      const prepared = await prepareSelfieDataUrl(dataUrl);
+      const prepared = await prepareSelfieFromFile(file, { checkQuality: true });
       persistStudioSelfie(prepared, "gallery");
       selectImage(prepared, { source: "gallery", styleTitle: "Studio", beforeImage: prepared });
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : t("aiStylePage.studio.pickFailed"));
+      toast.error(
+        e instanceof Error
+          ? presentSelfieError(e.message, (key, fallback) => t(key, { defaultValue: fallback }))
+          : t("aiStylePage.studio.pickFailed"),
+      );
     } finally {
       if (fileRef.current) fileRef.current.value = "";
     }
@@ -1004,14 +1008,19 @@ export function MorphAiStudioPage() {
         onClose={() => setCameraOpen(false)}
         onCapture={(payload) => {
           setCameraOpen(false);
-          void prepareSelfieDataUrl(payload.dataUrl).then((prepared) => {
-            persistStudioSelfie(prepared, "camera_scan");
-            selectImage(prepared, {
-              source: "camera",
-              styleTitle: "Studio",
-              beforeImage: prepared,
+          void prepareSelfieDataUrl(payload.dataUrl, { checkQuality: true })
+            .then((prepared) => {
+              persistStudioSelfie(prepared, "camera_scan");
+              selectImage(prepared, {
+                source: "camera",
+                styleTitle: "Studio",
+                beforeImage: prepared,
+              });
+            })
+            .catch((error: unknown) => {
+              const message = error instanceof Error ? error.message : t("aiStylePage.studio.pickFailed");
+              toast.error(presentSelfieError(message, (key, fallback) => t(key, { defaultValue: fallback })));
             });
-          });
         }}
       />
       <MorphLimitUpsell

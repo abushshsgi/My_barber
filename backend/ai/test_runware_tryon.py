@@ -20,9 +20,29 @@ TINY_PNG = (
 
 
 def _jpeg_bytes() -> bytes:
+    return _jpeg_bytes_color((90, 70, 60), (32, 32))
+
+
+def _jpeg_bytes_color(color: tuple[int, int, int], size: tuple[int, int]) -> bytes:
     buffer = BytesIO()
-    Image.new("RGB", (32, 32), (90, 70, 60)).save(buffer, format="JPEG", quality=80)
+    Image.new("RGB", size, color).save(buffer, format="JPEG", quality=95)
     return buffer.getvalue()
+
+
+def _solid_jpeg(color: tuple[int, int, int], size: tuple[int, int]) -> bytes:
+    return _jpeg_bytes_color(color, size)
+
+
+def _jpeg_of(image: Image.Image) -> bytes:
+    buffer = BytesIO()
+    image.save(buffer, format="JPEG", quality=95)
+    return buffer.getvalue()
+
+
+def _data_url(raw: bytes) -> str:
+    import base64
+
+    return "data:image/jpeg;base64," + base64.b64encode(raw).decode("ascii")
 
 
 class _Response:
@@ -95,14 +115,21 @@ class RunwareTryOnTests(SimpleTestCase):
         with override_settings(RUNWARE_TRYON_WIDTH=1152, RUNWARE_TRYON_HEIGHT=1536):
             self.assertEqual(_output_size_for_bytes(buffer.getvalue(), "runware:400@6"), (1536, 1536))
 
-    def test_pad_selfie_adds_top_headroom(self):
-        from ai.services.runware_tryon import _pad_selfie_for_hair
+    def test_prepare_selfie_does_not_pad_above_the_hair(self):
+        from ai.services.runware_tryon import prepare_selfie_bytes
 
+        image = Image.new("RGB", (900, 700), (90, 70, 60))
+        image.paste((255, 0, 0), (440, 0, 461, 8))
         buffer = BytesIO()
-        Image.new("RGB", (900, 700), (90, 70, 60)).save(buffer, format="JPEG", quality=80)
-        padded = Image.open(BytesIO(_pad_selfie_for_hair(buffer.getvalue())))
-        self.assertEqual(padded.size[0], 900)
-        self.assertEqual(padded.size[1], int(900 * 4 / 3))
+        image.save(buffer, format="JPEG", quality=95)
+        raw = buffer.getvalue()
+        prepared = prepare_selfie_bytes(raw, style_detail="mid fade")
+        self.assertEqual(prepared.crop_strategy, "none")
+        self.assertFalse(prepared.exif_transposed)
+        self.assertEqual(prepared.payload, raw)
+        opened = Image.open(BytesIO(prepared.payload))
+        self.assertEqual(opened.size, (900, 700))
+        self.assertGreater(opened.getpixel((450, 1))[0], 200)
 
     def test_unverified_model_is_rejected_before_http(self):
         from ai.services.runware_tryon import generate_tryon_preview
@@ -518,18 +545,189 @@ class RunwareTryOnTests(SimpleTestCase):
             )
         self.assertEqual(infer.call_count, 1)
 
-    def test_long_hair_gets_bottom_room_without_stretching(self):
-        from ai.services.runware_tryon import _pad_selfie_for_hair
+    def test_long_hair_gets_bottom_room_without_moving_the_forehead(self):
+        from ai.services.runware_tryon import prepare_selfie_bytes
 
+        image = Image.new("RGB", (800, 800), (20, 20, 20))
+        image.paste((255, 0, 0), (0, 0, 16, 16))
         buffer = BytesIO()
-        Image.new("RGB", (800, 800), (20, 20, 20)).save(buffer, format="JPEG", quality=80)
-        padded = Image.open(
-            BytesIO(
-                _pad_selfie_for_hair(
-                    buffer.getvalue(),
-                    style_detail="long layered hair below the shoulders",
-                )
-            )
+        image.save(buffer, format="JPEG", quality=95)
+        prepared = prepare_selfie_bytes(
+            buffer.getvalue(),
+            style_detail="long layered hair below the shoulders",
         )
-        self.assertEqual(padded.size[0], 800)
-        self.assertGreater(padded.size[1], int(800 * 4 / 3))
+        opened = Image.open(BytesIO(prepared.payload))
+        self.assertEqual(prepared.crop_strategy, "bottom_length")
+        self.assertEqual(opened.size[0], 800)
+        self.assertEqual(opened.size[1], 800 + int(800 * 0.12))
+        self.assertGreater(opened.getpixel((4, 4))[0], 200)
+
+    def test_wide_frame_crops_sides_and_keeps_the_top_row(self):
+        from ai.services.runware_tryon import prepare_selfie_bytes
+
+        image = Image.new("RGB", (900, 500), (10, 20, 30))
+        image.paste((255, 0, 0), (440, 0, 461, 6))
+        image.paste((0, 255, 0), (0, 240, 12, 260))
+        buffer = BytesIO()
+        image.save(buffer, format="JPEG", quality=95)
+        prepared = prepare_selfie_bytes(buffer.getvalue(), style_detail="mid fade")
+        opened = Image.open(BytesIO(prepared.payload))
+        self.assertEqual(prepared.crop_strategy, "horizontal_portrait")
+        self.assertEqual(opened.size[1], 500)
+        self.assertLess(opened.size[0], 900)
+        self.assertGreater(max(opened.getpixel((x, 1))[0] for x in range(opened.size[0])), 200)
+        self.assertLess(opened.getpixel((0, 250))[1], 80)
+
+    def test_exif_orientation_swaps_axes_without_extra_headroom(self):
+        from ai.services.runware_tryon import prepare_selfie_bytes
+
+        image = Image.new("RGB", (80, 40), (0, 0, 180))
+        exif = Image.Exif()
+        exif[274] = 6
+        buffer = BytesIO()
+        image.save(buffer, format="JPEG", quality=95, exif=exif)
+        prepared = prepare_selfie_bytes(buffer.getvalue())
+        self.assertTrue(prepared.exif_transposed)
+        self.assertEqual(prepared.exif_orientation, 6)
+        self.assertEqual((prepared.normalized_width, prepared.normalized_height), (40, 80))
+
+    def test_equivalent_camera_and_gallery_bytes_share_one_payload(self):
+        from ai.services.runware_tryon import (
+            DOCUMENTED_TASK_FIELDS,
+            FORBIDDEN_TASK_KEYS,
+            _output_size_for_bytes,
+            build_tryon_task,
+            prepare_selfie_bytes,
+            tryon_diagnostic_record,
+        )
+
+        image = Image.new("RGB", (900, 700), (90, 70, 60))
+        buffer = BytesIO()
+        image.save(buffer, format="JPEG", quality=95)
+        raw = buffer.getvalue()
+        camera = prepare_selfie_bytes(raw, style_detail="mid fade")
+        gallery = prepare_selfie_bytes(raw, style_detail="mid fade")
+        self.assertEqual(camera.payload, gallery.payload)
+        self.assertEqual(
+            (camera.normalized_width, camera.normalized_height),
+            (gallery.normalized_width, gallery.normalized_height),
+        )
+        width, height = _output_size_for_bytes(camera.payload, "runware:400@6")
+        camera_task = build_tryon_task(
+            model="runware:400@6",
+            prompt="edit reference image 1",
+            width=width,
+            height=height,
+            references=["data:image/jpeg;base64,abcd"],
+        )
+        gallery_task = build_tryon_task(
+            model="runware:400@6",
+            prompt="edit reference image 1",
+            width=width,
+            height=height,
+            references=["data:image/jpeg;base64,abcd"],
+        )
+        self.assertEqual(camera_task["width"], gallery_task["width"])
+        self.assertEqual(camera_task["height"], gallery_task["height"])
+        self.assertEqual(camera_task.keys(), gallery_task.keys())
+        self.assertTrue(set(camera_task).issubset(DOCUMENTED_TASK_FIELDS))
+        for key in FORBIDDEN_TASK_KEYS:
+            self.assertNotIn(key, camera_task)
+        record = tryon_diagnostic_record(
+            input_source="camera",
+            original_width=camera.original_width,
+            original_height=camera.original_height,
+            normalized_width=camera.normalized_width,
+            normalized_height=camera.normalized_height,
+            image_format=camera.image_format,
+            exif_orientation=camera.exif_orientation,
+            exif_transposed=camera.exif_transposed,
+            mirror_correction="client",
+            jpeg_quality=camera.jpeg_quality,
+            crop_strategy=camera.crop_strategy,
+            model="runware:400@6",
+            quality_result="skipped",
+        )
+        blob = json.dumps(record)
+        self.assertNotIn("data:image", blob)
+        self.assertNotIn("base64", blob)
+        self.assertNotIn(raw.hex(), blob)
+
+    def test_style_prompts_protect_forehead_hairline_and_curl_shape(self):
+        from ai.services.tryon_prompts import build_tryon_prompt
+
+        curly = build_tryon_prompt(
+            title="Curly top fade",
+            style_detail="defined curly top with a mid fade",
+        )
+        self.assertIn("FOREHEAD, HAIRLINE, AND HEAD ANATOMY", curly)
+        self.assertIn("CURLY HAIRSTYLE", curly)
+        self.assertIn("FADE HAIRSTYLE", curly)
+        self.assertIn("Do not stack tight spirals", curly)
+        self.assertLessEqual(len(curly), 10000)
+
+        straight = build_tryon_prompt(title="Blunt bob", style_detail="straight blunt bob")
+        self.assertIn("STRAIGHT HAIRSTYLE", straight)
+        self.assertNotIn("CURLY HAIRSTYLE", straight)
+
+        slick = build_tryon_prompt(title="Slick back", style_detail="slicked hair close to the scalp")
+        self.assertIn("SLICKED HAIRSTYLE", slick)
+        self.assertNotIn("STRAIGHT HAIRSTYLE", slick)
+        self.assertIn("Do not push the hairline back", slick)
+
+    def test_face_restore_keeps_aligned_skin_and_skips_a_moved_face(self):
+        from ai.services.tryon_preserve import preserve_face
+
+        original = _solid_jpeg((220, 180, 150), (320, 400))
+        edited = _solid_jpeg((206, 166, 136), (320, 400))
+        restored, report = preserve_face(original, edited, apply=True)
+        self.assertEqual(report["status"], "restored")
+        self.assertTrue(report["applied"])
+        center = Image.open(BytesIO(restored)).getpixel((160, 230))
+        self.assertLess(abs(center[0] - 220), 15)
+
+        source = Image.new("RGB", (320, 400), (20, 40, 180))
+        source.paste((220, 180, 150), (60, 120, 150, 280))
+        shifted = Image.new("RGB", (320, 400), (20, 40, 180))
+        shifted.paste((220, 180, 150), (180, 120, 270, 280))
+        source_bytes = _jpeg_of(source)
+        shifted_bytes = _jpeg_of(shifted)
+        kept, failed = preserve_face(source_bytes, shifted_bytes, apply=True)
+        self.assertEqual(failed["status"], "failed")
+        self.assertFalse(failed["applied"])
+        self.assertEqual(kept, shifted_bytes)
+
+    @patch("media_store.utils.save_media_bytes", return_value="stored.jpg")
+    @patch("ai.services.runware_tryon.download_image")
+    @patch("ai.services.runware_tryon.run_image_inference")
+    def test_quality_retry_stays_off_unless_explicitly_enabled(self, infer, download, _save):
+        from ai.services.runware_tryon import generate_tryon_preview
+
+        skin = _data_url(_solid_jpeg((220, 180, 150), (320, 400)))
+        blue = _jpeg_bytes_color((20, 40, 180), (320, 400))
+        download.return_value = blue
+        infer.return_value = {"imageURL": "https://im.runware.ai/image/example.jpg", "cost": 0.001}
+        generate_tryon_preview(
+            selfie_data_url=skin,
+            audience="men",
+            slug="mid-fade",
+            title="Mid Fade",
+        )
+        self.assertEqual(infer.call_count, 1)
+        self.assertNotIn("strength", infer.call_args.args[0])
+
+        infer.reset_mock()
+        download.reset_mock()
+        download.side_effect = [blue, blue]
+        infer.return_value = {"imageURL": "https://im.runware.ai/image/example.jpg", "cost": 0.001}
+        with override_settings(RUNWARE_TRYON_QUALITY_RETRY=True, TRYON_FACE_RESTORE=True):
+            generate_tryon_preview(
+                selfie_data_url=skin,
+                audience="men",
+                slug="mid-fade",
+                title="Mid Fade",
+            )
+        self.assertEqual(infer.call_count, 2)
+        self.assertIn("SAFER REVISION", infer.call_args_list[1].args[0]["positivePrompt"])
+        self.assertNotIn("strength", infer.call_args_list[1].args[0])
+        self.assertNotIn("mask", infer.call_args_list[1].args[0])

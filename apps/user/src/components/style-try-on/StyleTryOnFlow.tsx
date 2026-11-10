@@ -18,6 +18,7 @@ import {
   HairstylePreviewImage,
 } from "@/components/hairstyles/HairstylePreviewImage";
 import type { useStyleTryOnFlow } from "@/components/style-try-on/useStyleTryOnFlow";
+import { presentSelfieError } from "@/lib/selfie-normalize";
 import type { HairstyleEntry } from "@/lib/hairstyles/catalog";
 import { getHairstyleImageUrl } from "@/lib/hairstyles/catalog";
 import { cn } from "@/lib/utils";
@@ -295,9 +296,9 @@ export function StyleTryOnFlow({ flow, entry }: Props) {
 
   useEffect(() => {
     if (flow.error && !flow.generating && !flow.validating) {
-      toast.error(flow.error);
+      toast.error(presentSelfieError(flow.error, (key, fallback) => t(key, { defaultValue: fallback })));
     }
-  }, [flow.error, flow.generating, flow.validating]);
+  }, [flow.error, flow.generating, flow.validating, t]);
 
   if (flow.tryOnPreview) {
     return (

@@ -43,10 +43,37 @@ async function assetToDataUrl(
   return null;
 }
 
+let lastSelfieSource: "camera" | "gallery" | "" = "";
+
+/** Last camera or gallery pick. Empty when the selfie did not come from these helpers. */
+export function currentSelfieSource(): "camera" | "gallery" | "" {
+  return lastSelfieSource;
+}
+
+function rememberSource(source: "camera" | "gallery") {
+  lastSelfieSource = source;
+}
+
+function assertAssetFrame(asset: ImagePicker.ImagePickerAsset) {
+  const width = asset.width ?? 0;
+  const height = asset.height ?? 0;
+  if (width <= 0 || height <= 0) return;
+  if (Math.min(width, height) < 320) {
+    throw new Error("Rasm juda kichik. Bosh va soch to‘liq ko‘rinadigan qilib qayta oling.");
+  }
+  if (width / height > 2.2 || height / width > 3.2) {
+    throw new Error("Bosh kadrdan chiqib ketgan. Peshona va soch to‘liq ko‘rinadigan qilib qayta oling.");
+  }
+}
+
+function isRetakeError(err: unknown): boolean {
+  return err instanceof Error && err.message.includes("qayta oling");
+}
+
 /** Asl kadr. Crop/zoom yo‘q — tahlil va natija o‘sha rasmni ko‘rsatadi. */
 function pickerExtras() {
   return {
-    quality: 0.72 as const,
+    quality: 0.92 as const,
     base64: true,
     allowsEditing: false,
   };
@@ -68,14 +95,17 @@ export async function pickSelfieFromGallery(): Promise<string | null> {
     });
 
     if (res.canceled || !res.assets?.[0]) return null;
+    assertAssetFrame(res.assets[0]);
 
     const dataUrl = await assetToDataUrl(res.assets[0]);
     if (!dataUrl) {
       notify("Xato", "Rasmni o‘qib bo‘lmadi. Boshqa fayl tanlang.");
       return null;
     }
+    rememberSource("gallery");
     return dataUrl;
   } catch (err) {
+    if (isRetakeError(err)) throw err;
     notify(
       "Galereya",
       err instanceof Error ? err.message : "Rasm tanlashda xatolik.",
@@ -95,11 +125,16 @@ export async function pickSelfieFromCamera(): Promise<string | null> {
           cameraType: ImagePicker.CameraType.front,
         });
         if (!res.canceled && res.assets?.[0]) {
+          assertAssetFrame(res.assets[0]);
           const dataUrl = await assetToDataUrl(res.assets[0]);
-          if (dataUrl) return dataUrl;
+          if (dataUrl) {
+            rememberSource("camera");
+            return dataUrl;
+          }
         }
         if (res.canceled) return null;
-      } catch {
+      } catch (err) {
+        if (isRetakeError(err)) throw err;
         /* fall through to gallery */
       }
       notify(
@@ -121,14 +156,17 @@ export async function pickSelfieFromCamera(): Promise<string | null> {
     });
 
     if (res.canceled || !res.assets?.[0]) return null;
+    assertAssetFrame(res.assets[0]);
 
     const dataUrl = await assetToDataUrl(res.assets[0]);
     if (!dataUrl) {
       notify("Xato", "Selfie o‘qilmadi. Qayta urinib ko‘ring.");
       return null;
     }
+    rememberSource("camera");
     return dataUrl;
   } catch (err) {
+    if (isRetakeError(err)) throw err;
     notify(
       "Kamera",
       err instanceof Error ? err.message : "Kamerani ochib bo‘lmadi.",

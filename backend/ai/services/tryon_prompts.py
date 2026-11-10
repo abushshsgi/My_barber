@@ -76,6 +76,66 @@ Treat the original face as a protected visual region.
 The requested transformation applies to the hairstyle only.
 """
 
+ANATOMY_ANCHOR_PROMPT = """\
+FOREHEAD, HAIRLINE, AND HEAD ANATOMY:
+
+The original forehead height, forehead width, and forehead shape are fixed.
+The original hairline position is fixed.
+The original temples and side hairline boundaries are fixed.
+The original skull size and head proportions are fixed.
+
+Do not enlarge, shrink, or reconstruct the forehead.
+Do not move the hairline forward or backward.
+Do not lower the hairline to make the hair look fuller.
+Do not invent follicles outside the natural growth boundary.
+Do not stretch the face or widen the head to fit the hairstyle.
+
+Adapt the hairstyle to this head.
+Hair must grow from the existing scalp and transition from the original hairline.
+Keep the original forehead visible unless the selected style explicitly has a fringe.
+A fringe may lay natural strands over the forehead without changing the forehead underneath.
+"""
+
+CURLY_STYLE_PROMPT = """\
+CURLY HAIRSTYLE:
+
+Distribute curls naturally along the scalp.
+Use believable curl size and mixed curl direction.
+Keep visible separation between curls.
+Follow the scalp curve and the existing growth direction.
+Keep volume inside the original head proportions.
+
+Do not stack tight spirals or oversized circles above the forehead.
+Do not build a wig cap, a floating curl mass, or extra density at the frontal hairline.
+"""
+
+STRAIGHT_STYLE_PROMPT = """\
+STRAIGHT HAIRSTYLE:
+
+Keep a natural fall and individual strand texture.
+Align the hair with the original hairline.
+Do not turn the hair into a flat plastic sheet.
+Do not move the hairline to create a sharper edge.
+"""
+
+FADE_STYLE_PROMPT = """\
+FADE HAIRSTYLE:
+
+Blend the temples into the original side hairline.
+Keep the fade depth consistent from the temple toward the ear.
+Do not paint a new hairline or fill the forehead.
+Do not change the head width to make the fade sharper.
+"""
+
+SLICK_STYLE_PROMPT = """\
+SLICKED HAIRSTYLE:
+
+Direct the hair backward from the original hairline.
+Keep realistic scalp visibility where the style is combed close.
+Do not push the hairline back and do not enlarge the forehead.
+Do not add a shiny helmet of hair.
+"""
+
 ORIGINAL_HAIR_COLOR_PROMPT = """\
 CRITICAL ORIGINAL HAIR COLOR PRESERVATION:
 
@@ -369,7 +429,7 @@ Do not add a further dye, bleach, highlight, ombre, or balayage beyond the selec
 """
 
 NEGATIVE_PROMPT = """\
-different person, identity replacement, face swap, face regeneration, reconstructed face, altered identity, changed face shape, modified facial proportions, distorted forehead, changed eye shape, changed eye size, changed eye spacing, modified eyelids, changed eyebrows, different nose, altered nose bridge, modified nostrils, changed lips, altered mouth, different cheekbones, modified jawline, different chin, distorted ears, changed facial symmetry, changed skin tone, artificial skin, plastic skin, skin smoothing, face retouching, beauty filter, facial enhancement, excessive makeup, changed expression, different gaze, altered head position, changed apparent age, unwanted hair recoloring, changed original hair color, incorrect hair pigmentation, unwanted highlights, unwanted bleaching, unwanted ombre, artificial wig, fake hairline, unnatural roots, synthetic hair, plastic hair, unrealistic hair texture, repeated hair patterns, malformed curls, distorted bangs, floating hair, unrealistic hair density, blurry face, distorted anatomy, changed clothing, different background, modified lighting, incorrect shadows, cartoon, illustration, CGI, 3D render, oversharpening, oversmoothing, low-resolution artifacts, compression artifacts
+different person, identity replacement, face swap, face regeneration, reconstructed face, altered identity, changed face shape, modified facial proportions, distorted forehead, changed eye shape, changed eye size, changed eye spacing, modified eyelids, changed eyebrows, different nose, altered nose bridge, modified nostrils, changed lips, altered mouth, different cheekbones, modified jawline, different chin, distorted ears, changed facial symmetry, changed skin tone, artificial skin, plastic skin, skin smoothing, face retouching, beauty filter, facial enhancement, excessive makeup, changed expression, different gaze, altered head position, changed apparent age, unwanted hair recoloring, changed original hair color, incorrect hair pigmentation, unwanted highlights, unwanted bleaching, unwanted ombre, artificial wig, fake hairline, unnatural roots, synthetic hair, plastic hair, unrealistic hair texture, repeated hair patterns, malformed curls, distorted bangs, floating hair, unrealistic hair density, blurry face, distorted anatomy, enlarged forehead, lowered hairline, moved hairline, stretched head, widened skull, stacked curls, oversized ringlets, wig cap, extra hair volume above the forehead, changed clothing, different background, modified lighting, incorrect shadows, cartoon, illustration, CGI, 3D render, oversharpening, oversmoothing, low-resolution artifacts, compression artifacts
 """
 
 _RECOLOR_MARKERS = (
@@ -402,6 +462,27 @@ def build_selected_hair_color_prompt(selected_hair_color: str) -> str:
         "Do not describe or replace the user's original color with a guessed color.\n"
         "Keep the original face, skin tone, expression, clothing, and background."
     )
+
+
+_CURLY_MARKERS = ("curl", "coil", "ringlet", "jingalak", "wavy", "wave")
+_STRAIGHT_MARKERS = ("straight", "silk", "blunt")
+_FADE_MARKERS = ("fade", "taper", "undercut")
+_SLICK_MARKERS = ("slick", "slicked", "pompadour")
+
+
+def style_guidance(title: str, style_detail: str) -> str:
+    """Style-specific limits. Anatomy rules stay in effect for every style."""
+    blob = f"{title} {style_detail}".lower()
+    sections: list[str] = []
+    if any(marker in blob for marker in _CURLY_MARKERS):
+        sections.append(CURLY_STYLE_PROMPT.strip())
+    if any(marker in blob for marker in _SLICK_MARKERS):
+        sections.append(SLICK_STYLE_PROMPT.strip())
+    elif any(marker in blob for marker in _STRAIGHT_MARKERS):
+        sections.append(STRAIGHT_STYLE_PROMPT.strip())
+    if any(marker in blob for marker in _FADE_MARKERS):
+        sections.append(FADE_STYLE_PROMPT.strip())
+    return "\n\n".join(sections)
 
 
 def _primary_task(title: str) -> str:
@@ -458,7 +539,9 @@ def build_tryon_prompt(
     sections = [
         ("primary", _primary_task(title), False),
         ("identity", IDENTITY_PRESERVATION_PROMPT, False),
+        ("anatomy", ANATOMY_ANCHOR_PROMPT, False),
         ("hairstyle", HAIRSTYLE_TRANSFORMATION_PROMPT, False),
+        ("style", style_guidance(title, style_detail), False),
         ("catalog", catalog, False),
         ("color", color_section, False),
         ("reference", reference, True),

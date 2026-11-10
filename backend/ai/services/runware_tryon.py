@@ -12,6 +12,7 @@ Try-On never falls back to Gemini image APIs.
 
 from __future__ import annotations
 
+import json
 import logging
 import time
 import uuid
@@ -31,6 +32,7 @@ from .errors import AiStyleError
 from .gemini_style import load_image_bytes
 from .image_response import to_data_url
 from .runware_client import download_image, run_image_inference
+from .tryon_preserve import preserve_face
 from .tryon_prompts import (
     NEGATIVE_PROMPT,
     NEGATIVE_PROMPT_MAX,
@@ -72,9 +74,34 @@ VERIFIED_EDIT_MODELS: dict[str, dict[str, int]] = {
 }
 
 INPUT_MAX_EDGE = 1536
-INPUT_JPEG_QUALITY = 88
+INPUT_JPEG_QUALITY = 92
 RESULT_JPEG_QUALITY = 92
-PORTRAIT_RATIO = 4 / 3  # height / width — soch toji qirqilmasin
+# Only very wide frames (phone video is often 16:9) lose side pixels.
+# 4:3 and 3:2 photographs stay intact. The top and bottom rows are never removed.
+WIDE_FRAME_RATIO = 1.60
+PORTRAIT_CROP_RATIO = 3 / 4  # width / height after a side-only crop
+LONG_HAIR_BOTTOM_PAD = 0.12
+# Fields this edit model documents. Anything else is omitted.
+DOCUMENTED_TASK_FIELDS = frozenset(
+    {
+        "model",
+        "positivePrompt",
+        "negativePrompt",
+        "width",
+        "height",
+        "steps",
+        "inputs",
+        "CFGScale",
+        "seed",
+        "scheduler",
+        "outputFormat",
+        "outputQuality",
+    }
+)
+SAFER_RETRY_SUFFIX = (
+    "SAFER REVISION: Keep the original forehead height, hairline, temples, and head shape. "
+    "Lower the hair volume. Do not cover the forehead with extra curls or a wig-like mass."
+)
 # FLUX.2 klein is distilled to 4 steps. Documented CFG default is 3.5 (range 1–20).
 # seedImage, strength, and masks are rejected or unsupported — never send them.
 TRYON_STEPS = 4
@@ -298,37 +325,143 @@ _LONG_HAIR_MARKERS = (
 )
 
 
-def _pad_selfie_for_hair(raw: bytes, *, style_detail: str = "") -> bytes:
-    """Add neutral headroom. Face pixels stay the same size and shape."""
+@dataclass(frozen=True)
+class SelfiePrep:
+    payload: bytes
+    original_width: int
+    original_height: int
+    normalized_width: int
+    normalized_height: int
+    image_format: str
+    exif_orientation: int | None
+    exif_transposed: bool
+    crop_strategy: str
+    jpeg_quality: int | None
+
+
+def _image_format(raw: bytes) -> str:
+    if raw.startswith(b"\xff\xd8\xff"):
+        return "jpeg"
+    if raw.startswith(b"\x89PNG\r\n\x1a\n"):
+        return "png"
+    if raw.startswith(b"RIFF") and raw[8:12] == b"WEBP":
+        return "webp"
+    return "unknown"
+
+
+def _exif_orientation(image: Image.Image) -> int | None:
+    try:
+        value = image.getexif().get(274)
+    except Exception:
+        return None
+    try:
+        parsed = int(value)
+    except (TypeError, ValueError):
+        return None
+    if parsed < 1 or parsed > 8:
+        return None
+    return parsed
+
+
+def prepare_selfie_bytes(raw: bytes, *, style_detail: str = "") -> SelfiePrep:
+    """One normalizer for camera and gallery bytes.
+
+    EXIF orientation is applied. Wide frames lose side pixels only.
+    Nothing is added above the hair, and the image is never stretched.
+    """
+    image_format = _image_format(raw)
     try:
         image = Image.open(BytesIO(raw))
-        image = ImageOps.exif_transpose(image)
-        if image.mode != "RGB":
-            image = image.convert("RGB")
+        orientation = _exif_orientation(image)
+        oriented = ImageOps.exif_transpose(image)
+        transposed = oriented.size != image.size or orientation not in (None, 1)
+        if oriented.mode != "RGB":
+            oriented = oriented.convert("RGB")
+            transposed = True
     except Exception:
-        return raw
-    src_w, src_h = image.size
+        return SelfiePrep(
+            payload=raw,
+            original_width=0,
+            original_height=0,
+            normalized_width=0,
+            normalized_height=0,
+            image_format=image_format,
+            exif_orientation=None,
+            exif_transposed=False,
+            crop_strategy="none",
+            jpeg_quality=None,
+        )
+
+    src_w, src_h = oriented.size
     if src_w < 1 or src_h < 1:
-        return raw
-    min_h = int(src_w * PORTRAIT_RATIO)
-    extra_top = max(int(src_h * 0.1), max(0, min_h - src_h))
+        return SelfiePrep(
+            payload=raw,
+            original_width=src_w,
+            original_height=src_h,
+            normalized_width=src_w,
+            normalized_height=src_h,
+            image_format=image_format,
+            exif_orientation=orientation,
+            exif_transposed=transposed,
+            crop_strategy="none",
+            jpeg_quality=None,
+        )
+
+    strategy = "none"
+    working = oriented
+    if src_h > 0 and (src_w / src_h) >= WIDE_FRAME_RATIO:
+        target_w = max(1, int(round(src_h * PORTRAIT_CROP_RATIO)))
+        if target_w < src_w - 1:
+            left = max(0, (src_w - target_w) // 2)
+            working = oriented.crop((left, 0, left + target_w, src_h))
+            strategy = "horizontal_portrait"
+
+    width, height = working.size
     detail = (style_detail or "").lower()
     needs_length = any(marker in detail for marker in _LONG_HAIR_MARKERS)
-    extra_bottom = 0
-    if needs_length and (src_h / src_w) < 1.45:
-        extra_bottom = max(int(src_h * 0.15), 1)
-    if extra_top <= 0 and extra_bottom <= 0:
-        return raw
-    top_fill = image.getpixel((src_w // 2, 0))
-    bottom_fill = image.getpixel((src_w // 2, src_h - 1))
-    canvas = Image.new("RGB", (src_w, src_h + extra_top + extra_bottom), top_fill)
-    if extra_bottom:
-        bottom = Image.new("RGB", (src_w, extra_bottom), bottom_fill)
-        canvas.paste(bottom, (0, src_h + extra_top))
-    canvas.paste(image, (0, extra_top))
+    if needs_length and width > 0 and (height / width) < 1.15:
+        extra_bottom = max(int(height * LONG_HAIR_BOTTOM_PAD), 1)
+        fill = working.getpixel((width // 2, height - 1))
+        canvas = Image.new("RGB", (width, height + extra_bottom), fill)
+        canvas.paste(working, (0, 0))
+        working = canvas
+        strategy = "bottom_length" if strategy == "none" else f"{strategy}+bottom_length"
+
+    if strategy == "none" and not transposed:
+        return SelfiePrep(
+            payload=raw,
+            original_width=src_w,
+            original_height=src_h,
+            normalized_width=src_w,
+            normalized_height=src_h,
+            image_format=image_format,
+            exif_orientation=orientation,
+            exif_transposed=False,
+            crop_strategy="none",
+            jpeg_quality=None,
+        )
+
     buffer = BytesIO()
-    canvas.save(buffer, format="JPEG", quality=INPUT_JPEG_QUALITY, optimize=True)
-    return buffer.getvalue() or raw
+    working.save(buffer, format="JPEG", quality=INPUT_JPEG_QUALITY, optimize=True)
+    payload = buffer.getvalue() or raw
+    out_w, out_h = working.size
+    return SelfiePrep(
+        payload=payload,
+        original_width=src_w,
+        original_height=src_h,
+        normalized_width=out_w,
+        normalized_height=out_h,
+        image_format="jpeg",
+        exif_orientation=orientation,
+        exif_transposed=transposed,
+        crop_strategy=strategy,
+        jpeg_quality=INPUT_JPEG_QUALITY,
+    )
+
+
+def _pad_selfie_for_hair(raw: bytes, *, style_detail: str = "") -> bytes:
+    """Backward-compatible wrapper. Does not add space above the hair."""
+    return prepare_selfie_bytes(raw, style_detail=style_detail).payload
 
 
 def _output_size_for_bytes(raw: bytes, model: str) -> tuple[int, int]:
@@ -598,6 +731,11 @@ def build_tryon_task(
         task["outputQuality"] = 95
     for key in FORBIDDEN_TASK_KEYS:
         task.pop(key, None)
+    unknown = sorted(set(task) - DOCUMENTED_TASK_FIELDS)
+    if unknown:
+        logger.warning("Dropping undocumented Runware fields: %s", unknown)
+        for key in unknown:
+            task.pop(key, None)
     return task
 
 
@@ -794,6 +932,60 @@ def _result(
     )
 
 
+def normalize_input_source(value: str | None) -> str:
+    raw = str(value or "").strip().lower().replace("-", "_")
+    if raw in {"camera", "camera_scan"}:
+        return "camera"
+    if raw in {"gallery", "upload"}:
+        return "gallery"
+    return ""
+
+
+def diagnostics_enabled() -> bool:
+    raw = getattr(settings, "TRYON_DIAGNOSTICS", None)
+    if raw is None or (isinstance(raw, str) and not raw.strip()):
+        return bool(getattr(settings, "DEBUG", False))
+    if isinstance(raw, str):
+        return raw.strip().lower() in {"1", "true", "yes", "on"}
+    return bool(raw)
+
+
+def tryon_diagnostic_record(**fields: Any) -> dict[str, Any]:
+    """Technical metadata only. Image bytes and prompts are not included."""
+    allowed = (
+        "input_source",
+        "original_width",
+        "original_height",
+        "normalized_width",
+        "normalized_height",
+        "image_format",
+        "exif_orientation",
+        "exif_transposed",
+        "mirror_correction",
+        "jpeg_quality",
+        "crop_strategy",
+        "model",
+        "latency_ms",
+        "provider_error",
+        "quality_result",
+        "quality_reason",
+        "quality_iou",
+        "quality_shift_px",
+        "face_restore_applied",
+        "quality_retries",
+        "output_width",
+        "output_height",
+    )
+    record = {key: fields.get(key) for key in allowed}
+    return record
+
+
+def log_tryon_diagnostics(record: dict[str, Any]) -> None:
+    if not diagnostics_enabled():
+        return
+    logger.info("tryon_diagnostics %s", json.dumps(record, sort_keys=True, default=str))
+
+
 def generate_tryon_preview(
     *,
     selfie_data_url: str,
@@ -803,13 +995,15 @@ def generate_tryon_preview(
     reference_image_url: str | None = None,
     selected_hair_color: str | None = None,
     queue_depth: int | None = None,
+    input_source: str | None = None,
 ) -> TryOnResult:
     tryon_provider_name()
     resolved_tryon_model()
+    source_name = normalize_input_source(input_source)
     _mime, selfie = load_image_bytes(selfie_data_url)
     style_detail = style_detail_for(audience, slug)
-    selfie = _pad_selfie_for_hair(selfie, style_detail=style_detail)
-    images = [selfie]
+    prepared = prepare_selfie_bytes(selfie, style_detail=style_detail)
+    images = [prepared.payload]
     # inputs.referenceImages has no role field. A catalog portrait is another
     # person, and FLUX.2 uses every reference as an identity source. The haircut
     # is passed as text. reference_image_url is accepted and not uploaded.
@@ -821,10 +1015,71 @@ def generate_tryon_preview(
         selected_hair_color=selected_hair_color,
         include_catalog_image=False,
     )
-    jpeg, cost, estimated, latency_ms, model = _infer_with_fallback(
+    width, height = _output_size_for_bytes(prepared.payload, resolved_tryon_model())
+    try:
+        jpeg, cost, estimated, latency_ms, model = _infer_with_fallback(
+            prompt=prompt,
+            images=images,
+            queue_depth=queue_depth,
+        )
+    except AiStyleError as exc:
+        log_tryon_diagnostics(
+            tryon_diagnostic_record(
+                input_source=source_name or "unknown",
+                original_width=prepared.original_width,
+                original_height=prepared.original_height,
+                normalized_width=prepared.normalized_width,
+                normalized_height=prepared.normalized_height,
+                image_format=prepared.image_format,
+                exif_orientation=prepared.exif_orientation,
+                exif_transposed=prepared.exif_transposed,
+                mirror_correction="client" if source_name == "camera" else "none",
+                jpeg_quality=prepared.jpeg_quality if prepared.jpeg_quality is not None else INPUT_JPEG_QUALITY,
+                crop_strategy=prepared.crop_strategy,
+                model=resolved_tryon_model(),
+                latency_ms=0,
+                provider_error=exc.status,
+                quality_result="not_run",
+                quality_retries=0,
+                output_width=width,
+                output_height=height,
+            )
+        )
+        raise
+    jpeg, report, quality_retries, cost, estimated, latency_ms, model = _preserve_and_maybe_retry(
+        original=prepared.payload,
+        generated=jpeg,
         prompt=prompt,
-        images=images,
-        queue_depth=queue_depth,
+        model=model,
+        cost=cost,
+        estimated=estimated,
+        latency_ms=latency_ms,
+    )
+    log_tryon_diagnostics(
+        tryon_diagnostic_record(
+            input_source=source_name or "unknown",
+            original_width=prepared.original_width,
+            original_height=prepared.original_height,
+            normalized_width=prepared.normalized_width,
+            normalized_height=prepared.normalized_height,
+            image_format=prepared.image_format,
+            exif_orientation=prepared.exif_orientation,
+            exif_transposed=prepared.exif_transposed,
+            mirror_correction="client" if source_name == "camera" else "none",
+            jpeg_quality=prepared.jpeg_quality if prepared.jpeg_quality is not None else INPUT_JPEG_QUALITY,
+            crop_strategy=prepared.crop_strategy,
+            model=model,
+            latency_ms=latency_ms,
+            provider_error=None,
+            quality_result=report.get("status"),
+            quality_reason=report.get("reason"),
+            quality_iou=report.get("iou"),
+            quality_shift_px=report.get("shift_px"),
+            face_restore_applied=bool(report.get("applied")),
+            quality_retries=quality_retries,
+            output_width=width,
+            output_height=height,
+        )
     )
     return _result(
         preview=_publish(jpeg),
@@ -833,6 +1088,58 @@ def generate_tryon_preview(
         cost=cost,
         estimated=estimated,
         latency_ms=latency_ms,
+    )
+
+
+def _preserve_and_maybe_retry(
+    *,
+    original: bytes,
+    generated: bytes,
+    prompt: str,
+    model: str,
+    cost: Decimal,
+    estimated: bool,
+    latency_ms: int,
+) -> tuple[bytes, dict[str, Any], int, Decimal, bool, int, str]:
+    """One optional regeneration. A failed retry keeps the safer of the two results."""
+    restore_enabled = _flag("TRYON_FACE_RESTORE", True)
+    jpeg, report = preserve_face(original, generated, apply=restore_enabled)
+    retries = 0
+    if report.get("status") != "failed" or not _flag("RUNWARE_TRYON_QUALITY_RETRY", False):
+        return jpeg, report, retries, cost, estimated, latency_ms, model
+
+    safer_prompt = f"{prompt}\n\n{SAFER_RETRY_SUFFIX}"
+    if len(safer_prompt) > PROMPT_MAX:
+        logger.info("Quality retry skipped: safer prompt exceeds %s characters", PROMPT_MAX)
+        return jpeg, report, retries, cost, estimated, latency_ms, model
+
+    width, height = _output_size_for_bytes(original, model)
+    try:
+        second, second_cost, second_estimated, second_latency = _infer_edit(
+            prompt=safer_prompt,
+            images=[original],
+            model=model,
+            width=width,
+            height=height,
+        )
+    except AiStyleError:
+        logger.warning("Quality retry failed; keeping the first try-on result")
+        return jpeg, report, retries, cost, estimated, latency_ms, model
+
+    retries = 1
+    second_jpeg, second_report = preserve_face(original, second, apply=restore_enabled)
+    first_score = report.get("iou") if isinstance(report.get("iou"), (int, float)) else -1
+    second_score = second_report.get("iou") if isinstance(second_report.get("iou"), (int, float)) else -1
+    if second_report.get("status") != "failed" or second_score >= first_score:
+        jpeg, report = second_jpeg, second_report
+    return (
+        jpeg,
+        report,
+        retries,
+        cost + second_cost,
+        estimated or second_estimated,
+        latency_ms + second_latency,
+        model,
     )
 
 

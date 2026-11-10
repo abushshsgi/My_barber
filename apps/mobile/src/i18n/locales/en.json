@@ -902,6 +902,7 @@
   "morph": {
     "selfieTitle": "Upload a selfie",
     "selfieHint": "Face clearly visible · good light",
+    "captureGuide": "Face the camera. Keep your forehead and hair visible, use even light, and fit your whole head in the frame.",
     "stepSelfie": "Selfie",
     "stepAnalyze": "Analysis",
     "stepResult": "Result",
@@ -955,6 +956,7 @@
       "cancelAnytimeShort": "Cancel anytime",
       "legalLine": "Privacy policy · Terms of use",
       "ctaCards": "Pay with Uzcard / Humo",
+      "askSupport": "Have a question? Message us on Telegram",
       "b1Title": "Morf AI try-on",
       "b1Body": "See a hairstyle that fits your face in seconds",
       "b2Title": "Morf AI chat",
@@ -1254,11 +1256,13 @@
       "chatFontPreviewAi": "The Morf AI reply appears at this size.",
       "helpGroup": "Help",
       "reportProblem": "Report a problem",
-      "helpCenter": "Help center"
+      "helpCenter": "Help center",
+      "telegramSupport": "Message on Telegram"
     },
     "support": {
       "ticketTitle": "Request",
       "faqTitle": "Frequently asked",
+      "telegram": "Message on Telegram",
       "askTitle": "Send a question",
       "reportTitle": "Describe the problem",
       "reportLead": "If try-on, chat, or the limit fails — write to us. Morf AI support will reply.",
@@ -1376,6 +1380,7 @@
   },
   "help": {
     "lead": "Check the FAQ first. If that doesn't help, write to us and support will reply. Morf AI questions go to Morf AI support.",
+    "telegram": "Message on Telegram",
     "faqTitle": "Frequently asked",
     "writeTitle": "Write a request",
     "myTickets": "My requests",

@@ -359,6 +359,7 @@ class AiStyleTryOnView(UnthrottledAPIView):
                     reference_image_url=reference_url,
                     persona_id=persona_id or "",
                     selected_hair_color=selected_hair_color or None,
+                    input_source=str(request.data.get("input_source") or ""),
                 )
                 return Response(
                     {
@@ -380,6 +381,7 @@ class AiStyleTryOnView(UnthrottledAPIView):
                 title=style.title_uz,
                 reference_image_url=reference_url,
                 selected_hair_color=selected_hair_color or None,
+                input_source=str(request.data.get("input_source") or ""),
             )
             record_ai_generation(
                 user_id=user.pk,

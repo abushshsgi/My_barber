@@ -291,6 +291,27 @@ RUNWARE_TRYON_SCHEDULER = os.environ.get("RUNWARE_TRYON_SCHEDULER", "default").s
 RUNWARE_TRYON_OUTPUT_FORMAT = os.environ.get("RUNWARE_TRYON_OUTPUT_FORMAT", "PNG").strip() or "PNG"
 # runware:400@6 has no strength parameter. A value here is logged and never sent.
 RUNWARE_TRYON_STRENGTH = os.environ.get("RUNWARE_TRYON_STRENGTH", "").strip()
+# Paste the original inner face back only when alignment checks pass.
+TRYON_FACE_RESTORE = os.environ.get("TRYON_FACE_RESTORE", "true").strip().lower() in (
+    "1",
+    "true",
+    "yes",
+    "on",
+)
+# One extra generation after a failed alignment check. Off so cost does not rise silently.
+RUNWARE_TRYON_QUALITY_RETRY = os.environ.get("RUNWARE_TRYON_QUALITY_RETRY", "false").strip().lower() in (
+    "1",
+    "true",
+    "yes",
+    "on",
+)
+# Empty follows DEBUG. Logs dimensions and pipeline flags, never image bytes.
+_tryon_diagnostics = os.environ.get("TRYON_DIAGNOSTICS", "").strip().lower()
+TRYON_DIAGNOSTICS = (
+    None
+    if _tryon_diagnostics == ""
+    else _tryon_diagnostics in ("1", "true", "yes", "on")
+)
 # Empty or 0 uses TRYON_PROVIDER_CONCURRENCY. Above that, new jobs start on a reserve model.
 RUNWARE_TRYON_OVERFLOW_DEPTH = os.environ.get("RUNWARE_TRYON_OVERFLOW_DEPTH", "").strip()
 

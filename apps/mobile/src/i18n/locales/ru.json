@@ -902,6 +902,7 @@
   "morph": {
     "selfieTitle": "Загрузите селфи",
     "selfieHint": "Лицо должно быть чётко видно · хорошее освещение",
+    "captureGuide": "Смотрите в камеру. Лоб и волосы в кадре, ровный свет, голова целиком.",
     "stepSelfie": "Селфи",
     "stepAnalyze": "Анализ",
     "stepResult": "Результат",
@@ -955,6 +956,7 @@
       "cancelAnytimeShort": "Отмена в любой момент",
       "legalLine": "Конфиденциальность · Условия использования",
       "ctaCards": "Оплатить Uzcard / Humo",
+      "askSupport": "Есть вопрос? Напишите в Telegram",
       "b1Title": "Morf AI try-on",
       "b1Body": "Причёска под ваше лицо за несколько секунд",
       "b2Title": "Morf AI чат",
@@ -1251,11 +1253,13 @@
       "chatFontPreviewAi": "Ответ Morf AI будет такого размера.",
       "helpGroup": "Помощь",
       "reportProblem": "Сообщить о проблеме в приложении",
-      "helpCenter": "Справочный центр"
+      "helpCenter": "Справочный центр",
+      "telegramSupport": "Написать в Telegram"
     },
     "support": {
       "ticketTitle": "Обращение",
       "faqTitle": "Частые вопросы",
+      "telegram": "Написать в Telegram",
       "askTitle": "Задать вопрос",
       "reportTitle": "Опишите проблему",
       "reportLead": "Не работает try-on, чат или лимит — напишите. Morf AI support ответит.",
@@ -1373,6 +1377,7 @@
   },
   "help": {
     "lead": "Сначала FAQ. Если не помогло — напишите, support ответит. Вопросы Morf AI попадают в Morf AI support.",
+    "telegram": "Написать в Telegram",
     "faqTitle": "Частые вопросы",
     "writeTitle": "Написать обращение",
     "myTickets": "Мои обращения",

@@ -579,6 +579,7 @@ export function MorphTryOnScreen({ navigation, route }: Props) {
       >
         <Text style={styles.headline}>{t("morph.selfieTitle")}</Text>
         <Text style={styles.sub}>{t("morph.selfieHint")}</Text>
+        <Text style={styles.sub}>{t("morph.captureGuide")}</Text>
         {route.params?.pendingTryOn ? (
           <Text style={styles.pending}>
             {t("morph.preview.pending", { title: route.params.pendingTryOn.title })}

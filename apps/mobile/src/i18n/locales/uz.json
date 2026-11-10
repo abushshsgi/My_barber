@@ -903,6 +903,7 @@
   "morph": {
     "selfieTitle": "Selfie yuklang",
     "selfieHint": "Yuz aniq ko'rinsin · yaxshi yorug'lik",
+    "captureGuide": "Kameraga qarang. Peshona va soch ko'rinsin, yorug'lik tekis bo'lsin, bosh kadrga sig'sin.",
     "stepSelfie": "Selfie",
     "stepAnalyze": "Tahlil",
     "stepResult": "Natija",
@@ -956,6 +957,7 @@
       "cancelAnytimeShort": "Istalgan vaqtda bekor",
       "legalLine": "Maxfiylik siyosati · Foydalanish shartlari",
       "ctaCards": "Uzcard / Humo orqali to'lash",
+      "askSupport": "Savol bormi? Telegramda yozing",
       "b1Title": "Morf AI try-on",
       "b1Body": "Yuzingizga mos soch uslubini bir necha soniyada ko'ring",
       "b2Title": "Morf AI chat",
@@ -1252,11 +1254,13 @@
       "chatFontPreviewAi": "Morf AI javobi shu o'lchamda ko'rinadi.",
       "helpGroup": "Yordam",
       "reportProblem": "Muammo haqida xabar berish",
-      "helpCenter": "Yordam markazi"
+      "helpCenter": "Yordam markazi",
+      "telegramSupport": "Telegram orqali yozish"
     },
     "support": {
       "ticketTitle": "Murojaat",
       "faqTitle": "Tez-tez so'raladi",
+      "telegram": "Telegram orqali yozish",
       "askTitle": "Savol yuborish",
       "reportTitle": "Muammoni yozing",
       "reportLead": "Try-on, chat yoki limit ishlamasa — yozing. Morf AI support javob beradi.",
@@ -1374,6 +1378,7 @@
   },
   "help": {
     "lead": "Avval FAQ ni ko'ring. Bo'lmasa — yozing, support javob beradi. Morf AI savollari Morf AI supportga tushadi.",
+    "telegram": "Telegram orqali yozish",
     "faqTitle": "Tez-tez so'raladi",
     "writeTitle": "Murojaat yozish",
     "myTickets": "Mening murojaatlarim",

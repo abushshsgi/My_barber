@@ -19,7 +19,12 @@ from django.utils import timezone
 from config.redis_url import get_redis_url, redis_blocking_client_kwargs, redis_client_kwargs
 
 from .gemini_style import AiStyleError
-from .runware_tryon import DEFAULT_TRYON_MODEL, generate_tryon_multiview, generate_tryon_preview
+from .runware_tryon import (
+    DEFAULT_TRYON_MODEL,
+    generate_tryon_multiview,
+    generate_tryon_preview,
+    normalize_input_source,
+)
 from .image_provider import provider_health, queue_generation_context
 from ..usage_log import record_ai_generation
 
@@ -556,6 +561,7 @@ def enqueue_tryon_job(
     persona_id: str | None = None,
     job_kind: str = "tryon",
     selected_hair_color: str | None = None,
+    input_source: str | None = None,
 ) -> str:
     client = _redis_client()
     if client is None:
@@ -610,6 +616,9 @@ def enqueue_tryon_job(
     color = " ".join(str(selected_hair_color or "").split())[:80]
     if color:
         payload["selected_hair_color"] = color
+    source_name = normalize_input_source(input_source)
+    if source_name:
+        payload["input_source"] = source_name
 
     pipe = client.pipeline()
     pipe.setex(_payload_key(job_id), _job_ttl(), json.dumps(payload))
@@ -1202,6 +1211,7 @@ def process_next_tryon_job(*, block_seconds: int = 5) -> bool:
                 reference_image_url=payload.get("reference_image_url"),
                 selected_hair_color=selected_color,
                 queue_depth=pressure,
+                input_source=str(payload.get("input_source") or ""),
             )
             meta["status"] = STATUS_COMPLETED
             meta["preview_image"] = result.preview_image

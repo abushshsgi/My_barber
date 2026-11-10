@@ -17,7 +17,7 @@ import { refreshMorphAiGenerationsCache, saveMorphAiGeneration } from "@/lib/mor
 import { markMorphAiOnboarded } from "@/lib/morf-ai-session";
 import type { ExplorePersonaId } from "@/lib/explore-personas";
 import { detectFaceMetricsFromDataUrl } from "@/components/ai-style/useFaceLandmarker";
-import { prepareSelfieDataUrl, prepareSelfieFromFile } from "@/lib/selfie-image";
+import { prepareSelfieDataUrl, readFileAsDataUrl, validateSelfieFile } from "@/lib/selfie-image";
 import {
   isMorphPlanLimitError,
   isMorphPlanLimitMessage,
@@ -82,6 +82,7 @@ export function useAiStyleFlow(options: UseAiStyleFlowOptions = {}) {
   const autoTryOnStartedRef = useRef<string | null>(null);
   /** Avto try-on muvaffaqiyatsiz bo‘lsa qayta-qayta so‘rov yubormaslik. */
   const tryOnFailedRef = useRef<Set<string>>(new Set());
+  const inputSourceRef = useRef<"camera" | "gallery">("gallery");
 
   useEffect(() => {
     analyzeTriggeredRef.current = false;
@@ -94,7 +95,8 @@ export function useAiStyleFlow(options: UseAiStyleFlowOptions = {}) {
       source: "gallery" | "camera_scan",
       meta?: { faceShapeKey?: FaceShapeKey; scannedAt?: string },
     ) => {
-      const prepared = await prepareSelfieDataUrl(dataUrl);
+      const prepared = dataUrl;
+      inputSourceRef.current = source === "camera_scan" ? "camera" : "gallery";
       setPhoto(prepared);
       setDone(false);
       setSummaryReady(false);
@@ -122,12 +124,12 @@ export function useAiStyleFlow(options: UseAiStyleFlowOptions = {}) {
     [],
   );
 
-  const applyPhoto = async (dataUrl: string) => {
+  const applyPhoto = async (dataUrl: string, source: "gallery" | "camera_scan") => {
     setPreparingPreview(dataUrl);
     setPreparingPhoto(true);
     setError(null);
     try {
-      const prepared = await prepareSelfieDataUrl(dataUrl);
+      const prepared = await prepareSelfieDataUrl(dataUrl, { checkQuality: true });
       const metricsFace = await Promise.race([
         detectFaceMetricsFromDataUrl(prepared).catch(() => null),
         new Promise<null>((resolve) => window.setTimeout(() => resolve(null), 280)),
@@ -149,13 +151,13 @@ export function useAiStyleFlow(options: UseAiStyleFlowOptions = {}) {
           scannedAt,
           source: "camera_scan",
         });
-        await storePhoto(prepared, "gallery", {
+        await storePhoto(prepared, source, {
           faceShapeKey: metricsFace.faceShapeKey,
           scannedAt,
         });
       } else {
         setFaceHint(null);
-        await storePhoto(prepared, "gallery");
+        await storePhoto(prepared, source);
       }
     } catch (e) {
       const message = e instanceof Error ? e.message : "Rasm yuklanmadi.";
@@ -174,8 +176,10 @@ export function useAiStyleFlow(options: UseAiStyleFlowOptions = {}) {
     if (!file) return;
     if (!allowAction()) return;
     try {
-      const dataUrl = await prepareSelfieFromFile(file);
-      await applyPhoto(dataUrl);
+      const validationError = validateSelfieFile(file);
+      if (validationError) throw new Error(validationError);
+      const dataUrl = await readFileAsDataUrl(file);
+      await applyPhoto(dataUrl, "gallery");
     } catch (e) {
       setError(e instanceof Error ? e.message : "Rasm yuklanmadi.");
     } finally {
@@ -207,10 +211,7 @@ export function useAiStyleFlow(options: UseAiStyleFlowOptions = {}) {
     }
     setCameraOpen(false);
     try {
-      await storePhoto(payload.dataUrl, "camera_scan", {
-        faceShapeKey: payload.faceShapeKey,
-        scannedAt,
-      });
+      await applyPhoto(payload.dataUrl, "camera_scan");
     } catch (e) {
       setError(e instanceof Error ? e.message : "Rasm yuklanmadi.");
     }
@@ -322,7 +323,12 @@ export function useAiStyleFlow(options: UseAiStyleFlowOptions = {}) {
           }
           trackEvent("ai_style_selected", { style_id: styleId, source });
           trackEvent("ai_generation_requested", { style_id: styleId, source });
-          const data = await generateAiStyleTryOn(photo, styleId, effectivePersona);
+          const data = await generateAiStyleTryOn(
+            photo,
+            styleId,
+            effectivePersona,
+            inputSourceRef.current,
+          );
           return data.preview_image;
         })();
         tryOnInFlight.set(flightKey, run);

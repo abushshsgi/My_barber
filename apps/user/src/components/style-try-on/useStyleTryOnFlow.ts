@@ -6,7 +6,7 @@ import type { ExplorePersonaId } from "@/lib/explore-personas";
 import { isMorphPlanLimitError } from "@/lib/morph-plan-limit";
 import { refreshMorphAiGenerationsCache, saveMorphAiGeneration } from "@/lib/morf-ai-gallery";
 import { markMorphAiOnboarded } from "@/lib/morf-ai-session";
-import { prepareSelfieDataUrl, prepareSelfieFromFile } from "@/lib/selfie-image";
+import { prepareSelfieDataUrl, readFileAsDataUrl, validateSelfieFile } from "@/lib/selfie-image";
 import { useActionAuth } from "@/hooks/use-action-auth";
 
 type UseStyleTryOnFlowOptions = {
@@ -70,6 +70,7 @@ export function useStyleTryOnFlow({
   const [preparing, setPreparing] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [tryOnPreview, setTryOnPreview] = useState<string | null>(null);
+  const inputSourceRef = useRef<"camera" | "gallery">("gallery");
   const [error, setError] = useState<string | null>(null);
   const [cameraOpen, setCameraOpen] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -99,7 +100,12 @@ export function useStyleTryOnFlow({
         }
         trackEvent("ai_style_selected", { style_id: styleId, source });
         trackEvent("ai_generation_requested", { style_id: styleId, source });
-        const data = await generateAiStyleTryOn(dataUrl, styleId, personaId ?? undefined);
+        const data = await generateAiStyleTryOn(
+          dataUrl,
+          styleId,
+          personaId ?? undefined,
+          inputSourceRef.current,
+        );
         return data.preview_image;
       })();
       styleTryOnInFlight.set(flightKey, run);
@@ -141,13 +147,14 @@ export function useStyleTryOnFlow({
     }
   };
 
-  const applyPhoto = async (dataUrl: string) => {
+  const applyPhoto = async (dataUrl: string, source: "camera" | "gallery") => {
     setPreparingPreview(dataUrl);
     setPreparing(true);
     setError(null);
     setTryOnPreview(null);
     try {
-      const prepared = await prepareSelfieDataUrl(dataUrl);
+      const prepared = await prepareSelfieDataUrl(dataUrl, { checkQuality: true });
+      inputSourceRef.current = source;
       setPhoto(prepared);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Rasm yuklanmadi.");
@@ -168,8 +175,10 @@ export function useStyleTryOnFlow({
     if (!file) return;
     if (!allowAction()) return;
     try {
-      const dataUrl = await prepareSelfieFromFile(file);
-      await applyPhoto(dataUrl);
+      const validationError = validateSelfieFile(file);
+      if (validationError) throw new Error(validationError);
+      const dataUrl = await readFileAsDataUrl(file);
+      await applyPhoto(dataUrl, "gallery");
     } catch (e) {
       setError(e instanceof Error ? e.message : "Rasm yuklanmadi.");
     } finally {
@@ -179,7 +188,7 @@ export function useStyleTryOnFlow({
 
   const onCameraCapture = (payload: CameraCapturePayload) => {
     setCameraOpen(false);
-    void applyPhoto(payload.dataUrl);
+    void applyPhoto(payload.dataUrl, "camera");
   };
 
   const openFile = () => {

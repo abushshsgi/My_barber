@@ -4,6 +4,7 @@ import { createPortal } from "react-dom";
 import { useTranslation } from "react-i18next";
 import type { FaceShapeKey } from "@/components/ai-style/ai-style-shared";
 import { ensureCameraPermission } from "@/lib/native-camera";
+import { captureSelfieFrame } from "@/lib/selfie-image";
 
 const FACE_CAMERA_ATTR = "data-face-camera";
 
@@ -21,7 +22,22 @@ type Props = {
 
 async function openSelfieStream(): Promise<MediaStream> {
   const attempts: MediaStreamConstraints[] = [
-    { audio: false, video: { facingMode: { ideal: "user" } } },
+    {
+      audio: false,
+      video: {
+        facingMode: { ideal: "user" },
+        width: { ideal: 1920 },
+        height: { ideal: 1920 },
+      },
+    },
+    {
+      audio: false,
+      video: {
+        facingMode: { ideal: "user" },
+        width: { ideal: 1280 },
+        height: { ideal: 1280 },
+      },
+    },
     { audio: false, video: { facingMode: "user" } },
     { audio: false, video: true },
   ];
@@ -65,23 +81,14 @@ export function AiStyleCamera({ open, onClose, onCapture }: Props) {
     if (!video || video.videoWidth <= 0) return;
 
     capturingRef.current = true;
-    const canvas = document.createElement("canvas");
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) {
-      capturingRef.current = false;
-      return;
-    }
-
-    ctx.translate(canvas.width, 0);
-    ctx.scale(-1, 1);
-    ctx.drawImage(video, 0, 0);
-
-    onCaptureRef.current({
-      dataUrl: canvas.toDataURL("image/jpeg", 0.92),
-    });
-    handleClose();
+    void captureSelfieFrame(video, streamRef.current)
+      .then((dataUrl) => {
+        onCaptureRef.current({ dataUrl });
+        handleClose();
+      })
+      .catch(() => {
+        capturingRef.current = false;
+      });
   }, [handleClose]);
 
   useEffect(() => {
@@ -118,6 +125,16 @@ export function AiStyleCamera({ open, onClose, onCapture }: Props) {
           return;
         }
         streamRef.current = stream;
+        const track = stream.getVideoTracks()[0];
+        const caps = track?.getCapabilities?.();
+        const maxWidth = caps?.width?.max;
+        const maxHeight = caps?.height?.max;
+        if (track && maxWidth && maxHeight) {
+          await track.applyConstraints({
+            width: { ideal: maxWidth },
+            height: { ideal: maxHeight },
+          }).catch(() => undefined);
+        }
         const video = videoRef.current;
         if (video) {
           video.srcObject = stream;
@@ -195,6 +212,11 @@ export function AiStyleCamera({ open, onClose, onCapture }: Props) {
               <p className="text-sm font-medium text-white/90">
                 {ready ? t("aiStylePage.capturePhoto") : t("aiStylePage.scanLoading")}
               </p>
+              {ready ? (
+                <p className="max-w-xs text-[12px] leading-snug text-white/75">
+                  {t("aiStylePage.captureGuide")}
+                </p>
+              ) : null}
               <button
                 type="button"
                 disabled={!ready}

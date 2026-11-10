@@ -1414,6 +1414,13 @@
     "cameraTitle": "Face scanner",
     "scanStep": "Step {{current}} of {{total}}",
     "capturePhoto": "Capture photo",
+    "captureGuide": "Face the camera. Keep your forehead and hair in frame, use even light, and step back so your whole head fits.",
+    "retake": {
+      "low_resolution": "This photo is too small. Retake it with your full head in the frame.",
+      "blur": "This photo is too blurry. Hold the camera still and retake it.",
+      "lighting": "The light is too dark or too bright. Retake the photo in even light.",
+      "head_cropped": "Your head is cropped. Step back so your forehead and hair are fully visible."
+    },
     "cameraReadyHint": "Ready — tap to capture",
     "cameraDenied": "Allow camera access or upload from gallery.",
     "scanLoading": "Opening camera…",

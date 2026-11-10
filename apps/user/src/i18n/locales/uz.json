@@ -1414,6 +1414,13 @@
     "cameraTitle": "Yuz skaneri",
     "scanStep": "{{current}} / {{total}} qadam",
     "capturePhoto": "Rasmga olish",
+    "captureGuide": "Kameraga qarang. Peshona va soch to‘liq ko‘rinsin, yorug‘lik tekis bo‘lsin va bosh kadrga sig‘sin.",
+    "retake": {
+      "low_resolution": "Rasm juda kichik. Bosh to‘liq ko‘rinadigan qilib qayta oling.",
+      "blur": "Rasm xira. Kamerani qimirlatmasdan qayta oling.",
+      "lighting": "Yorug‘lik juda xira yoki juda kuchli. Tekis yorug‘likda qayta oling.",
+      "head_cropped": "Bosh kadrdan chiqib ketgan. Peshona va soch to‘liq ko‘rinadigan qilib orqaga turing."
+    },
     "cameraReadyHint": "Tayyor — rasmga oling",
     "cameraDenied": "Kameraga ruxsat bering yoki galereyadan yuklang.",
     "scanLoading": "Kamera ochilmoqda…",

@@ -1,5 +1,6 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { sanitizeDisplayError } from "../lib/network-error";
+import { currentSelfieSource } from "../lib/selfie";
 import { apiFetch, apiJson } from "./client";
 import { resolveMediaUrl } from "./media";
 
@@ -270,8 +271,17 @@ async function pollTryOnJob(jobId: string): Promise<AiStyleTryOnResponse> {
   throw new Error("Rasm yaratish juda uzoq davom etdi. Qayta urinib ko'ring.");
 }
 
+/** Try-on keeps detail. Shrink only when the long edge is above the shared 1536 cap. */
+async function prepareTryOnPayload(image: string): Promise<string> {
+  return resizeDataUrl(image, 1536, 0.92);
+}
+
 /** Face-check uchun rasmni kichiklashtirish — Railway/Gemini 502 kamayadi. */
 async function shrinkImageForFaceCheck(image: string): Promise<string> {
+  return resizeDataUrl(image, 720, 0.72);
+}
+
+async function resizeDataUrl(image: string, maxEdge: number, quality: number): Promise<string> {
   if (typeof document === "undefined" || !image.startsWith("data:")) return image;
   try {
     const img = await new Promise<HTMLImageElement>((resolve, reject) => {
@@ -280,7 +290,6 @@ async function shrinkImageForFaceCheck(image: string): Promise<string> {
       el.onerror = () => reject(new Error("decode"));
       el.src = image;
     });
-    const maxEdge = 720;
     const scale = Math.min(1, maxEdge / Math.max(img.width, img.height));
     if (scale >= 0.98) return image;
     const w = Math.max(1, Math.round(img.width * scale));
@@ -291,7 +300,7 @@ async function shrinkImageForFaceCheck(image: string): Promise<string> {
     const ctx = canvas.getContext("2d");
     if (!ctx) return image;
     ctx.drawImage(img, 0, 0, w, h);
-    return canvas.toDataURL("image/jpeg", 0.72);
+    return canvas.toDataURL("image/jpeg", quality);
   } catch {
     return image;
   }
@@ -388,10 +397,15 @@ async function generateAiStyleTryOnOnce(
   image: string,
   styleId: string,
 ): Promise<AiStyleTryOnResponse> {
-  const payload = await shrinkImageForFaceCheck(image);
+  const payload = await prepareTryOnPayload(image);
+  const inputSource = currentSelfieSource();
   const res = await apiFetch("/api/v1/ai/style-tryon/", {
     method: "POST",
-    body: JSON.stringify({ image: payload, style_id: styleId }),
+    body: JSON.stringify({
+      image: payload,
+      style_id: styleId,
+      ...(inputSource ? { input_source: inputSource } : {}),
+    }),
     timeoutMs: 120_000,
   });
   const body = (await res.json().catch(() => null)) as
