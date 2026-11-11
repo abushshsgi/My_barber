@@ -1265,6 +1265,9 @@ def process_next_tryon_job(*, block_seconds: int = 5) -> bool:
     except AiStyleError as exc:
         attempts = _provider_attempts(meta) or 1
         max_attempts = int(meta.get("max_attempts") or _max_retries())
+        if exc.status == 504:
+            timeout_cap = int(getattr(settings, "TRYON_TIMEOUT_MAX_ATTEMPTS", 2) or 2)
+            max_attempts = min(max_attempts, max(1, timeout_cap))
         retryable = bool(getattr(exc, "retryable", exc.status in (429, 502, 503, 504)))
         if retryable and attempts < max_attempts:
             delay = _provider_backoff_seconds(attempts, getattr(exc, "retry_after", None))

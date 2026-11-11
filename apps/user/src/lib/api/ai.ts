@@ -133,7 +133,8 @@ function presentTryOnResult<T extends { preview_image: string; views?: Partial<R
 }
 
 const TRYON_POLL_MS = 350;
-const TRYON_POLL_TIMEOUT_MS = 1_800_000;
+/** Runware FLUX + fallback + queue retries; fail visibly before ~8 minutes. */
+const TRYON_POLL_TIMEOUT_MS = 480_000;
 const MULTIVIEW_POLL_TIMEOUT_MS = 720_000;
 
 function sleep(ms: number): Promise<void> {
@@ -162,7 +163,10 @@ async function pollAiStyleTryOnJob(
   while (Date.now() < deadline) {
     if (delay > 0) await sleep(delay);
     const job = await apiJson<AiStyleTryOnJobResponse>(`/api/v1/ai/style-tryon/${jobId}/`);
-    if (job.status === "completed" && job.preview_image) {
+    if (job.status === "completed") {
+      if (!job.preview_image) {
+        throw new Error(job.detail ?? job.message ?? "Rasm yaratishda xatolik");
+      }
       const result = presentTryOnResult({
         preview_image: job.preview_image,
         style_id: job.style_id,

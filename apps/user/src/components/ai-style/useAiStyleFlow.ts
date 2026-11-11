@@ -372,10 +372,10 @@ export function useAiStyleFlow(options: UseAiStyleFlowOptions = {}) {
           onTryOnSuccess?.();
         }
       } catch (e) {
-        if (joinedExisting) return;
         if (e instanceof Error && e.message === "__tryon_gate_blocked__") {
           return;
         }
+        if (joinedExisting) return;
         tryOnFailedRef.current.add(cacheKey);
         if (isMorphPlanLimitError(e)) {
           onPlanLimit?.();

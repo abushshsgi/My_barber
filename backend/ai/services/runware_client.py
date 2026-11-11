@@ -57,10 +57,19 @@ def api_url() -> str:
 
 def timeout_seconds() -> int:
     try:
-        value = int(getattr(settings, "RUNWARE_TRYON_TIMEOUT", 120) or 120)
+        value = int(getattr(settings, "RUNWARE_TRYON_TIMEOUT", 180) or 180)
     except (TypeError, ValueError):
-        value = 120
+        value = 180
     return max(30, min(value, 240))
+
+
+def timeout_seconds_for_model(model: str) -> int:
+    """FLUX 3 edit jobs often need >120s; fallbacks should fail faster."""
+    base = timeout_seconds()
+    key = (model or "").strip().lower()
+    if "flux@3-image-klein" in key:
+        return base
+    return min(base, 120)
 
 
 def _api_key() -> str:
@@ -213,19 +222,21 @@ def run_image_inference(task: dict[str, Any]) -> dict[str, Any]:
             retryable=False,
         )
 
-    payload = [
-        {
-            "taskType": "imageInference",
-            "taskUUID": str(uuid.uuid4()),
-            "deliveryMethod": "sync",
-            "outputType": "URL",
-            "outputFormat": "JPG",
-            "numberResults": 1,
-            "includeCost": True,
-            **task,
-        }
-    ]
-    read_timeout = timeout_seconds()
+    model = str(task.get("model") or "")
+    base_fields = {
+        "taskType": "imageInference",
+        "taskUUID": str(uuid.uuid4()),
+        "deliveryMethod": "sync",
+        "outputType": "URL",
+        "outputFormat": "JPG",
+        "numberResults": 1,
+        "includeCost": True,
+    }
+    merged = {**base_fields, **task}
+    # Task-level WEBP must not override: we always normalize to JPEG bytes server-side.
+    merged["outputFormat"] = "JPG"
+    payload = [merged]
+    read_timeout = timeout_seconds_for_model(model)
     try:
         response = http_session().post(
             api_url(),

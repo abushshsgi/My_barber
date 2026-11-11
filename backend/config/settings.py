@@ -228,10 +228,14 @@ except ValueError:
     _tryon_cooldown = 15
 TRYON_RATE_LIMIT_COOLDOWN = max(1, min(_tryon_cooldown, 120))
 try:
-    _tryon_lease = int(os.environ.get("TRYON_LEASE_SECONDS", "240") or "240")
+    _tryon_lease = int(os.environ.get("TRYON_LEASE_SECONDS", "480") or "480")
 except ValueError:
     _tryon_lease = 240
 TRYON_LEASE_SECONDS = max(60, min(_tryon_lease, 600))
+TRYON_TIMEOUT_MAX_ATTEMPTS = max(
+    1,
+    min(int(os.environ.get("TRYON_TIMEOUT_MAX_ATTEMPTS", "2") or "2"), 6),
+)
 try:
     _tryon_dedupe = int(os.environ.get("TRYON_DEDUPE_SECONDS", "30") or "30")
 except ValueError:
@@ -271,7 +275,7 @@ try:
 except ValueError:
     _runware_height = 1024
 try:
-    _runware_timeout = int(os.environ.get("RUNWARE_TRYON_TIMEOUT", "120") or "120")
+    _runware_timeout = int(os.environ.get("RUNWARE_TRYON_TIMEOUT", "180") or "180")
 except ValueError:
     _runware_timeout = 120
 RUNWARE_TRYON_WIDTH = max(128, min(_runware_width, 4096))
