@@ -71,6 +71,7 @@ from control_panel.statistics_views import (
     AdminStatisticsUsersView,
     AdminStatisticsWalletView,
 )
+from control_panel.platform_settings_views import AdminPlatformSettingsView, SiteConfigView
 from control_panel.visitor_views import AdminSiteVisitorsView, TelemetryCollectView
 from agents.views import (
     AdminAgentAylanmaHubView,
@@ -444,6 +445,7 @@ router.register(r"barber/support", MyBarberSupportTicketViewSet, basename="barbe
 api_routes = [
     path("", include("analytics.urls")),
     path("admin/stats/", AdminStatsView.as_view()),
+    path("admin/platform-settings/", AdminPlatformSettingsView.as_view()),
     path("admin/statistics/live/", AdminStatisticsLiveView.as_view()),
     path("admin/statistics/referral-tryon/", AdminReferralTryonView.as_view()),
     path("admin/statistics/overview/", AdminStatisticsOverviewView.as_view()),
@@ -592,6 +594,7 @@ api_routes = [
     path("agent/wallet/", AgentWalletView.as_view()),
     path("agent/payouts/request/", AgentPayoutRequestView.as_view()),
     path("regions/", UzRegionsView.as_view()),
+    path("site/config/", SiteConfigView.as_view()),
     path("geo/map-config/", MapConfigView.as_view()),
     path("geo/geocode/", GeocodeView.as_view()),
     path("geo/reverse/", ReverseGeocodeView.as_view()),

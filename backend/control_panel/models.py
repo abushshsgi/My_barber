@@ -253,3 +253,25 @@ class SiteVisitEvent(models.Model):
             models.Index(fields=["visitor", "-created_at"], name="site_evt_vis_created_idx"),
         ]
 
+
+class PlatformSettings(models.Model):
+    """Singleton — mijoz sayti bo‘yicha global flaglar."""
+
+    maintenance_banner_enabled = models.BooleanField(
+        default=True,
+        help_text="True bo‘lsa barcha sahifalar tepasida texnik ishlar banneri chiqadi.",
+    )
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Platform settings"
+        verbose_name_plural = "Platform settings"
+
+    def __str__(self) -> str:
+        return "Platform settings"
+
+    @classmethod
+    def load(cls) -> "PlatformSettings":
+        obj, _ = cls.objects.get_or_create(pk=1)
+        return obj
+

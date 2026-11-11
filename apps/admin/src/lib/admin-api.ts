@@ -1178,6 +1178,24 @@ function mapSalonDetail(s: BackendSalonRow): AdminSalonDetail {
 }
 
 // --- API functions ---
+export type PlatformSettings = {
+  maintenance_banner_enabled: boolean;
+  updated_at: string | null;
+};
+
+export async function fetchPlatformSettings(): Promise<PlatformSettings> {
+  return apiJson("/api/v1/admin/platform-settings/");
+}
+
+export async function patchPlatformSettings(
+  body: Partial<Pick<PlatformSettings, "maintenance_banner_enabled">>,
+): Promise<PlatformSettings> {
+  return apiJson("/api/v1/admin/platform-settings/", {
+    method: "PATCH",
+    body: JSON.stringify(body),
+  });
+}
+
 export async function fetchAdminStats(): Promise<AdminStats> {
   const stats = await apiJson<BackendStats & { agents?: AdminStats["agents"] }>(
     "/api/v1/admin/stats/",

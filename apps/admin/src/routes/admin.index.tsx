@@ -1,13 +1,30 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { format } from "date-fns";
-import { fetchAdminStats, fetchAdminBookings, downloadAdminReport } from "@/lib/admin-api";
+import {
+  fetchAdminStats,
+  fetchAdminBookings,
+  downloadAdminReport,
+  fetchPlatformSettings,
+  patchPlatformSettings,
+} from "@/lib/admin-api";
 import { formatAdminUzs } from "@/lib/admin-analytics";
 import { KPICard } from "@/components/admin/KPICard";
 import { CardSkeleton } from "@/components/admin/Skeletons";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { Button } from "@/components/ui/button";
-import { Download, TrendingUp, Users, Scissors, Building2, CalendarClock, UserPlus, QrCode } from "lucide-react";
+import {
+  Download,
+  TrendingUp,
+  Users,
+  Scissors,
+  Building2,
+  CalendarClock,
+  UserPlus,
+  QrCode,
+  Construction,
+} from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/admin/")({
@@ -15,6 +32,27 @@ export const Route = createFileRoute("/admin/")({
 });
 
 function DashboardPage() {
+  const qc = useQueryClient();
+
+  const platformQ = useQuery({
+    queryKey: ["admin", "platform-settings"],
+    queryFn: fetchPlatformSettings,
+  });
+
+  const maintenanceMut = useMutation({
+    mutationFn: (enabled: boolean) => patchPlatformSettings({ maintenance_banner_enabled: enabled }),
+    onSuccess: (data) => {
+      qc.setQueryData(["admin", "platform-settings"], data);
+      toast.success(
+        data.maintenance_banner_enabled
+          ? "Texnik ishlar banneri yoqildi"
+          : "Texnik ishlar banneri o‘chirildi",
+      );
+    },
+    onError: (e: unknown) =>
+      toast.error(e instanceof Error ? e.message : "Sozlamani saqlab bo‘lmadi"),
+  });
+
   const reportMut = useMutation({
     mutationFn: () => downloadAdminReport("stats"),
     onSuccess: () => toast.success("Hisobot tayyorlandi"),
@@ -82,6 +120,42 @@ function DashboardPage() {
               : "Ma'lumotlarni yuklashda xatolik"}
         </div>
       )}
+
+      <div className="rounded-2xl border border-border bg-card p-5 shadow-card">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex gap-3">
+            <div
+              className="hidden sm:flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-red-600/10 text-red-600"
+              aria-hidden
+            >
+              <Construction className="size-5" />
+            </div>
+            <div>
+              <h2 className="font-heading text-lg font-semibold text-foreground">
+                Texnik ishlar banneri
+              </h2>
+              <p className="mt-1 text-sm text-muted-foreground max-w-xl">
+                Mijoz saytida qizil chiziq: «На сайте ведутся технические работы…». Yoqish /
+                o‘chirish barcha foydalanuvchilarga 1–2 daqiqada yetadi.
+              </p>
+            </div>
+          </div>
+          <label className="flex items-center gap-3 rounded-xl border border-border bg-muted/30 px-4 py-3 text-sm font-medium shrink-0 cursor-pointer">
+            <span className={platformQ.data?.maintenance_banner_enabled ? "text-red-600" : "text-muted-foreground"}>
+              {platformQ.isLoading
+                ? "…"
+                : platformQ.data?.maintenance_banner_enabled
+                  ? "Yoniq"
+                  : "O‘chiq"}
+            </span>
+            <Switch
+              checked={platformQ.data?.maintenance_banner_enabled ?? false}
+              disabled={platformQ.isLoading || maintenanceMut.isPending}
+              onCheckedChange={(v) => maintenanceMut.mutate(v)}
+            />
+          </label>
+        </div>
+      </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
         {statsQ.isLoading ? (

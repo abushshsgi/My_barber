@@ -1,5 +1,6 @@
 import { useEffect, useLayoutEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useSiteConfig } from "@/hooks/use-site-config";
 
 const STORAGE_KEY = "mysaloon.maintenanceBanner.dismissed";
 
@@ -21,11 +22,14 @@ function readVisible() {
 /** Barcha sahifalar tepasidagi bir xil texnik ishlar ogohlantirishi. */
 export function MaintenanceBanner() {
   const { t } = useTranslation();
-  const [visible, setVisible] = useState(readVisible);
+  const siteConfig = useSiteConfig();
+  const bannerEnabled = siteConfig.data?.maintenance_banner_enabled ?? false;
+  const [dismissed, setDismissed] = useState(() => !readVisible());
   const [bar, setBar] = useState<HTMLDivElement | null>(null);
+  const visible = bannerEnabled && !dismissed;
 
   useEffect(() => {
-    setVisible(readVisible());
+    setDismissed(!readVisible());
   }, []);
 
   useLayoutEffect(() => {
@@ -58,7 +62,7 @@ export function MaintenanceBanner() {
     } catch {
       /* sessionStorage yopiq bo'lsa ham yopiladi */
     }
-    setVisible(false);
+    setDismissed(true);
   };
 
   return (
