@@ -14,6 +14,7 @@ const AuthMarketingPanel = lazy(() =>
 );
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
+import { fetchSiteConfig } from "@/lib/api/site-config";
 import { useIsNativeApp } from "@/lib/native-app";
 import { cn } from "@/lib/utils";
 import {
@@ -95,7 +96,7 @@ const phoneAuthEnabled =
   (import.meta as unknown as { env?: Record<string, string | undefined> }).env
     ?.VITE_PHONE_AUTH_ENABLED === "true";
 /** GSI faqat bitta Web client ID qabul qiladi (vergulli ro'yxat → invalid_client). */
-const googleClientId =
+const googleClientIdFromEnv =
   (
     (import.meta as unknown as { env?: Record<string, string | undefined> }).env
       ?.VITE_GOOGLE_CLIENT_ID || ""
@@ -123,10 +124,26 @@ function Auth() {
   const [authIntent, setAuthIntent] = useState<PhoneAuthIntent>("register");
   const [resendSeconds, setResendSeconds] = useState(() => getStoredOtpCooldownSeconds(phone));
   const [googleBusy, setGoogleBusy] = useState(false);
+  const [googleClientIdFromApi, setGoogleClientIdFromApi] = useState("");
+  const googleClientId = googleClientIdFromEnv || googleClientIdFromApi;
   const authCompleted = useRef(false);
   const furthestStep = useRef<Step>("phone");
   const intentRef = useRef<PhoneAuthIntent>(authIntent);
   intentRef.current = authIntent;
+
+  useEffect(() => {
+    if (googleClientIdFromEnv || phoneAuthEnabled) return;
+    let cancelled = false;
+    void fetchSiteConfig()
+      .then((cfg) => {
+        const id = (cfg.google_oauth_client_id || "").trim().split(",")[0]?.trim() || "";
+        if (!cancelled && id) setGoogleClientIdFromApi(id);
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [googleClientIdFromEnv, phoneAuthEnabled]);
 
   useEffect(() => {
     trackAuthFunnel("view", { method: phoneAuthEnabled ? "phone" : "google" });

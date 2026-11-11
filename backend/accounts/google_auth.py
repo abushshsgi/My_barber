@@ -37,6 +37,20 @@ def google_client_ids() -> list[str]:
     return [part.strip() for part in raw.split(",") if part.strip()]
 
 
+def google_web_client_id() -> str:
+    """Public Web client for GSI — one ID only (comma-separated env is server-side verify list)."""
+    dedicated = os.environ.get("GOOGLE_OAUTH_WEB_CLIENT_ID", "").strip()
+    if dedicated:
+        return dedicated.split(",")[0].strip()
+    ids = google_client_ids()
+    if not ids:
+        return ""
+    for client_id in ids:
+        if client_id.endswith(".apps.googleusercontent.com"):
+            return client_id
+    return ids[0]
+
+
 def is_google_auth_configured() -> bool:
     return bool(google_client_ids())
 

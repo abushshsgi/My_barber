@@ -1,3 +1,6 @@
+import os
+from unittest.mock import patch
+
 from django.test import TestCase
 from rest_framework.test import APIRequestFactory
 
@@ -21,3 +24,14 @@ class SiteConfigViewTests(TestCase):
         row.save(update_fields=["maintenance_banner_enabled"])
         response = SiteConfigView.as_view()(request)
         self.assertFalse(response.data["maintenance_banner_enabled"])
+
+    @patch.dict(
+        os.environ,
+        {"GOOGLE_OAUTH_CLIENT_ID": "web-test.apps.googleusercontent.com,other.apps.googleusercontent.com"},
+    )
+    def test_public_config_includes_google_web_client(self):
+        factory = APIRequestFactory()
+        request = factory.get("/api/v1/site/config/")
+        response = SiteConfigView.as_view()(request)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.data["google_oauth_client_id"], "web-test.apps.googleusercontent.com")
