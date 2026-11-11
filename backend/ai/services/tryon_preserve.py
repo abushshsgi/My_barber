@@ -29,6 +29,77 @@ MAX_SHIFT_FRACTION = 0.035
 ASPECT_TOLERANCE = 0.02
 HAIRLINE_CUT = 0.20
 RESTORE_JPEG_QUALITY = 92
+# Only pixels inside this vertical band (minus protected skin) may keep model hair edits.
+HAIR_EDIT_BAND_FRACTION = 0.48
+SKIN_DILATE_FOR_HAIR_LOCK = 5
+
+
+def _skin_mask_full(image: Image.Image) -> Image.Image:
+    return _skin_mask(image).resize(image.size, Image.Resampling.NEAREST)
+
+
+def preserve_hair_only_edit(
+    original: bytes,
+    generated: bytes,
+    *,
+    apply: bool = True,
+) -> tuple[bytes, dict[str, Any]]:
+    """Lock background, clothing, and skin; keep model output only in the hair band.
+
+    Stops catalog-reference bleed into shoulders, backdrop, and face-adjacent pixels
+    when the edit model over-applies the second reference image.
+    """
+    report: dict[str, Any] = {
+        "status": "skipped",
+        "reason": "not_run",
+        "applied": False,
+        "band_fraction": HAIR_EDIT_BAND_FRACTION,
+    }
+    try:
+        source = _open_rgb(original)
+        edited = _open_rgb(generated)
+    except Exception:
+        report["reason"] = "decode_failed"
+        return generated, report
+
+    if min(source.size) < MIN_EDGE or min(edited.size) < MIN_EDGE:
+        report["reason"] = "too_small"
+        return generated, report
+
+    if edited.size != source.size:
+        edited = edited.resize(source.size, Image.Resampling.LANCZOS)
+
+    width, height = source.size
+    band = Image.new("L", (width, height), 0)
+    y_band = int(height * HAIR_EDIT_BAND_FRACTION)
+    ImageDraw.Draw(band).rectangle((0, 0, width, max(1, y_band)), fill=255)
+
+    skin = _skin_mask_full(source)
+    if SKIN_DILATE_FOR_HAIR_LOCK > 1:
+        skin = skin.filter(ImageFilter.MaxFilter(SKIN_DILATE_FOR_HAIR_LOCK))
+
+    allowed = ImageChops.subtract(band, skin)
+    if _count(allowed) < 64:
+        report["reason"] = "no_hair_band"
+        return generated, report
+
+    if not apply:
+        report["status"] = "skipped"
+        report["reason"] = "scene_lock_disabled"
+        return generated, report
+
+    allowed = allowed.filter(ImageFilter.GaussianBlur(radius=2.2))
+    merged = Image.composite(edited, source, allowed)
+    buffer = BytesIO()
+    merged.save(buffer, format="JPEG", quality=RESTORE_JPEG_QUALITY, optimize=True)
+    payload = buffer.getvalue()
+    if not payload.startswith(b"\xff\xd8\xff"):
+        report["reason"] = "encode_failed"
+        return generated, report
+    report["status"] = "locked"
+    report["reason"] = "hair_band_only"
+    report["applied"] = True
+    return payload, report
 
 
 def preserve_face(original: bytes, generated: bytes, *, apply: bool = True) -> tuple[bytes, dict[str, Any]]:

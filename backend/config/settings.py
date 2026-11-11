@@ -305,6 +305,13 @@ TRYON_FACE_RESTORE = os.environ.get("TRYON_FACE_RESTORE", "true").strip().lower(
     "yes",
     "on",
 )
+# Paste original pixels outside the hair band (background, clothing, lower frame).
+TRYON_SCENE_LOCK = os.environ.get("TRYON_SCENE_LOCK", "true").strip().lower() in (
+    "1",
+    "true",
+    "yes",
+    "on",
+)
 # One extra generation after a failed alignment check. Off so cost does not rise silently.
 RUNWARE_TRYON_QUALITY_RETRY = os.environ.get("RUNWARE_TRYON_QUALITY_RETRY", "false").strip().lower() in (
     "1",
@@ -325,6 +332,13 @@ RUNWARE_TRYON_OVERFLOW_DEPTH = os.environ.get("RUNWARE_TRYON_OVERFLOW_DEPTH", ""
 TRYON_PROMPT_VERSION = os.environ.get("TRYON_PROMPT_VERSION", "v2").strip().lower() or "v2"
 # Selfie + exact catalog reference (referenceImages[0]=user, [1]=hairstyle). Off = text-only style lock.
 RUNWARE_TRYON_DUAL_REFERENCE = os.environ.get("RUNWARE_TRYON_DUAL_REFERENCE", "true").strip().lower() in (
+    "1",
+    "true",
+    "yes",
+    "on",
+)
+# Grayscale-blend catalog reference so FLUX does not copy catalog hair/background color.
+RUNWARE_TRYON_CATALOG_DESATURATE = os.environ.get("RUNWARE_TRYON_CATALOG_DESATURATE", "true").strip().lower() in (
     "1",
     "true",
     "yes",

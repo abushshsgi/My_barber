@@ -392,6 +392,8 @@ Do not transfer the catalog model's background.
 
 Do not transfer the catalog model's hair color.
 
+Do not transfer catalog hair edge tones, catalog lighting, or catalog background hues.
+
 Do not recreate the catalog model.
 
 Apply only the hairstyle design to the original user.
@@ -445,20 +447,24 @@ Do not regenerate the face.
 Do not beautify the person.
 Do not change facial geometry.
 
-IMAGE 2 — TARGET HAIRSTYLE:
-Use image 2 exclusively as the hairstyle design reference.
-Transfer the hairstyle's defining characteristics onto the person from image 1.
-Match:
+IMAGE 2 — TARGET HAIRSTYLE (HAIR GEOMETRY ONLY):
+Use image 2 exclusively as a haircut shape and structure reference.
+Transfer only these characteristics onto the person from image 1:
 - Hair length
-- Hair texture
-- Hair direction
-- Curl pattern
-- Hair volume
+- Hair texture class (straight, wavy, curly — not skin or lighting)
+- Hair direction and parting
+- Curl pattern silhouette (not catalog hair pigment)
+- Hair volume envelope inside the original skull width
 - Fringe placement
-- Side length
-- Fade or taper structure
-- Overall silhouette
-- Styling finish
+- Side length and fade/taper line placement
+- Overall haircut silhouette and styling finish
+
+CATALOG ISOLATION — IGNORE from image 2:
+Hair color, root tone, highlight edges, lowlights, dyed tips, vignette, contrast,
+studio lighting color, background, clothing, ears, neck, skin, face, jaw, and frame edges.
+Do not match catalog hair edge colors or catalog model lighting on the user.
+All hair color and tone must come from image 1 unless the text prompt requests a dye.
+
 Do not copy the identity, face, skin, clothing, or background of the person in image 2.
 
 HAIRSTYLE TRANSFER:

@@ -29,6 +29,8 @@ Backend resolves catalog path from the published `Hairstyle` record (`style_id`)
 ## Quality pipeline
 
 - **Pre-flight:** documented cost estimate vs `RUNWARE_TRYON_MAX_COST_USD`
+- **Catalog ref:** `prepare_catalog_hair_reference` (head crop + desaturate; `RUNWARE_TRYON_CATALOG_DESATURATE`)
+- **Scene lock:** `preserve_hair_only_edit` — background/clothing/skin unchanged (`TRYON_SCENE_LOCK`)
 - **Face:** `tryon_preserve.preserve_face` (skin IoU / shift)
 - **Optional retry:** `RUNWARE_TRYON_QUALITY_RETRY` (off by default)
 - **QC:** `tryon_quality.assess_tryon_quality`

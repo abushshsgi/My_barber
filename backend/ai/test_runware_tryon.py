@@ -782,6 +782,32 @@ class RunwareTryOnTests(SimpleTestCase):
         self.assertNotIn("STRAIGHT HAIRSTYLE", slick)
         self.assertIn("Do not push the hairline back", slick)
 
+    def test_catalog_reference_desaturates_and_crops_head(self):
+        from ai.services.runware_tryon import prepare_catalog_hair_reference
+
+        source = Image.new("RGB", (400, 600), (200, 40, 40))
+        source.paste((20, 120, 220), (80, 400, 320, 580))
+        raw = _jpeg_of(source)
+        prepared = prepare_catalog_hair_reference(raw)
+        out = Image.open(BytesIO(prepared))
+        self.assertLess(out.height, 600)
+        self.assertGreaterEqual(out.height, int(600 * 0.55))
+        top = out.getpixel((200, 80))
+        bottom = out.getpixel((200, out.height - 5))
+        self.assertLess(max(top) - min(top), max(bottom) - min(bottom) + 40)
+
+    def test_scene_lock_keeps_lower_frame_from_selfie(self):
+        from ai.services.tryon_preserve import preserve_hair_only_edit
+
+        source = Image.new("RGB", (320, 400), (30, 30, 30))
+        source.paste((220, 180, 150), (90, 160, 230, 300))
+        edited = source.copy()
+        edited.paste((10, 200, 10), (0, int(400 * 0.55), 320, 400))
+        locked, report = preserve_hair_only_edit(_jpeg_of(source), _jpeg_of(edited), apply=True)
+        self.assertEqual(report["status"], "locked")
+        px = Image.open(BytesIO(locked)).getpixel((160, 380))
+        self.assertLess(abs(px[1] - 30), 25)
+
     def test_face_restore_keeps_aligned_skin_and_skips_a_moved_face(self):
         from ai.services.tryon_preserve import preserve_face
 
@@ -833,7 +859,11 @@ class RunwareTryOnTests(SimpleTestCase):
         download.reset_mock()
         download.side_effect = [blue, blue]
         infer.return_value = {"imageURL": "https://im.runware.ai/image/example.jpg", "cost": 0.001}
-        with override_settings(RUNWARE_TRYON_QUALITY_RETRY=True, TRYON_FACE_RESTORE=True), patch(
+        with override_settings(
+            RUNWARE_TRYON_QUALITY_RETRY=True,
+            TRYON_FACE_RESTORE=True,
+            TRYON_SCENE_LOCK=False,
+        ), patch(
             "ai.services.runware_tryon.load_public_image",
             return_value=("image/jpeg", catalog),
         ):

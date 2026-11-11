@@ -331,7 +331,8 @@ def format_style_lock(lock: StyleLock, *, catalog_attached: bool = False) -> str
         if catalog_attached:
             ref_line = (
                 f"Catalog reference image 2 path: {lock.reference_image} "
-                "(hairstyle silhouette only — do not copy this person's face)."
+                "(haircut geometry only — ignore catalog hair color, face, skin, clothing, "
+                "background, and lighting; keep the user's colors from reference image 1)."
             )
         else:
             ref_line = (

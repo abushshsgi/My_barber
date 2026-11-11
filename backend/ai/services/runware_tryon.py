@@ -32,7 +32,7 @@ from .errors import AiStyleError
 from .gemini_style import load_image_bytes
 from .image_response import to_data_url
 from .runware_client import download_image, run_image_inference
-from .tryon_preserve import preserve_face
+from .tryon_preserve import preserve_face, preserve_hair_only_edit
 from .tryon_prompts import (
     NEGATIVE_PROMPT,
     NEGATIVE_PROMPT_MAX,
@@ -127,8 +127,12 @@ DOCUMENTED_TASK_FIELDS = frozenset(
 )
 SAFER_RETRY_SUFFIX = (
     "SAFER REVISION: Keep the original forehead height, hairline, temples, and head shape. "
-    "Lower the hair volume. Do not cover the forehead with extra curls or a wig-like mass."
+    "Lower the hair volume. Do not cover the forehead with extra curls or a wig-like mass. "
+    "Use catalog reference 2 for haircut shape only — keep the user's hair color, skin, clothing, "
+    "and background from reference image 1; do not copy catalog edge colors or studio lighting."
 )
+CATALOG_HEAD_KEEP_FRACTION = 0.58
+CATALOG_DESATURATE_BLEND = 0.82
 # Per-model defaults live in VERIFIED_EDIT_MODELS["default_steps"].
 TRYON_CFG = 3.5
 PROMPT_MAX = 10000
@@ -593,6 +597,29 @@ def dual_reference_enabled() -> bool:
     return _flag("RUNWARE_TRYON_DUAL_REFERENCE", True)
 
 
+def prepare_catalog_hair_reference(raw: bytes) -> bytes:
+    """Strip catalog color/lighting bleed; keep head crop for haircut geometry only."""
+    try:
+        image = Image.open(BytesIO(raw))
+        image = ImageOps.exif_transpose(image)
+        if image.mode != "RGB":
+            image = image.convert("RGB")
+    except Exception:
+        return raw
+    width, height = image.size
+    if width < 32 or height < 32:
+        return raw
+    crop_h = max(32, int(height * CATALOG_HEAD_KEEP_FRACTION))
+    image = image.crop((0, 0, width, min(height, crop_h)))
+    gray = ImageOps.grayscale(image).convert("RGB")
+    blend = max(0.0, min(1.0, CATALOG_DESATURATE_BLEND))
+    image = Image.blend(image, gray, blend)
+    buffer = BytesIO()
+    image.save(buffer, format="JPEG", quality=INPUT_JPEG_QUALITY, optimize=True)
+    payload = buffer.getvalue()
+    return payload if payload.startswith(b"\xff\xd8\xff") else raw
+
+
 def load_catalog_reference_bytes(reference_image_url: str | None) -> bytes:
     """Load the Explore catalog portrait for referenceImages[1]. Fails if missing."""
     url = str(reference_image_url or "").strip()
@@ -617,6 +644,8 @@ def load_catalog_reference_bytes(reference_image_url: str | None) -> bytes:
             400,
             retryable=False,
         )
+    if _flag("RUNWARE_TRYON_CATALOG_DESATURATE", True):
+        return prepare_catalog_hair_reference(prepared.payload)
     return prepared.payload
 
 
@@ -1308,6 +1337,19 @@ def generate_tryon_preview(
     )
 
 
+def _apply_post_generation_preserve(original: bytes, generated: bytes) -> tuple[bytes, dict[str, Any]]:
+    """Scene lock (hair-only edits) then inner-face restore when alignment allows."""
+    working = generated
+    scene_report: dict[str, Any] = {"status": "skipped", "applied": False}
+    if _flag("TRYON_SCENE_LOCK", True):
+        working, scene_report = preserve_hair_only_edit(original, working, apply=True)
+    restore_enabled = _flag("TRYON_FACE_RESTORE", True)
+    jpeg, face_report = preserve_face(original, working, apply=restore_enabled)
+    if scene_report.get("applied"):
+        face_report = {**face_report, "scene_lock": scene_report}
+    return jpeg, face_report
+
+
 def _preserve_and_maybe_retry(
     *,
     original: bytes,
@@ -1320,8 +1362,7 @@ def _preserve_and_maybe_retry(
     inference_images: list[bytes] | None = None,
 ) -> tuple[bytes, dict[str, Any], int, Decimal, bool, int, str]:
     """One optional regeneration. A failed retry keeps the safer of the two results."""
-    restore_enabled = _flag("TRYON_FACE_RESTORE", True)
-    jpeg, report = preserve_face(original, generated, apply=restore_enabled)
+    jpeg, report = _apply_post_generation_preserve(original, generated)
     retries = 0
     if report.get("status") != "failed" or not _flag("RUNWARE_TRYON_QUALITY_RETRY", False):
         return jpeg, report, retries, cost, estimated, latency_ms, model
@@ -1346,7 +1387,7 @@ def _preserve_and_maybe_retry(
         return jpeg, report, retries, cost, estimated, latency_ms, model
 
     retries = 1
-    second_jpeg, second_report = preserve_face(original, second, apply=restore_enabled)
+    second_jpeg, second_report = _apply_post_generation_preserve(original, second)
     first_score = report.get("iou") if isinstance(report.get("iou"), (int, float)) else -1
     second_score = second_report.get("iou") if isinstance(second_report.get("iou"), (int, float)) else -1
     if second_report.get("status") != "failed" or second_score >= first_score:
