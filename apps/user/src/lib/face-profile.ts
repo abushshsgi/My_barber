@@ -1,10 +1,11 @@
 import type { FaceShapeKey, HairTypeKey } from "@/components/ai-style/ai-style-shared";
+import { safeLocalStorageSet, stripDataUrlForStorage } from "@/lib/storage-quota";
 
 const FACE_PROFILE_KEY_PREFIX = "mysaloon.ai.faceProfile";
 const FACE_HISTORY_KEY_PREFIX = "mysaloon.ai.faceHistory";
 const LEGACY_FACE_PROFILE_KEY = "mysaloon.ai.faceProfile";
 const LEGACY_FACE_HISTORY_KEY = "mysaloon.ai.faceHistory";
-const FACE_HISTORY_MAX = 40;
+const FACE_HISTORY_MAX = 6;
 export const FACE_HISTORY_UPDATED_EVENT = "mysaloon:face-history-updated";
 
 const USER_KEY = "mysaloon.auth.user";
@@ -140,9 +141,26 @@ export function loadFaceProfileHistory(userId?: number): FaceProfileHistoryEntry
   }
 }
 
+function compactFaceHistoryForStorage(entries: FaceProfileHistoryEntry[]): FaceProfileHistoryEntry[] {
+  return entries.slice(0, FACE_HISTORY_MAX).map((entry) => ({
+    ...entry,
+    photoDataUrl: stripDataUrlForStorage(entry.photoDataUrl) ?? "",
+  }));
+}
+
 function persistFaceProfileHistory(userId: number, entries: FaceProfileHistoryEntry[]) {
-  localStorage.setItem(historyKey(userId), JSON.stringify(entries.slice(0, FACE_HISTORY_MAX)));
-  window.dispatchEvent(new Event(FACE_HISTORY_UPDATED_EVENT));
+  const key = historyKey(userId);
+  const attempts = [
+    compactFaceHistoryForStorage(entries),
+    compactFaceHistoryForStorage(entries).slice(0, 3),
+    compactFaceHistoryForStorage(entries).slice(0, 1),
+  ];
+  for (const payload of attempts) {
+    if (safeLocalStorageSet(key, JSON.stringify(payload))) {
+      window.dispatchEvent(new Event(FACE_HISTORY_UPDATED_EVENT));
+      return;
+    }
+  }
 }
 
 export function syncFaceProfileHistoryCache(userId: number, entries: FaceProfileHistoryEntry[]) {

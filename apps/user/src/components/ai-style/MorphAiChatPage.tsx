@@ -52,6 +52,7 @@ import {
   morphChatCanSend,
 } from "@/lib/morph-plan-limit";
 import { cn } from "@/lib/utils";
+import { safeLocalStorageSet } from "@/lib/storage-quota";
 
 type ChatMsg = {
   id: string;
@@ -73,7 +74,7 @@ const THREADS_KEY = "mysaloon.morphAi.chat.threads.v2";
 const LEGACY_THREADS_KEY = "mysaloon.morphAi.chat.threads.v1";
 const ACTIVE_KEY = "mysaloon.morphAi.chat.activeId";
 const SESSION_THREAD_KEY = "mysaloon.morphAi.chat.threadId";
-const MAX_THREADS = 40;
+const MAX_THREADS = 8;
 
 function newId() {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -182,7 +183,7 @@ function saveLocalThreads(threads: ChatThread[]) {
     localStorage.removeItem(LEGACY_THREADS_KEY);
     return;
   }
-  localStorage.setItem(THREADS_KEY, JSON.stringify(threads.slice(0, MAX_THREADS)));
+  safeLocalStorageSet(THREADS_KEY, JSON.stringify(threads.slice(0, MAX_THREADS)));
 }
 
 function readActiveId() {

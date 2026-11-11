@@ -27,6 +27,7 @@ import {
 import type { Audience } from "@/lib/mock-data";
 import type { AiFaceHint } from "@/lib/api/ai";
 import { useActionAuth } from "@/hooks/use-action-auth";
+import { isStorageQuotaError, STORAGE_QUOTA_USER_MESSAGE } from "@/lib/storage-quota";
 
 type UseAiStyleFlowOptions = {
   menPersonaId?: ExplorePersonaId | null;
@@ -41,10 +42,16 @@ type UseAiStyleFlowOptions = {
 };
 
 function formatAiRequestError(error: unknown, fallback: string): string {
+  if (isStorageQuotaError(error)) {
+    return STORAGE_QUOTA_USER_MESSAGE;
+  }
   if (isMorphPlanLimitError(error)) {
     return error.message;
   }
   const raw = error instanceof Error ? error.message : fallback;
+  if (isStorageQuotaError(raw)) {
+    return STORAGE_QUOTA_USER_MESSAGE;
+  }
   if (isMorphPlanLimitMessage(raw)) {
     return raw;
   }
@@ -347,14 +354,17 @@ export function useAiStyleFlow(options: UseAiStyleFlowOptions = {}) {
           const resolvedTitle =
             title ?? result?.suggestions.find((s) => s.id === styleId)?.title ?? styleId;
           // Server try-on tugaganda historyga yozadi — remote POST qilmaslik (duplicate).
-          saveMorphAiGeneration({
-            styleId,
-            title: resolvedTitle,
-            previewImage,
-            beforeImage: photo,
-            personaId: effectivePersona,
-            syncRemote: false,
-          });
+          try {
+            saveMorphAiGeneration({
+              styleId,
+              title: resolvedTitle,
+              previewImage,
+              personaId: effectivePersona,
+              syncRemote: false,
+            });
+          } catch {
+            /* gallery cache — try-on natijasi ekranda qoladi */
+          }
           window.setTimeout(() => {
             void refreshMorphAiGenerationsCache();
           }, 1200);
@@ -387,14 +397,17 @@ export function useAiStyleFlow(options: UseAiStyleFlowOptions = {}) {
       // cacheKey is either styleId or `${personaId}:${styleId}`
       const styleId = cacheKey.includes(":") ? cacheKey.slice(cacheKey.indexOf(":") + 1) : cacheKey;
       const title = result?.suggestions.find((s) => s.id === styleId)?.title ?? styleId;
-      saveMorphAiGeneration({
-        styleId,
-        title,
-        previewImage,
-        beforeImage: photo ?? undefined,
-        personaId: menPersonaId ?? undefined,
-        syncRemote: false,
-      });
+      try {
+        saveMorphAiGeneration({
+          styleId,
+          title,
+          previewImage,
+          personaId: menPersonaId ?? undefined,
+          syncRemote: false,
+        });
+      } catch {
+        /* ignore cache quota */
+      }
       window.setTimeout(() => {
         void refreshMorphAiGenerationsCache();
       }, 1200);

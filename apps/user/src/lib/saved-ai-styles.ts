@@ -1,4 +1,5 @@
 import { getActiveUserId } from "@/lib/face-profile";
+import { safeLocalStorageSet, stripDataUrlForStorage } from "@/lib/storage-quota";
 
 const KEY_PREFIX = "mysaloon.ai.savedStyles";
 
@@ -26,7 +27,11 @@ function readAll(): SavedAiStyle[] {
 }
 
 function writeAll(entries: SavedAiStyle[]) {
-  localStorage.setItem(storageKey(), JSON.stringify(entries));
+  const compact = entries.map((entry) => ({
+    ...entry,
+    previewImage: stripDataUrlForStorage(entry.previewImage) ?? entry.previewImage,
+  }));
+  safeLocalStorageSet(storageKey(), JSON.stringify(compact.slice(0, 16)));
 }
 
 export function loadSavedAiStyles(): SavedAiStyle[] {

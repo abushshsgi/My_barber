@@ -38,14 +38,17 @@ function persistExploreTryOnResult(opts: {
   personaId?: ExplorePersonaId | null;
 }) {
   // Server try-on tugaganda MorphAiGenerationEntry yozadi — remote POST = duplicate.
-  saveMorphAiGeneration({
-    styleId: opts.styleId,
-    title: opts.styleTitle,
-    previewImage: opts.previewImage,
-    beforeImage: opts.beforeImage,
-    personaId: opts.personaId ?? undefined,
-    syncRemote: false,
-  });
+  try {
+    saveMorphAiGeneration({
+      styleId: opts.styleId,
+      title: opts.styleTitle,
+      previewImage: opts.previewImage,
+      personaId: opts.personaId ?? undefined,
+      syncRemote: false,
+    });
+  } catch {
+    /* gallery cache */
+  }
   markMorphAiOnboarded();
   void persistAiStyleHistory({
     image: opts.beforeImage,

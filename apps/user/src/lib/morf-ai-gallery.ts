@@ -6,9 +6,10 @@ import {
 } from "@/lib/api/ai";
 import { resolveMediaUrl } from "@/lib/media-url";
 import { shouldPersistLooksToServer } from "@/lib/morf-ai-prefs";
+import { isStorageQuotaError, safeLocalStorageSet, stripDataUrlForStorage } from "@/lib/storage-quota";
 
 const KEY_PREFIX = "mysaloon.morphAi.generations";
-const MAX_ENTRIES = 60;
+const MAX_ENTRIES = 16;
 export const MORPH_AI_GALLERY_UPDATED_EVENT = "mysaloon:morf-ai-gallery-updated";
 
 export type MorphAiGeneration = {
@@ -39,9 +40,29 @@ function readAll(): MorphAiGeneration[] {
   }
 }
 
+function compactForLocalStorage(entries: MorphAiGeneration[]): MorphAiGeneration[] {
+  return entries
+    .map((entry) => ({
+      ...entry,
+      previewImage: stripDataUrlForStorage(entry.previewImage) ?? "",
+      beforeImage: stripDataUrlForStorage(entry.beforeImage),
+    }))
+    .filter((entry) => Boolean(entry.previewImage));
+}
+
 function writeAll(entries: MorphAiGeneration[]) {
-  localStorage.setItem(storageKey(), JSON.stringify(entries.slice(0, MAX_ENTRIES)));
-  window.dispatchEvent(new Event(MORPH_AI_GALLERY_UPDATED_EVENT));
+  const key = storageKey();
+  const attempts = [
+    compactForLocalStorage(entries.slice(0, MAX_ENTRIES)),
+    compactForLocalStorage(entries.slice(0, 8)),
+    compactForLocalStorage(entries.slice(0, 3)),
+  ];
+  for (const payload of attempts) {
+    if (safeLocalStorageSet(key, JSON.stringify(payload))) {
+      window.dispatchEvent(new Event(MORPH_AI_GALLERY_UPDATED_EVENT));
+      return;
+    }
+  }
 }
 
 function mapApiGeneration(entry: MorphAiGenerationApi): MorphAiGeneration | null {
@@ -64,6 +85,26 @@ function mapApiGeneration(entry: MorphAiGenerationApi): MorphAiGeneration | null
 export function loadMorphAiGenerations(): MorphAiGeneration[] {
   return readAll();
 }
+
+/** Eski keshdagi data: URL selfielarni tozalash — localStorage limiti. */
+export function recompactMorphAiGalleryCache() {
+  const existing = readAll();
+  if (!existing.length) return;
+  writeAll(existing);
+}
+
+/** Sahifa ochilganda eski og‘ir kalitlardan xotirani bo‘shatish. */
+export function pruneHeavyMorphLocalCaches() {
+  if (typeof localStorage === "undefined") return;
+  try {
+    localStorage.removeItem(LEGACY_THREADS_KEY);
+  } catch {
+    /* noop */
+  }
+  recompactMorphAiGalleryCache();
+}
+
+const LEGACY_THREADS_KEY = "mysaloon.morphAi.chat.threads.v1";
 
 /** Guest try-ons → logged-in user key after auth. */
 export function migrateGuestMorphAiGenerations(userId: number) {

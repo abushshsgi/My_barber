@@ -20,10 +20,13 @@ export function selfieQualityMessage(code: SelfieQualityCode): string {
   return `selfie_quality:${code}`;
 }
 
+import { isStorageQuotaError, STORAGE_QUOTA_USER_MESSAGE } from "@/lib/storage-quota";
+
 export function presentSelfieError(
   message: string,
   translate?: (key: string, fallback: string) => string,
 ): string {
+  if (isStorageQuotaError(message)) return STORAGE_QUOTA_USER_MESSAGE;
   if (!message.startsWith("selfie_quality:")) return message;
   const code = message.slice("selfie_quality:".length) as SelfieQualityCode;
   const fallback = QUALITY_FALLBACK[code] ?? "Please retake the photo with your full head visible.";
