@@ -180,10 +180,13 @@ def merge_usage_tokens(*payloads: dict[str, Any] | None) -> dict[str, int]:
 # Larger output is scaled by megapixels. The API `cost` field is the real bill
 # when Runware returns it; this table is only the fallback.
 RUNWARE_USD_PER_1024 = {
+    "bfl:flux@3-image-klein": Decimal("0.006000"),  # docs: 1024², 16 steps
     "runware:400@2": Decimal("0.000780"),  # FLUX.2 klein 9B
     "runware:400@6": Decimal("0.000780"),  # FLUX.2 klein 9B KV
     "runware:400@4": Decimal("0.000600"),  # FLUX.2 klein 4B
 }
+# Documented reference-to-image runs cost more than plain 1024² text edits.
+RUNWARE_REFERENCE_SURCHARGE_PER_EXTRA_IMAGE = Decimal("0.002500")
 _GEMINI_PROVIDERS = frozenset({"vertex", "studio", "gemini", "google"})
 _ANALYZE_KINDS = frozenset({"analyze", "face_check", "ingredient"})
 _VOICE_KINDS = frozenset({"voice_stt", "voice_tts"})
@@ -191,18 +194,57 @@ _VOICE_KINDS = frozenset({"voice_stt", "voice_tts"})
 
 def runware_list_usd(model: str | None = None) -> Decimal:
     """Configured try-on output size × Runware list price. Not an API invoice."""
+    width = int(getattr(settings, "RUNWARE_TRYON_WIDTH", 1024) or 1024)
+    height = int(getattr(settings, "RUNWARE_TRYON_HEIGHT", 1024) or 1024)
+    return estimate_tryon_request_usd(
+        model=model or "",
+        width=width,
+        height=height,
+        reference_count=1,
+        steps=16,
+    )
+
+
+def tryon_cost_cap_usd() -> Decimal:
+    raw = getattr(settings, "RUNWARE_TRYON_MAX_COST_USD", None)
+    if raw is None or str(raw).strip() == "":
+        return Decimal("0.009")
+    try:
+        value = Decimal(str(raw).strip())
+    except Exception:
+        return Decimal("0.009")
+    if value <= 0:
+        return Decimal("0.009")
+    return value.quantize(USD_QUANT, rounding=ROUND_HALF_UP)
+
+
+def estimate_tryon_request_usd(
+    *,
+    model: str,
+    width: int,
+    height: int,
+    reference_count: int = 1,
+    steps: int = 16,
+) -> Decimal:
+    """Conservative pre-flight estimate from Runware docs. API `cost` is authoritative."""
     key = (model or "").strip()
     base = RUNWARE_USD_PER_1024.get(key)
     if base is None:
-        if "400@4" in key:
+        if "flux@3-image-klein" in key:
+            base = RUNWARE_USD_PER_1024["bfl:flux@3-image-klein"]
+        elif "400@4" in key:
             base = RUNWARE_USD_PER_1024["runware:400@4"]
         else:
             base = RUNWARE_USD_PER_1024["runware:400@2"]
-    width = int(getattr(settings, "RUNWARE_TRYON_WIDTH", 1024) or 1024)
-    height = int(getattr(settings, "RUNWARE_TRYON_HEIGHT", 1024) or 1024)
-    pixels = Decimal(max(128, width) * max(128, height))
+    w = max(128, int(width or 1024))
+    h = max(128, int(height or 1024))
+    pixels = Decimal(w * h)
     unit = pixels / Decimal(1024 * 1024)
-    return (base * unit).quantize(USD_QUANT, rounding=ROUND_HALF_UP)
+    step_scale = Decimal(max(1, int(steps or 16))) / Decimal("16")
+    refs = max(1, int(reference_count or 1))
+    surcharge = RUNWARE_REFERENCE_SURCHARGE_PER_EXTRA_IMAGE * Decimal(max(0, refs - 1))
+    total = base * unit * step_scale + surcharge
+    return total.quantize(USD_QUANT, rounding=ROUND_HALF_UP)
 
 
 def _as_cost(value: Any) -> Decimal:
@@ -234,7 +276,11 @@ def explain_usage_charge(
     model_l = (model or "").strip()
     stored = _as_cost(cost_usd)
     tokens = max(0, int(total_tokens or 0))
-    is_runware = provider_l == "runware" or model_l.startswith("runware:")
+    is_runware = (
+        provider_l == "runware"
+        or model_l.startswith("runware:")
+        or model_l.startswith("bfl:flux@")
+    )
     success = status_l == "success"
 
     def pack(

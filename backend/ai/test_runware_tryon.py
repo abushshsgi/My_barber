@@ -62,8 +62,8 @@ class _Response:
     TRYON_PROVIDER="runware",
     RUNWARE_API_KEY="super-secret-key",
     RUNWARE_API_URL="https://api.runware.ai/v1",
-    RUNWARE_TRYON_MODEL="runware:400@6",
-    RUNWARE_TRYON_FALLBACK_MODELS="runware:400@2,runware:400@4",
+    RUNWARE_TRYON_MODEL="bfl:flux@3-image-klein",
+    RUNWARE_TRYON_FALLBACK_MODELS="runware:400@6",
     RUNWARE_TRYON_WIDTH=1024,
     RUNWARE_TRYON_HEIGHT=1024,
     RUNWARE_TRYON_TIMEOUT=30,
@@ -71,7 +71,7 @@ class _Response:
     RUNWARE_TRYON_NEGATIVE_PROMPT_ENABLED=True,
     RUNWARE_TRYON_SEED_MODE="auto",
     RUNWARE_TRYON_SCHEDULER="default",
-    RUNWARE_TRYON_OUTPUT_FORMAT="PNG",
+    RUNWARE_TRYON_OUTPUT_FORMAT="WEBP",
     RUNWARE_TRYON_STRENGTH="0.45",
     RUNWARE_TRYON_OVERFLOW_DEPTH="8",
     TRYON_PROVIDER_CONCURRENCY=8,
@@ -80,10 +80,27 @@ class _Response:
     RUNWARE_TRYON_DUAL_REFERENCE=False,
 )
 class RunwareTryOnTests(SimpleTestCase):
+    def test_resolved_model_is_flux3_klein(self):
+        from ai.services.runware_tryon import FLUX3_TRYON_MODEL, resolved_tryon_model
+
+        self.assertEqual(resolved_tryon_model(), FLUX3_TRYON_MODEL)
+
+    def test_cost_estimate_1024_dual_reference_under_cap(self):
+        from ai.usage_pricing import estimate_tryon_request_usd, tryon_cost_cap_usd
+
+        estimate = estimate_tryon_request_usd(
+            model="bfl:flux@3-image-klein",
+            width=1024,
+            height=1024,
+            reference_count=2,
+            steps=16,
+        )
+        self.assertLessEqual(estimate, tryon_cost_cap_usd())
+
     def test_1024_is_inside_model_limits(self):
         from ai.services.runware_tryon import resolved_tryon_size, snap_dimension
 
-        self.assertEqual(resolved_tryon_size("runware:400@6"), (1024, 1024))
+        self.assertEqual(resolved_tryon_size("bfl:flux@3-image-klein"), (1024, 1024))
         self.assertEqual(snap_dimension(1000), 992)
         self.assertEqual(snap_dimension(1024), 1024)
 
@@ -92,14 +109,14 @@ class RunwareTryOnTests(SimpleTestCase):
 
         buffer = BytesIO()
         Image.new("RGB", (768, 1024), (90, 70, 60)).save(buffer, format="JPEG", quality=80)
-        self.assertEqual(_output_size_for_bytes(buffer.getvalue(), "runware:400@6"), (768, 1024))
+        self.assertEqual(_output_size_for_bytes(buffer.getvalue(), "bfl:flux@3-image-klein"), (768, 1024))
 
     def test_output_size_keeps_landscape_ratio(self):
         from ai.services.runware_tryon import _output_size_for_bytes
 
         buffer = BytesIO()
         Image.new("RGB", (1600, 900), (90, 70, 60)).save(buffer, format="JPEG", quality=80)
-        self.assertEqual(_output_size_for_bytes(buffer.getvalue(), "runware:400@6"), (1024, 576))
+        self.assertEqual(_output_size_for_bytes(buffer.getvalue(), "bfl:flux@3-image-klein"), (1024, 576))
 
     @override_settings(RUNWARE_TRYON_WIDTH=1152, RUNWARE_TRYON_HEIGHT=1536)
     def test_output_size_scales_portrait_taller(self):
@@ -107,7 +124,7 @@ class RunwareTryOnTests(SimpleTestCase):
 
         buffer = BytesIO()
         Image.new("RGB", (768, 1024), (90, 70, 60)).save(buffer, format="JPEG", quality=80)
-        self.assertEqual(_output_size_for_bytes(buffer.getvalue(), "runware:400@6"), (1152, 1536))
+        self.assertEqual(_output_size_for_bytes(buffer.getvalue(), "bfl:flux@3-image-klein"), (1152, 1536))
 
     def test_output_size_keeps_square_selfie(self):
         from ai.services.runware_tryon import _output_size_for_bytes
@@ -115,7 +132,7 @@ class RunwareTryOnTests(SimpleTestCase):
         buffer = BytesIO()
         Image.new("RGB", (1024, 1024), (90, 70, 60)).save(buffer, format="JPEG", quality=80)
         with override_settings(RUNWARE_TRYON_WIDTH=1152, RUNWARE_TRYON_HEIGHT=1536):
-            self.assertEqual(_output_size_for_bytes(buffer.getvalue(), "runware:400@6"), (1536, 1536))
+            self.assertEqual(_output_size_for_bytes(buffer.getvalue(), "bfl:flux@3-image-klein"), (1536, 1536))
 
     def test_prepare_selfie_does_not_pad_above_the_hair(self):
         from ai.services.runware_tryon import prepare_selfie_bytes
@@ -198,7 +215,7 @@ class RunwareTryOnTests(SimpleTestCase):
         vertex.assert_not_called()
         task = infer.call_args.args[0]
         refs = task["inputs"]["referenceImages"]
-        self.assertEqual(task["model"], "runware:400@6")
+        self.assertEqual(task["model"], "bfl:flux@3-image-klein")
         self.assertEqual(len(refs), 2)
         self.assertTrue(all(item.startswith("data:image/jpeg;base64,") for item in refs))
         self.assertNotIn("seedImage", task)
@@ -208,21 +225,19 @@ class RunwareTryOnTests(SimpleTestCase):
         self.assertNotIn("inpaintingMask", task)
         self.assertNotIn("seed", task)
         self.assertNotIn("scheduler", task)
-        self.assertEqual(task["steps"], 4)
-        self.assertEqual(task["CFGScale"], 3.5)
-        self.assertEqual(task["outputFormat"], "PNG")
-        self.assertNotIn("outputQuality", task)
+        self.assertNotIn("CFGScale", task)
+        self.assertNotIn("negativePrompt", task)
+        self.assertEqual(task["steps"], 16)
+        self.assertEqual(task["outputFormat"], "WEBP")
+        self.assertEqual(task["outputQuality"], 95)
         self.assertLessEqual(len(task["positivePrompt"]), 10000)
-        self.assertLessEqual(len(task["negativePrompt"]), 3000)
-        self.assertGreaterEqual(len(task["negativePrompt"]), 2)
         prompt = task["positivePrompt"].lower()
-        self.assertIn("reference image 1", prompt)
-        self.assertIn("reference image 2", prompt)
-        self.assertIn("identity-preserving hairstyle transformation", prompt)
+        self.assertIn("image 1", prompt)
+        self.assertIn("image 2", prompt)
+        self.assertIn("professional photorealistic hairstyle transformation", prompt)
         self.assertIn("critical original hair color preservation", prompt)
         self.assertIn("selected hairstyle lock", prompt)
         self.assertIn("mid fade", prompt)
-        self.assertIn("change only the hairstyle", prompt)
         self.assertTrue(result.preview_image.startswith("/media/ai-style/tryon-results/"))
         self.assertNotIn("runware.ai", result.preview_image)
         self.assertNotIn("super-secret-key", result.preview_image)
@@ -307,36 +322,40 @@ class RunwareTryOnTests(SimpleTestCase):
         download.return_value = _jpeg_bytes()
         infer.side_effect = [
             AiStyleError("Try-on hozir band.", 429, retryable=True),
-            AiStyleError("Try-on modeli topilmadi.", 400, retryable=False),
             {"imageURL": "https://im.runware.ai/image/fallback.jpg", "cost": 0.002},
         ]
-        result = generate_tryon_preview(
-            selfie_data_url=TINY_PNG,
-            audience="men",
-            slug="mid-fade",
-            title="Mid Fade",
-        )
-        self.assertEqual(result.model, "runware:400@4")
-        self.assertEqual(infer.call_count, 3)
+        catalog = _jpeg_bytes_color((40, 80, 120), (128, 128))
+        with patch(
+            "ai.services.runware_tryon.load_public_image",
+            return_value=("image/jpeg", catalog),
+        ):
+            result = generate_tryon_preview(
+                selfie_data_url=TINY_PNG,
+                audience="men",
+                slug="mid-fade",
+                title="Mid Fade",
+                reference_image_url="/hairstyles/men/mid-fade.webp",
+            )
+        self.assertEqual(result.model, "runware:400@6")
+        self.assertEqual(infer.call_count, 2)
         self.assertEqual(
             [call.args[0]["model"] for call in infer.call_args_list],
-            ["runware:400@6", "runware:400@2", "runware:400@4"],
+            ["bfl:flux@3-image-klein", "runware:400@6"],
         )
 
-    def test_default_chain_is_kv_then_two_reserves(self):
+    def test_default_chain_is_flux3_then_kv_reserve(self):
         from ai.services.runware_tryon import tryon_model_chain, tryon_model_chain_for_pressure
 
         self.assertEqual(
             tryon_model_chain(),
-            ["runware:400@6", "runware:400@2", "runware:400@4"],
+            ["bfl:flux@3-image-klein", "runware:400@6"],
         )
         self.assertEqual(
             tryon_model_chain_for_pressure(1),
-            ["runware:400@6", "runware:400@2", "runware:400@4"],
+            ["bfl:flux@3-image-klein", "runware:400@6"],
         )
-        self.assertEqual(tryon_model_chain_for_pressure(9)[0], "runware:400@2")
-        self.assertEqual(tryon_model_chain_for_pressure(10)[0], "runware:400@4")
-        self.assertIn("runware:400@6", tryon_model_chain_for_pressure(9))
+        self.assertEqual(tryon_model_chain_for_pressure(9)[0], "runware:400@6")
+        self.assertIn("bfl:flux@3-image-klein", tryon_model_chain_for_pressure(9))
 
     def test_unsupported_parameter_is_not_reported_as_a_missing_model(self):
         from ai.services.runware_client import run_image_inference
@@ -509,35 +528,45 @@ class RunwareTryOnTests(SimpleTestCase):
             self.assertIsNone(resolved_cfg_scale())
 
         self.assertIsNone(resolved_seed())
-        self.assertIsNone(resolved_scheduler())
+        self.assertIsNone(resolved_scheduler("bfl:flux@3-image-klein"))
         with override_settings(RUNWARE_TRYON_SEED_MODE="fixed", RUNWARE_TRYON_TEST_SEED="12345"):
             self.assertEqual(resolved_seed(), 12345)
         with override_settings(RUNWARE_TRYON_SEED_MODE="fixed", RUNWARE_TRYON_TEST_SEED="-1"):
             self.assertIsNone(resolved_seed())
         with override_settings(RUNWARE_TRYON_SCHEDULER="Euler"):
-            self.assertEqual(resolved_scheduler(), "Euler")
+            self.assertEqual(resolved_scheduler("runware:400@6"), "Euler")
         with override_settings(RUNWARE_TRYON_SCHEDULER="not-a-scheduler"):
-            self.assertIsNone(resolved_scheduler())
+            self.assertIsNone(resolved_scheduler("runware:400@6"))
 
-        task = build_tryon_task(
+        flux_task = build_tryon_task(
+            model="bfl:flux@3-image-klein",
+            prompt="edit",
+            width=1024,
+            height=1024,
+            references=["data:image/jpeg;base64,abcd", "data:image/jpeg;base64,efgh"],
+        )
+        self.assertEqual(flux_task["steps"], 16)
+        self.assertNotIn("CFGScale", flux_task)
+        self.assertNotIn("negativePrompt", flux_task)
+        self.assertNotIn("strength", flux_task)
+
+        legacy = build_tryon_task(
             model="runware:400@6",
             prompt="edit",
             width=1024,
             height=1024,
             references=["data:image/jpeg;base64,abcd"],
         )
-        self.assertNotIn("strength", task)
-        self.assertNotIn("seedImage", task)
-        self.assertNotIn("mask", task)
-        self.assertNotIn("maskImage", task)
-        self.assertNotIn("inpaintingMask", task)
+        self.assertEqual(legacy["steps"], 4)
+        self.assertEqual(legacy["CFGScale"], 3.5)
+        self.assertNotIn("seedImage", legacy)
         with override_settings(RUNWARE_TRYON_OUTPUT_FORMAT="JPG"):
             jpg_task = build_tryon_task(
-                model="runware:400@6",
+                model="bfl:flux@3-image-klein",
                 prompt="edit",
                 width=1024,
                 height=1024,
-                references=["data:image/jpeg;base64,abcd"],
+                references=["data:image/jpeg;base64,abcd", "data:image/jpeg;base64,efgh"],
             )
         self.assertEqual(jpg_task["outputFormat"], "JPG")
         self.assertEqual(jpg_task["outputQuality"], 95)
@@ -577,8 +606,11 @@ class RunwareTryOnTests(SimpleTestCase):
             title="Mid Fade",
             style_detail="mid fade",
             include_catalog_image=True,
+            audience="men",
+            slug="mid-fade",
         )
-        self.assertIn(REFERENCE_IMAGE_PROMPT.strip()[:40], with_catalog)
+        self.assertIn("IMAGE 1 — ORIGINAL PERSON", with_catalog)
+        self.assertIn("SELECTED HAIRSTYLE LOCK", with_catalog)
         self.assertLessEqual(len(NEGATIVE_PROMPT.strip()), 3000)
 
         with override_settings(RUNWARE_TRYON_NEGATIVE_PROMPT="x" * 3001):
@@ -605,13 +637,19 @@ class RunwareTryOnTests(SimpleTestCase):
         from ai.services.runware_tryon import generate_tryon_preview
 
         infer.side_effect = AiStyleError("Rasm qabul qilinmadi.", 400, retryable=False)
-        with self.assertRaises(AiStyleError):
-            generate_tryon_preview(
-                selfie_data_url=TINY_PNG,
-                audience="men",
-                slug="mid-fade",
-                title="Mid Fade",
-            )
+        catalog = _jpeg_bytes_color((40, 80, 120), (128, 128))
+        with patch(
+            "ai.services.runware_tryon.load_public_image",
+            return_value=("image/jpeg", catalog),
+        ):
+            with self.assertRaises(AiStyleError):
+                generate_tryon_preview(
+                    selfie_data_url=TINY_PNG,
+                    audience="men",
+                    slug="mid-fade",
+                    title="Mid Fade",
+                    reference_image_url="/hairstyles/men/mid-fade.webp",
+                )
         self.assertEqual(infer.call_count, 1)
 
     def test_long_hair_gets_bottom_room_without_moving_the_forehead(self):
@@ -681,16 +719,16 @@ class RunwareTryOnTests(SimpleTestCase):
             (camera.normalized_width, camera.normalized_height),
             (gallery.normalized_width, gallery.normalized_height),
         )
-        width, height = _output_size_for_bytes(camera.payload, "runware:400@6")
+        width, height = _output_size_for_bytes(camera.payload, "bfl:flux@3-image-klein")
         camera_task = build_tryon_task(
-            model="runware:400@6",
+            model="bfl:flux@3-image-klein",
             prompt="edit reference image 1",
             width=width,
             height=height,
             references=["data:image/jpeg;base64,abcd"],
         )
         gallery_task = build_tryon_task(
-            model="runware:400@6",
+            model="bfl:flux@3-image-klein",
             prompt="edit reference image 1",
             width=width,
             height=height,
@@ -714,7 +752,7 @@ class RunwareTryOnTests(SimpleTestCase):
             mirror_correction="client",
             jpeg_quality=camera.jpeg_quality,
             crop_strategy=camera.crop_strategy,
-            model="runware:400@6",
+            model="bfl:flux@3-image-klein",
             quality_result="skipped",
         )
         blob = json.dumps(record)
@@ -774,14 +812,20 @@ class RunwareTryOnTests(SimpleTestCase):
 
         skin = _data_url(_solid_jpeg((220, 180, 150), (320, 400)))
         blue = _jpeg_bytes_color((20, 40, 180), (320, 400))
+        catalog = _jpeg_bytes_color((40, 80, 120), (128, 128))
         download.return_value = blue
         infer.return_value = {"imageURL": "https://im.runware.ai/image/example.jpg", "cost": 0.001}
-        generate_tryon_preview(
-            selfie_data_url=skin,
-            audience="men",
-            slug="mid-fade",
-            title="Mid Fade",
-        )
+        with patch(
+            "ai.services.runware_tryon.load_public_image",
+            return_value=("image/jpeg", catalog),
+        ):
+            generate_tryon_preview(
+                selfie_data_url=skin,
+                audience="men",
+                slug="mid-fade",
+                title="Mid Fade",
+                reference_image_url="/hairstyles/men/mid-fade.webp",
+            )
         self.assertEqual(infer.call_count, 1)
         self.assertNotIn("strength", infer.call_args.args[0])
 
@@ -789,12 +833,16 @@ class RunwareTryOnTests(SimpleTestCase):
         download.reset_mock()
         download.side_effect = [blue, blue]
         infer.return_value = {"imageURL": "https://im.runware.ai/image/example.jpg", "cost": 0.001}
-        with override_settings(RUNWARE_TRYON_QUALITY_RETRY=True, TRYON_FACE_RESTORE=True):
+        with override_settings(RUNWARE_TRYON_QUALITY_RETRY=True, TRYON_FACE_RESTORE=True), patch(
+            "ai.services.runware_tryon.load_public_image",
+            return_value=("image/jpeg", catalog),
+        ):
             generate_tryon_preview(
                 selfie_data_url=skin,
                 audience="men",
                 slug="mid-fade",
                 title="Mid Fade",
+                reference_image_url="/hairstyles/men/mid-fade.webp",
             )
         self.assertEqual(infer.call_count, 2)
         self.assertIn("SAFER REVISION", infer.call_args_list[1].args[0]["positivePrompt"])

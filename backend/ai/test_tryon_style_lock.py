@@ -49,8 +49,8 @@ class TryOnStyleLockTests(SimpleTestCase):
             slug="pompadour",
             include_catalog_image=True,
         )
-        self.assertIn("REFERENCE IMAGE 2 — TARGET HAIRSTYLE", prompt)
-        self.assertIn("Do not replace a Pompadour with a Quiff", prompt)
+        self.assertIn("IMAGE 2 — TARGET HAIRSTYLE", prompt)
+        self.assertIn("If the selected style is Pompadour", prompt)
         self.assertNotIn("No catalog model photograph is attached", prompt)
 
     @override_settings(TRYON_PROMPT_VERSION="legacy")

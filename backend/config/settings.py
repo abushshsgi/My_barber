@@ -254,12 +254,13 @@ RUNWARE_API_URL = (
     os.environ.get("RUNWARE_API_URL", "https://api.runware.ai/v1").strip()
     or "https://api.runware.ai/v1"
 )
-# Default: FLUX.2 [klein] 9B KV. Reserves run only when it is full or the queue is deep.
+# Default: FLUX 3 Image Klein. Reserve runware:400@6 only under queue pressure (rollback).
 RUNWARE_TRYON_MODEL = (
-    os.environ.get("RUNWARE_TRYON_MODEL", "runware:400@6").strip() or "runware:400@6"
+    os.environ.get("RUNWARE_TRYON_MODEL", "bfl:flux@3-image-klein").strip()
+    or "bfl:flux@3-image-klein"
 )
 RUNWARE_TRYON_FALLBACK_MODELS = os.environ.get(
-    "RUNWARE_TRYON_FALLBACK_MODELS", "runware:400@2,runware:400@4"
+    "RUNWARE_TRYON_FALLBACK_MODELS", "runware:400@6"
 ).strip()
 try:
     _runware_width = int(os.environ.get("RUNWARE_TRYON_WIDTH", "1024") or "1024")
@@ -273,8 +274,13 @@ try:
     _runware_timeout = int(os.environ.get("RUNWARE_TRYON_TIMEOUT", "120") or "120")
 except ValueError:
     _runware_timeout = 120
-RUNWARE_TRYON_WIDTH = max(128, min(_runware_width, 2048))
-RUNWARE_TRYON_HEIGHT = max(128, min(_runware_height, 2048))
+RUNWARE_TRYON_WIDTH = max(128, min(_runware_width, 4096))
+RUNWARE_TRYON_HEIGHT = max(128, min(_runware_height, 4096))
+try:
+    _runware_steps = int(os.environ.get("RUNWARE_TRYON_STEPS", "16") or "16")
+except ValueError:
+    _runware_steps = 16
+RUNWARE_TRYON_STEPS = max(1, min(_runware_steps, 50))
 RUNWARE_TRYON_TIMEOUT = max(30, min(_runware_timeout, 240))
 # Validated at request time. 3.5 is the documented FLUX.2 klein default.
 RUNWARE_TRYON_CFG_SCALE = os.environ.get("RUNWARE_TRYON_CFG_SCALE", "3.5").strip() or "3.5"
@@ -288,8 +294,9 @@ RUNWARE_TRYON_SEED_MODE = (
 RUNWARE_TRYON_TEST_SEED = os.environ.get("RUNWARE_TRYON_TEST_SEED", "12345").strip() or "12345"
 # "default" is internal: the scheduler field is omitted and the model default is used.
 RUNWARE_TRYON_SCHEDULER = os.environ.get("RUNWARE_TRYON_SCHEDULER", "default").strip() or "default"
-RUNWARE_TRYON_OUTPUT_FORMAT = os.environ.get("RUNWARE_TRYON_OUTPUT_FORMAT", "PNG").strip() or "PNG"
-# runware:400@6 has no strength parameter. A value here is logged and never sent.
+RUNWARE_TRYON_OUTPUT_FORMAT = os.environ.get("RUNWARE_TRYON_OUTPUT_FORMAT", "WEBP").strip() or "WEBP"
+RUNWARE_TRYON_MAX_COST_USD = os.environ.get("RUNWARE_TRYON_MAX_COST_USD", "0.009").strip() or "0.009"
+# strength is unsupported on Try-On edit models; values are logged and never sent.
 RUNWARE_TRYON_STRENGTH = os.environ.get("RUNWARE_TRYON_STRENGTH", "").strip()
 # Paste the original inner face back only when alignment checks pass.
 TRYON_FACE_RESTORE = os.environ.get("TRYON_FACE_RESTORE", "true").strip().lower() in (

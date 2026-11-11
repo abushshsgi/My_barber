@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Try-On V2: dual catalog reference + style-lock prompts on VPS backend.
+# Try-On FLUX 3 Image Klein: dual catalog reference + style-lock prompts on VPS backend.
 # Server (root): sudo bash deploy/vps/deploy-tryon-dual-reference.sh
 set -euo pipefail
 
@@ -42,6 +42,13 @@ _ensure_env() {
   fi
 }
 
+_ensure_env "RUNWARE_TRYON_MODEL" "bfl:flux@3-image-klein"
+_ensure_env "RUNWARE_TRYON_FALLBACK_MODELS" "runware:400@6"
+_ensure_env "RUNWARE_TRYON_WIDTH" "1024"
+_ensure_env "RUNWARE_TRYON_HEIGHT" "1024"
+_ensure_env "RUNWARE_TRYON_STEPS" "16"
+_ensure_env "RUNWARE_TRYON_MAX_COST_USD" "0.009"
+_ensure_env "RUNWARE_TRYON_OUTPUT_FORMAT" "WEBP"
 _ensure_env "RUNWARE_TRYON_DUAL_REFERENCE" "true"
 _ensure_env "TRYON_PROMPT_VERSION" "v2"
 
@@ -50,6 +57,8 @@ cat > "$ROLLBACK_FILE" << 'EOF'
 # 1) Quyidagi qatorlarni /var/www/mysaloon/source/backend/.env ga qo'ying
 # 2) systemctl restart mysaloon.service
 # 3) systemctl try-restart mysaloon-tryon-worker.service (agar bor bo'lsa)
+RUNWARE_TRYON_MODEL=runware:400@6
+RUNWARE_TRYON_FALLBACK_MODELS=
 RUNWARE_TRYON_DUAL_REFERENCE=false
 TRYON_PROMPT_VERSION=legacy
 EOF
@@ -68,5 +77,5 @@ fi
 
 curl -sS -o /dev/null -w 'health=%{http_code}\n' https://api.mysaloon.uz/health/
 git -C "$ROOT" log -1 --oneline
-grep -E '^RUNWARE_TRYON_DUAL_REFERENCE=|^TRYON_PROMPT_VERSION=' "$ENV_FILE"
+grep -E '^RUNWARE_TRYON_MODEL=|^RUNWARE_TRYON_DUAL_REFERENCE=|^TRYON_PROMPT_VERSION=' "$ENV_FILE"
 echo "Rollback snippet: $ROLLBACK_FILE"

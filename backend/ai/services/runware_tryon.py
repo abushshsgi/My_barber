@@ -1,12 +1,12 @@
 """Morf AI Try-On via Runware image editing.
 
-Primary: FLUX.2 [klein] 9B KV, AIR ``runware:400@6``.
-Reserve models are used only when that model is full or the try-on queue is
-past the overflow threshold: ``runware:400@2`` (9B), then ``runware:400@4`` (4B).
-All three list Edit and ``inputs.referenceImages`` (1–4 images, no per-image role).
-Width and height are 128–2048, step 16. 1024×1024 is valid.
+Primary: FLUX 3 Image Klein, AIR ``bfl:flux@3-image-klein``.
+Rollback reserve (overflow only, cost-checked): ``runware:400@6`` (FLUX.2 klein 9B KV).
 
-``strength``, ``seedImage``, and mask/inpaint fields are not part of this model.
+Dual-reference: ``inputs.referenceImages[0]`` = user selfie, ``[1]`` = Explore catalog.
+Width and height 128–4096 (step 16) on FLUX 3; legacy Runware edit models cap at 2048.
+
+``strength``, ``seedImage``, and masks are not supported on these models.
 Try-On never falls back to Gemini image APIs.
 """
 
@@ -40,38 +40,63 @@ from .tryon_prompts import (
     resolve_tryon_prompt_version,
 )
 from .tryon_quality import assess_tryon_quality
+from ai.usage_pricing import estimate_tryon_request_usd, tryon_cost_cap_usd
 
 logger = logging.getLogger(__name__)
 
 PUBLIC_ROOT = Path(settings.BASE_DIR).parent / "apps" / "user" / "public"
 
-# FLUX.2 [klein] 9B KV. Reserves: 9B, then 4B.
-DEFAULT_TRYON_MODEL = "runware:400@6"
-DEFAULT_FALLBACK_MODELS = "runware:400@2,runware:400@4"
+FLUX3_TRYON_MODEL = "bfl:flux@3-image-klein"
+# FLUX 3 Image Klein — production Try-On. Reserve: prior KV edit model for rollback.
+DEFAULT_TRYON_MODEL = FLUX3_TRYON_MODEL
+DEFAULT_FALLBACK_MODELS = "runware:400@6"
 
 # Verified against Runware docs on 2026-11-07. Do not add a model here
 # unless its page lists Edit (or image-to-image) and reference image input.
-VERIFIED_EDIT_MODELS: dict[str, dict[str, int]] = {
-    # FLUX.2 [klein] 9B
+VERIFIED_EDIT_MODELS: dict[str, dict[str, int | bool]] = {
+    FLUX3_TRYON_MODEL: {
+        "min_edge": 128,
+        "max_edge": 4096,
+        "step": 16,
+        "max_references": 4,
+        "default_steps": 16,
+        "supports_negative": False,
+        "supports_cfg": False,
+        "supports_scheduler": False,
+        "requires_dual_reference": True,
+    },
     "runware:400@2": {
         "min_edge": 128,
         "max_edge": 2048,
         "step": 16,
         "max_references": 4,
+        "default_steps": 4,
+        "supports_negative": True,
+        "supports_cfg": True,
+        "supports_scheduler": True,
+        "requires_dual_reference": False,
     },
-    # FLUX.2 [klein] 9B KV — default edit model. KV cache, same edit API as 9B.
     "runware:400@6": {
         "min_edge": 128,
         "max_edge": 2048,
         "step": 16,
         "max_references": 4,
+        "default_steps": 4,
+        "supports_negative": True,
+        "supports_cfg": True,
+        "supports_scheduler": True,
+        "requires_dual_reference": False,
     },
-    # FLUX.2 [klein] 4B — low-latency edit
     "runware:400@4": {
         "min_edge": 128,
         "max_edge": 2048,
         "step": 16,
         "max_references": 4,
+        "default_steps": 4,
+        "supports_negative": True,
+        "supports_cfg": True,
+        "supports_scheduler": True,
+        "requires_dual_reference": False,
     },
 }
 
@@ -104,9 +129,7 @@ SAFER_RETRY_SUFFIX = (
     "SAFER REVISION: Keep the original forehead height, hairline, temples, and head shape. "
     "Lower the hair volume. Do not cover the forehead with extra curls or a wig-like mass."
 )
-# FLUX.2 klein is distilled to 4 steps. Documented CFG default is 3.5 (range 1–20).
-# seedImage, strength, and masks are rejected or unsupported — never send them.
-TRYON_STEPS = 4
+# Per-model defaults live in VERIFIED_EDIT_MODELS["default_steps"].
 TRYON_CFG = 3.5
 PROMPT_MAX = 10000
 SEED_MAX = 9223372036854776000
@@ -228,14 +251,24 @@ def tryon_provider_name() -> str:
     return "runware"
 
 
-def snap_dimension(value: int, *, step: int = 16, lo: int = 128, hi: int = 2048) -> int:
+def snap_dimension(value: int, *, step: int = 16, lo: int = 128, hi: int = 4096) -> int:
     snapped = (max(lo, min(hi, int(value))) // step) * step
     if snapped < lo:
         snapped = lo
     return min(snapped, hi)
 
 
-_DEFAULT_MODEL_SPEC = {"min_edge": 128, "max_edge": 2048, "step": 16, "max_references": 4}
+_DEFAULT_MODEL_SPEC: dict[str, int | bool] = {
+    "min_edge": 128,
+    "max_edge": 4096,
+    "step": 16,
+    "max_references": 4,
+    "default_steps": 16,
+    "supports_negative": False,
+    "supports_cfg": False,
+    "supports_scheduler": False,
+    "requires_dual_reference": False,
+}
 
 
 def resolved_tryon_model() -> str:
@@ -243,19 +276,45 @@ def resolved_tryon_model() -> str:
     if model not in VERIFIED_EDIT_MODELS:
         raise AiStyleError(
             "RUNWARE_TRYON_MODEL Try-On uchun tasdiqlanmagan. "
-            "Image editing modeli kerak (runware:400@6 — FLUX.2 klein 9B KV).",
+            f"Image editing modeli kerak ({FLUX3_TRYON_MODEL} — FLUX 3 Image Klein).",
             503,
             retryable=False,
         )
     return model
 
 
+def _chain_within_cost_cap(chain: list[str], *, width: int, height: int, reference_count: int) -> list[str]:
+    """Drop fallbacks whose documented estimate exceeds the business cost cap."""
+    cap = tryon_cost_cap_usd()
+    kept: list[str] = []
+    for model in chain:
+        estimate = estimate_tryon_request_usd(
+            model=model,
+            width=width,
+            height=height,
+            reference_count=reference_count,
+            steps=tryon_steps_for_model(model),
+        )
+        if estimate > cap and kept:
+            logger.warning(
+                "Try-on model omitted from chain: estimate $%s exceeds cap $%s model=%s",
+                estimate,
+                cap,
+                model,
+            )
+            continue
+        kept.append(model)
+    return kept or chain[:1]
+
+
 def tryon_model_chain() -> list[str]:
     """Asosiy model, keyin zaxira modellar. Ko'pi bilan 4 ta."""
     primary = resolved_tryon_model()
-    raw = getattr(settings, "RUNWARE_TRYON_FALLBACK_MODELS", "") or ""
+    raw = getattr(settings, "RUNWARE_TRYON_FALLBACK_MODELS", "") or DEFAULT_FALLBACK_MODELS
     extras = [part.strip() for part in str(raw).split(",") if part.strip() and part.strip() != primary]
-    return [primary, *extras][:4]
+    chain = [primary, *extras][:4]
+    verified = [model for model in chain if model in VERIFIED_EDIT_MODELS]
+    return verified or [primary]
 
 
 def overflow_threshold() -> int:
@@ -295,8 +354,35 @@ def tryon_model_chain_for_pressure(queue_depth: int | None = None) -> list[str]:
     return [chosen, *others, primary]
 
 
-def _model_spec(model: str) -> dict[str, int]:
+def _model_spec(model: str) -> dict[str, int | bool]:
     return VERIFIED_EDIT_MODELS.get(model) or _DEFAULT_MODEL_SPEC
+
+
+def tryon_steps_for_model(model: str) -> int:
+    spec = _model_spec(model)
+    default = int(spec.get("default_steps") or 16)
+    if model != FLUX3_TRYON_MODEL:
+        return default
+    raw = getattr(settings, "RUNWARE_TRYON_STEPS", None)
+    if raw is not None and str(raw).strip() not in ("", "0"):
+        try:
+            value = int(raw)
+            if 1 <= value <= 50:
+                return value
+        except (TypeError, ValueError):
+            pass
+    return default
+
+
+def model_requires_dual_reference(model: str) -> bool:
+    return bool(_model_spec(model).get("requires_dual_reference"))
+
+
+def dual_reference_required(model: str | None = None) -> bool:
+    chosen = (model or resolved_tryon_model()).strip()
+    if model_requires_dual_reference(chosen):
+        return True
+    return dual_reference_enabled()
 
 
 def resolved_tryon_size(model: str | None = None) -> tuple[int, int]:
@@ -718,19 +804,22 @@ def resolved_seed() -> int | None:
     return seed
 
 
-def resolved_scheduler() -> str | None:
+def resolved_scheduler(model: str) -> str | None:
     """Internal 'default' is not sent. Only documented scheduler names are sent."""
+    if not bool(_model_spec(model).get("supports_scheduler")):
+        return None
     raw = str(getattr(settings, "RUNWARE_TRYON_SCHEDULER", "default") or "default").strip()
     if raw.lower() in ("", "default"):
         return None
     if raw not in DOCUMENTED_SCHEDULERS:
-        logger.warning("scheduler %s is not documented for runware:400@6; field omitted", raw)
+        logger.warning("scheduler %s is not documented for %s; field omitted", raw, model)
         return None
     return raw
 
 
 def resolved_output_format() -> str:
-    raw = str(getattr(settings, "RUNWARE_TRYON_OUTPUT_FORMAT", "PNG") or "PNG").strip().upper()
+    default = "WEBP" if resolved_tryon_model() == FLUX3_TRYON_MODEL else "PNG"
+    raw = str(getattr(settings, "RUNWARE_TRYON_OUTPUT_FORMAT", default) or default).strip().upper()
     if raw == "JPEG":
         raw = "JPG"
     if raw not in OUTPUT_FORMATS:
@@ -742,9 +831,7 @@ def resolved_output_format() -> str:
 def _note_ignored_strength() -> None:
     raw = str(getattr(settings, "RUNWARE_TRYON_STRENGTH", "") or "").strip()
     if raw:
-        logger.info(
-            "RUNWARE_TRYON_STRENGTH ignored; runware:400@6 does not support strength"
-        )
+        logger.info("RUNWARE_TRYON_STRENGTH ignored; Try-On edit models do not support strength")
 
 
 def build_tryon_task(
@@ -755,32 +842,35 @@ def build_tryon_task(
     height: int,
     references: list[str],
 ) -> dict[str, Any]:
-    """Payload fields verified for runware:400@6. Unsupported fields are left out."""
+    """Payload fields verified per model. Unsupported fields are left out."""
     _note_ignored_strength()
+    spec = _model_spec(model)
     if len(prompt) > PROMPT_MAX:
         logger.warning(
             "positivePrompt length %s exceeds %s; request may be rejected",
             len(prompt),
             PROMPT_MAX,
         )
-    cfg = resolved_cfg_scale()
+    steps = tryon_steps_for_model(model)
     task: dict[str, Any] = {
         "model": model,
         "positivePrompt": prompt,
         "width": int(width),
         "height": int(height),
-        "steps": TRYON_STEPS,
+        "steps": steps,
         "inputs": {"referenceImages": list(references)},
     }
+    cfg = resolved_cfg_scale() if bool(spec.get("supports_cfg")) else None
     if cfg is not None:
         task["CFGScale"] = cfg
-    negative = resolved_negative_prompt(cfg)
-    if negative:
-        task["negativePrompt"] = negative
+    if bool(spec.get("supports_negative")):
+        negative = resolved_negative_prompt(cfg)
+        if negative:
+            task["negativePrompt"] = negative
     seed = resolved_seed()
     if seed is not None:
         task["seed"] = seed
-    scheduler = resolved_scheduler()
+    scheduler = resolved_scheduler(model)
     if scheduler:
         task["scheduler"] = scheduler
     output_format = resolved_output_format()
@@ -789,12 +879,37 @@ def build_tryon_task(
         task["outputQuality"] = 95
     for key in FORBIDDEN_TASK_KEYS:
         task.pop(key, None)
-    unknown = sorted(set(task) - DOCUMENTED_TASK_FIELDS)
+    allowed = set(DOCUMENTED_TASK_FIELDS)
+    unknown = sorted(set(task) - allowed)
     if unknown:
         logger.warning("Dropping undocumented Runware fields: %s", unknown)
         for key in unknown:
             task.pop(key, None)
     return task
+
+
+def _assert_tryon_cost_budget(
+    *,
+    model: str,
+    width: int,
+    height: int,
+    reference_count: int,
+) -> Decimal:
+    estimate = estimate_tryon_request_usd(
+        model=model,
+        width=width,
+        height=height,
+        reference_count=reference_count,
+        steps=tryon_steps_for_model(model),
+    )
+    cap = tryon_cost_cap_usd()
+    if estimate > cap:
+        raise AiStyleError(
+            "Try-on konfiguratsiyasi byudjet chegarasidan oshdi. Administratorga murojaat qiling.",
+            503,
+            retryable=False,
+        )
+    return estimate
 
 
 def _build_tryon_prompt(
@@ -873,6 +988,12 @@ def _infer_edit(
         raise AiStyleError("Rasm qabul qilinmadi. Boshqa surat yuklang.", 400, retryable=False)
     edge = min(INPUT_MAX_EDGE, max(width, height))
     references = [_prepare_data_uri(raw, max_edge=edge) for raw in images]
+    _assert_tryon_cost_budget(
+        model=model,
+        width=width,
+        height=height,
+        reference_count=len(references),
+    )
     started = time.perf_counter()
     task = build_tryon_task(
         model=model,
@@ -928,6 +1049,14 @@ def _infer_with_fallback(
         )
     last: AiStyleError | None = None
     source = images[0] if images else b""
+    reference_count = len(images)
+    width, height = _output_size_for_bytes(source, chain[0] if chain else resolved_tryon_model())
+    chain = _chain_within_cost_cap(
+        chain,
+        width=width,
+        height=height,
+        reference_count=reference_count,
+    )
     for index, model in enumerate(chain):
         width, height = _output_size_for_bytes(source, model)
         try:
@@ -1071,9 +1200,14 @@ def generate_tryon_preview(
     _mime, selfie = load_image_bytes(selfie_data_url)
     style_detail = style_detail_for(audience, slug)
     prepared = prepare_selfie_bytes(selfie, style_detail=style_detail)
+    primary_model = resolved_tryon_model()
     include_catalog = False
     images: list[bytes] = [prepared.payload]
-    if dual_reference_enabled():
+    if dual_reference_required(primary_model):
+        catalog_bytes = load_catalog_reference_bytes(reference_image_url)
+        images = [prepared.payload, catalog_bytes]
+        include_catalog = True
+    elif dual_reference_enabled():
         catalog_bytes = load_catalog_reference_bytes(reference_image_url)
         images = [prepared.payload, catalog_bytes]
         include_catalog = True

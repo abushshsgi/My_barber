@@ -1,7 +1,7 @@
-"""Try-on prompt sections for FLUX.2 [klein] 9B KV (runware:400@6).
+"""Try-on prompts for FLUX 3 Image Klein (bfl:flux@3-image-klein) dual-reference transfer.
 
-positivePrompt max is 10000 characters. negativePrompt max is 3000.
-These are guidance strings. They do not guarantee exact identity preservation.
+positivePrompt max is 10000 characters. negativePrompt is only sent on legacy Runware
+edit models that document it (not FLUX 3 Image Klein).
 """
 
 from __future__ import annotations
@@ -431,47 +431,57 @@ Do not add a further dye, bleach, highlight, ombre, or balayage beyond the selec
 """
 
 NEGATIVE_PROMPT = """\
-different person, copied reference model face, altered facial identity, changed facial proportions, distorted forehead anatomy, enlarged skull, artificial wig, floating hair, disconnected strands, excessive hair volume, unnatural curls, duplicated hairline, deformed ears, altered eyes, altered nose, changed mouth, plastic skin, excessive beauty retouching, cartoon appearance, CGI hair, unrealistic hair growth, incorrect hairstyle, unrelated haircut, changed clothing, changed background, face replacement artifacts, visible compositing seams, identity replacement, face swap, beauty filter, stacked curls, wig cap, changed original hair color, unwanted bleaching or ombre
+different person, copied catalog model face, altered identity, changed facial proportions, distorted forehead, enlarged skull, artificial wig, floating curls, excessive volume, unnatural hairline, distorted ears, changed eyes, changed nose, altered mouth, plastic skin, CGI hair, cartoon, artificial texture, wrong hairstyle, changed clothing, changed background, visible editing seams
 """
 
 MASTER_HAIRSTYLE_TRANSFER_PROMPT = """\
-Perform a highly realistic, identity-preserving hairstyle transformation using two reference photographs.
+You are performing a professional photorealistic hairstyle transformation using two reference images.
 
-REFERENCE IMAGE 1 — ORIGINAL PERSON:
-This photograph is the primary and authoritative source for the final image.
-Preserve the original person's recognizable facial identity, facial geometry, forehead anatomy, eyes, eyebrows, nose, mouth, ears, skin texture, facial expression, head position, camera angle, clothing, background, and lighting.
-The final photograph must depict the same person in the same photographic environment.
-Do not redesign or beautify the person's face.
-Do not alter the skull proportions or underlying forehead geometry.
+IMAGE 1 — ORIGINAL PERSON:
+Use image 1 as the authoritative identity and photographic reference.
+Preserve the original person's recognizable facial identity, eyes, eyebrows, nose, mouth, ears, facial proportions, forehead anatomy, skin texture, expression, head pose, camera angle, clothing, background, and lighting.
+The final image must depict the same person in the same environment.
+Do not regenerate the face.
+Do not beautify the person.
+Do not change facial geometry.
 
-REFERENCE IMAGE 2 — TARGET HAIRSTYLE:
-Use this photograph exclusively as the hairstyle design reference.
-Transfer the defining hairstyle characteristics onto the person from reference image 1.
-Match the selected hairstyle's overall silhouette, hair length, top volume, side length, hair direction, texture, curl pattern, fringe placement, fade or taper structure, and styling finish.
-Do not copy the person from reference image 2.
-Do not transfer their face, skin, clothing, expression, background, or camera perspective.
+IMAGE 2 — TARGET HAIRSTYLE:
+Use image 2 exclusively as the hairstyle design reference.
+Transfer the hairstyle's defining characteristics onto the person from image 1.
+Match:
+- Hair length
+- Hair texture
+- Hair direction
+- Curl pattern
+- Hair volume
+- Fringe placement
+- Side length
+- Fade or taper structure
+- Overall silhouette
+- Styling finish
+Do not copy the identity, face, skin, clothing, or background of the person in image 2.
 
-HAIRSTYLE ADAPTATION:
-Adapt the hairstyle naturally to the original person's existing head anatomy.
-Preserve realistic scalp curvature and natural hair growth boundaries where compatible with the selected style.
-The hairstyle must look professionally cut and styled on the original person.
-Allow natural hair strands to overlap the forehead when required by the selected hairstyle.
-Do not reshape the underlying forehead, artificially enlarge the head, or create excessive hair volume.
+HAIRSTYLE TRANSFER:
+Adapt the hairstyle to the original person's natural head anatomy.
+Maintain believable hair growth direction.
+Preserve realistic scalp curvature.
+Preserve the original underlying forehead geometry.
+Allow natural hair strands to overlap the forehead only when the selected hairstyle requires it.
+Do not artificially enlarge the skull.
+Do not create excessive hair volume.
+Do not invent an unrelated hairstyle.
 
 STYLE CONSISTENCY:
-The hairstyle must remain recognizable as the selected catalog hairstyle.
-Preserve its defining structure instead of creating a generic haircut.
-Do not replace a Pompadour with a Quiff, a Slick Back with a Curly Fringe, or a French Crop with an unrelated hairstyle.
-Do not invent an alternative hairstyle.
+The result must remain recognizable as the exact selected hairstyle.
+If the selected style is Pompadour, preserve the elevated front and backward styling.
+If the selected style is Slick Back, preserve the backward hair direction.
+If the selected style is French Crop, preserve the short textured top and forward fringe.
+If the selected style is Side Part, preserve the side parting and comb direction.
+If the selected style is Undercut, preserve the contrast between the top and sides.
 
 PHOTOREALISM:
-Maintain natural photographic detail with believable strand structure, density, highlights, shadows, and growth direction.
-Hair-to-skin transitions must look natural.
-The result must resemble a real photograph after a professional salon appointment.
-
-FINAL OUTPUT:
-Return one realistic photograph of the original person with the selected reference hairstyle.
-The face must remain as consistent as technically possible with reference image 1.
+Create natural hair strands, realistic highlights, believable density, realistic shadows, and natural hair-to-skin transitions.
+The final image must look like a real photograph after a professional haircut.
 Only hairstyle-related regions should visibly change.
 """
 
@@ -650,11 +660,14 @@ def build_tryon_prompt(
     extra = style_guidance(title, style_detail)
 
     if include_catalog_image:
+        catalog_line = (
+            f'Selected MySaloon catalog hairstyle: "{title.strip()[:160]}". '
+            f"Structure detail: {style_detail.strip()[:400]}"
+        )
         sections = [
-            ("primary", _primary_task(title), False),
             ("master", MASTER_HAIRSTYLE_TRANSFER_PROMPT, False),
-            ("anatomy", ANATOMY_ANCHOR_PROMPT, False),
             ("style_lock", style_lock, False),
+            ("catalog", catalog_line, False),
             ("style", extra, True),
             ("color", color_section, False),
             ("photorealism", PHOTOREALISM_V2_PROMPT, True),

@@ -1,57 +1,38 @@
-# MySaloon AI Try-On — Hairstyle Quality (runware:400@6)
+# MySaloon AI Try-On — Hairstyle Quality (FLUX 3 Image Klein)
 
-## Root cause analysis
+## Model
 
-| Issue | Likely cause |
-| --- | --- |
-| Artificial / wig-like hair | Generic “match volume and curl” text without per-style locks; model invents texture |
-| Exaggerated curls | Curly marker block applied to all curl slugs plus no backward/forward direction lock |
-| Forehead / hairline drift | Competing instructions (“believable hairline” vs fixed anatomy); no post-QC in diagnostics |
-| Inconsistent same style | `style_detail_for` varies widely (short classic vs long curly batch prompts); no structured lock |
-| Wrong hairstyle invented | Single reference image + long redundant prompt; catalog photo intentionally omitted (face bleed) |
-| Camera vs gallery variance | Previously divergent paths; now unified `prepare_selfie_bytes` (mirror still client-side for camera) |
+- **Model:** `bfl:flux@3-image-klein` (FLUX 3 Image Klein)
+- **Steps:** 16 (default; override `RUNWARE_TRYON_STEPS` within 1–50)
+- **Output:** 1024×1024 target via `RUNWARE_TRYON_WIDTH/HEIGHT` (selfie aspect preserved when sizing)
+- **References:** `inputs.referenceImages` — `[user selfie, Explore catalog portrait]`
+- **Documented cost (1024², 16 steps):** ~$0.006; business cap `RUNWARE_TRYON_MAX_COST_USD=0.009`
+- **Rollback:** `RUNWARE_TRYON_FALLBACK_MODELS=runware:400@6` (overflow only; cost-filtered)
 
-## Prompt audit (production path)
+## Dual reference
 
-- **Model:** `runware:400@6` (FLUX.2 klein 9B KV), steps=4, CFG=3.5, `inputs.referenceImages` (selfie first, catalog second when enabled).
-- **Catalog reference image:** Sent when `RUNWARE_TRYON_DUAL_REFERENCE=true` (default). Master prompt + style lock instruct the model to use image 2 for hair only. Missing catalog file → controlled 400 error (no silent fallback).
-- **Negative prompt:** Up to 3000 chars; omitted when CFG ≤ 1 or disabled.
-- **Unsupported (never sent):** `strength`, `seedImage`, masks, inpaint fields.
+`RUNWARE_TRYON_DUAL_REFERENCE=true` (default). FLUX 3 **requires** two references; missing catalog file → 400 (no text-only fallback).
 
-### Versions
+Reference order:
 
-- **`TRYON_PROMPT_VERSION=v2` (default):** Layers A identity → anatomy → B style lock → color → reference → C quality.
-- **`TRYON_PROMPT_VERSION=legacy`:** Previous long stack (rollback).
+1. User selfie (identity, scene, original hair color)
+2. Selected Explore catalog image (hairstyle silhouette only)
 
-## Style Lock (layer B)
+Backend resolves catalog path from the published `Hairstyle` record (`style_id`); client URLs are not trusted.
 
-Implemented in `ai/services/tryon_style_lock.py`. Fields come from seed metadata + `style_detail_for`; hand-tuned overrides for buzz, crew, crop, curly fringe/slick back, pompadour, undercut, fades, side part.
+## Prompts
 
-## Reference conditioning
+- **Version:** `TRYON_PROMPT_VERSION=v2` (master transfer + style lock)
+- **Legacy:** `TRYON_PROMPT_VERSION=legacy` for long prompt stack rollback
+- **Negative prompt:** not sent to FLUX 3 (unsupported); legacy Runware models may still use `negativePrompt` when CFG > 1
 
-`runware:400@6` supports up to 4 `referenceImages` without per-image roles. Production uses **two references** when dual-reference is on: `[user selfie, selected Explore portrait]`. Set `RUNWARE_TRYON_DUAL_REFERENCE=false` to roll back to text + selfie only.
+## Quality pipeline
 
-## Reproducibility
+- **Pre-flight:** documented cost estimate vs `RUNWARE_TRYON_MAX_COST_USD`
+- **Face:** `tryon_preserve.preserve_face` (skin IoU / shift)
+- **Optional retry:** `RUNWARE_TRYON_QUALITY_RETRY` (off by default)
+- **QC:** `tryon_quality.assess_tryon_quality`
 
-- Set `RUNWARE_TRYON_SEED_MODE=fixed` and `RUNWARE_TRYON_TEST_SEED` for controlled repeats (provider may still vary).
-- Cross-person consistency is validated with human review + `benchmark_tryon` prompt diff, not seed alone.
+## VPS deploy
 
-## Quality control
-
-- **Face:** `tryon_preserve.preserve_face` (skin IoU / shift); optional one retry via `RUNWARE_TRYON_QUALITY_RETRY`.
-- **Diagnostics:** `tryon_quality.assess_tryon_quality` (hair-band change ratio, forehead stability) logged when `TRYON_DIAGNOSTICS` is on.
-
-## Benchmark
-
-```bash
-python manage.py benchmark_tryon
-python manage.py benchmark_tryon --output /tmp/tryon-prompt-report.json
-```
-
-Paid live matrix: requires `--execute --approve-spend` (placeholder guard — add authorized selfies before spend).
-
-## Remaining limitations
-
-- Without per-image roles, identity bleed from reference 2 is mitigated by prompts and `tryon_preserve`; monitor quality after enabling dual reference.
-- Identity preservation is best-effort; FLUX edit models may still drift on difficult curls or low-light selfies.
-- QC metrics are heuristic — not a substitute for human review or embedding “proof”.
+See `deploy/vps/deploy-tryon-dual-reference.sh`. Set `RUNWARE_TRYON_MODEL=bfl:flux@3-image-klein` in production env before restart `mysaloon.service`.

@@ -41,7 +41,7 @@ def get_settings_payload() -> dict[str, Any]:
         "gallery_public": s.gallery_public,
         "referral_generation_enabled": s.referral_generation_enabled,
         "runtime_model": getattr(settings, "GEMINI_MODEL", "") or "",
-        "tryon_model": getattr(settings, "RUNWARE_TRYON_MODEL", "") or "runware:400@6",
+        "tryon_model": getattr(settings, "RUNWARE_TRYON_MODEL", "") or "bfl:flux@3-image-klein",
         "tryon_provider": "runware",
         "updated_at": s.updated_at.isoformat() if s.updated_at else None,
     }

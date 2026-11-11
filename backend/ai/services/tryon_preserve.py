@@ -1,6 +1,6 @@
 """Post-generation face preservation for models that cannot take a mask.
 
-runware:400@6 accepts reference images and a prompt. It does not accept
+FLUX 3 Image Klein and legacy Runware edit models accept reference images and a prompt. They do not accept
 mask, seedImage, or strength. This module never sends those fields.
 
 The original face is copied back only when a skin-region overlap check says
