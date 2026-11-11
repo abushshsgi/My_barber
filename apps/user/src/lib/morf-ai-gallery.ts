@@ -6,10 +6,12 @@ import {
 } from "@/lib/api/ai";
 import { resolveMediaUrl } from "@/lib/media-url";
 import { shouldPersistLooksToServer } from "@/lib/morf-ai-prefs";
-import { isStorageQuotaError, safeLocalStorageSet, stripDataUrlForStorage } from "@/lib/storage-quota";
+import { safeLocalStorageSet, stripDataUrlForStorage } from "@/lib/storage-quota";
 
 const KEY_PREFIX = "mysaloon.morphAi.generations";
-const MAX_ENTRIES = 16;
+const GUEST_KEY = `${KEY_PREFIX}:guest`;
+/** Server bilan bir xil (backend GENERATION_HISTORY_MAX_PER_USER). */
+export const MAX_ENTRIES = 60;
 export const MORPH_AI_GALLERY_UPDATED_EVENT = "mysaloon:morf-ai-gallery-updated";
 
 export type MorphAiGeneration = {
@@ -24,14 +26,16 @@ export type MorphAiGeneration = {
   personaId?: string;
 };
 
-function storageKey() {
-  const userId = getActiveUserId();
-  return userId ? `${KEY_PREFIX}:${userId}` : `${KEY_PREFIX}:guest`;
+/** Kirgan foydalanuvchi — tarix API dan; telefonga rasm yozilmaydi. */
+let generationsMemory: MorphAiGeneration[] = [];
+
+function isLoggedInGallery(): boolean {
+  return Boolean(getActiveUserId());
 }
 
-function readAll(): MorphAiGeneration[] {
+function readGuestLocal(): MorphAiGeneration[] {
   try {
-    const raw = localStorage.getItem(storageKey());
+    const raw = localStorage.getItem(GUEST_KEY);
     if (!raw) return [];
     const parsed = JSON.parse(raw) as MorphAiGeneration[];
     return Array.isArray(parsed) ? parsed : [];
@@ -50,19 +54,21 @@ function compactForLocalStorage(entries: MorphAiGeneration[]): MorphAiGeneration
     .filter((entry) => Boolean(entry.previewImage));
 }
 
-function writeAll(entries: MorphAiGeneration[]) {
-  const key = storageKey();
-  const attempts = [
-    compactForLocalStorage(entries.slice(0, MAX_ENTRIES)),
-    compactForLocalStorage(entries.slice(0, 8)),
-    compactForLocalStorage(entries.slice(0, 3)),
-  ];
-  for (const payload of attempts) {
-    if (safeLocalStorageSet(key, JSON.stringify(payload))) {
-      window.dispatchEvent(new Event(MORPH_AI_GALLERY_UPDATED_EVENT));
-      return;
-    }
+function writeGuestLocal(entries: MorphAiGeneration[]) {
+  const payload = compactForLocalStorage(entries.slice(0, MAX_ENTRIES));
+  if (safeLocalStorageSet(GUEST_KEY, JSON.stringify(payload))) {
+    window.dispatchEvent(new Event(MORPH_AI_GALLERY_UPDATED_EVENT));
   }
+}
+
+function writeAll(entries: MorphAiGeneration[]) {
+  const slice = entries.slice(0, MAX_ENTRIES);
+  if (isLoggedInGallery()) {
+    generationsMemory = slice;
+    window.dispatchEvent(new Event(MORPH_AI_GALLERY_UPDATED_EVENT));
+    return;
+  }
+  writeGuestLocal(slice);
 }
 
 function mapApiGeneration(entry: MorphAiGenerationApi): MorphAiGeneration | null {
@@ -83,48 +89,45 @@ function mapApiGeneration(entry: MorphAiGenerationApi): MorphAiGeneration | null
 }
 
 export function loadMorphAiGenerations(): MorphAiGeneration[] {
-  return readAll();
+  if (isLoggedInGallery()) return generationsMemory;
+  return readGuestLocal();
 }
 
-/** Eski keshdagi data: URL selfielarni tozalash — localStorage limiti. */
-export function recompactMorphAiGalleryCache() {
-  const existing = readAll();
-  if (!existing.length) return;
-  writeAll(existing);
-}
-
-/** Sahifa ochilganda eski og‘ir kalitlardan xotirani bo‘shatish. */
+/** Eski duplicate localStorage (kirgan user) ni tozalash. */
 export function pruneHeavyMorphLocalCaches() {
   if (typeof localStorage === "undefined") return;
+  const userId = getActiveUserId();
+  if (userId) {
+    try {
+      localStorage.removeItem(`${KEY_PREFIX}:${userId}`);
+    } catch {
+      /* noop */
+    }
+  }
   try {
-    localStorage.removeItem(LEGACY_THREADS_KEY);
+    localStorage.removeItem("mysaloon.morphAi.chat.threads.v1");
   } catch {
     /* noop */
   }
-  recompactMorphAiGalleryCache();
+  if (!isLoggedInGallery()) {
+    writeAll(readGuestLocal());
+  }
 }
 
-const LEGACY_THREADS_KEY = "mysaloon.morphAi.chat.threads.v1";
-
-/** Guest try-ons → logged-in user key after auth. */
+/** Guest try-ons → login; server keyingi refresh da to‘ldiradi. */
 export function migrateGuestMorphAiGenerations(userId: number) {
   try {
-    const guestKey = `${KEY_PREFIX}:guest`;
-    const userKey = `${KEY_PREFIX}:${userId}`;
-    const guestRaw = localStorage.getItem(guestKey);
-    if (!guestRaw) return;
-    const guest = JSON.parse(guestRaw) as MorphAiGeneration[];
-    if (!Array.isArray(guest) || guest.length === 0) return;
-    const existingRaw = localStorage.getItem(userKey);
-    const existing = existingRaw ? (JSON.parse(existingRaw) as MorphAiGeneration[]) : [];
-    const existingIds = new Set((Array.isArray(existing) ? existing : []).map((item) => item.id));
-    const merged = [
+    const guest = readGuestLocal();
+    if (!guest.length) return;
+    const existing = generationsMemory;
+    const existingIds = new Set(existing.map((item) => item.id));
+    generationsMemory = [
       ...guest.filter((item) => item?.id && !existingIds.has(item.id)),
-      ...(Array.isArray(existing) ? existing : []),
+      ...existing,
     ].slice(0, MAX_ENTRIES);
-    localStorage.setItem(userKey, JSON.stringify(merged));
-    localStorage.removeItem(guestKey);
+    localStorage.removeItem(GUEST_KEY);
     window.dispatchEvent(new Event(MORPH_AI_GALLERY_UPDATED_EVENT));
+    void userId;
   } catch {
     /* noop */
   }
@@ -134,17 +137,16 @@ export function syncMorphAiGenerationsCache(entries: MorphAiGeneration[]) {
   writeAll(entries.slice(0, MAX_ENTRIES));
 }
 
-/** Pull DB-backed generation history into local cache. */
+/** DB generation history — asosiy manba. */
 export async function refreshMorphAiGenerationsCache(): Promise<MorphAiGeneration[]> {
   const userId = getActiveUserId();
-  if (!userId) return readAll();
+  if (!userId) return readGuestLocal();
   try {
     const remote = await fetchMorphAiGenerations();
     const mapped = remote
       .map(mapApiGeneration)
       .filter((item): item is MorphAiGeneration => Boolean(item));
-    // Keep very recent optimistic local rows until server ack.
-    const local = readAll();
+    const local = isLoggedInGallery() ? generationsMemory : readGuestLocal();
     const remoteIds = new Set(mapped.map((item) => item.id));
     const now = Date.now();
     const pending = local.filter((item) => {
@@ -157,21 +159,18 @@ export async function refreshMorphAiGenerationsCache(): Promise<MorphAiGeneratio
     writeAll(merged);
     return merged;
   } catch {
-    return readAll();
+    return loadMorphAiGenerations();
   }
 }
 
 /**
- * Optimistic local save + optional async DB persist.
- * Try-on: server allaqachon `persist_tryon_generation` yozadi — `syncRemote: false` qiling,
- * aks holda historyda bir generatsiya ikki marta chiqadi.
- * Studio: backend history yozmaydi — `syncRemote` default `true` qoladi.
+ * Try-on: server `persist_tryon_generation` yozadi — faqat xotira yangilanadi.
+ * Studio: kerak bo‘lsa POST /ai/generations/.
  */
 export function saveMorphAiGeneration(
   entry: Omit<MorphAiGeneration, "id" | "createdAt"> & {
     id?: string;
     createdAt?: string;
-    /** false = faqat local cache (try-on). Default true = POST /ai/generations/ */
     syncRemote?: boolean;
   },
 ) {
@@ -181,27 +180,35 @@ export function saveMorphAiGeneration(
     styleId: entry.styleId,
     title: entry.title,
     previewImage: entry.previewImage,
-    beforeImage: entry.beforeImage,
+    beforeImage: stripDataUrlForStorage(entry.beforeImage),
     createdAt: entry.createdAt ?? new Date().toISOString(),
     personaId: entry.personaId,
   };
-  const rest = readAll().filter(
-    (item) => !(item.styleId === next.styleId && item.previewImage === next.previewImage),
-  );
-  writeAll([next, ...rest]);
+
+  if (isLoggedInGallery()) {
+    const rest = generationsMemory.filter(
+      (item) => !(item.styleId === next.styleId && item.previewImage === next.previewImage),
+    );
+    writeAll([next, ...rest]);
+  } else {
+    const rest = readGuestLocal().filter(
+      (item) => !(item.styleId === next.styleId && item.previewImage === next.previewImage),
+    );
+    writeAll([next, ...rest]);
+  }
 
   if (syncRemote && getActiveUserId() && next.previewImage && shouldPersistLooksToServer()) {
     void saveMorphAiGenerationRemote({
       style_id: next.styleId,
       title: next.title,
       persona_id: next.personaId,
-      before_image: next.beforeImage,
+      before_image: entry.beforeImage,
       after_image: next.previewImage,
     })
       .then((saved) => {
         const mapped = mapApiGeneration(saved);
         if (!mapped) return;
-        const list = readAll().filter(
+        const list = loadMorphAiGenerations().filter(
           (item) =>
             item.id !== next.id &&
             !(item.styleId === mapped.styleId && item.previewImage === mapped.previewImage),
@@ -209,7 +216,7 @@ export function saveMorphAiGeneration(
         writeAll([mapped, ...list]);
       })
       .catch(() => {
-        /* keep optimistic local row */
+        /* server navbatda */
       });
   }
 
@@ -217,5 +224,5 @@ export function saveMorphAiGeneration(
 }
 
 export function removeMorphAiGeneration(id: string) {
-  writeAll(readAll().filter((item) => item.id !== id));
+  writeAll(loadMorphAiGenerations().filter((item) => item.id !== id));
 }

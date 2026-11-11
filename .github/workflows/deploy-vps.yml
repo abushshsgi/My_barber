@@ -1,0 +1,45 @@
+name: Deploy to VPS (backend + frontends)
+
+on:
+  push:
+    branches: [main]
+
+concurrency:
+  group: deploy-vps-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    if: vars.VPS_HOST != ''
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy backend and frontends on VPS
+        env:
+          VPS_HOST: ${{ vars.VPS_HOST }}
+          VPS_USER: ${{ vars.VPS_USER }}
+          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+        run: |
+          if [ -z "$VPS_USER" ] || [ -z "$VPS_SSH_KEY" ]; then
+            echo "VPS_USER variable yoki VPS_SSH_KEY secret yo'q."
+            exit 1
+          fi
+          mkdir -p ~/.ssh
+          printf '%s\n' "$VPS_SSH_KEY" > ~/.ssh/mysaloon
+          chmod 600 ~/.ssh/mysaloon
+          ssh -o StrictHostKeyChecking=accept-new -i ~/.ssh/mysaloon "$VPS_USER@$VPS_HOST" bash -s <<'REMOTE'
+          set -euo pipefail
+          if [ -d /var/www/mysaloon/source/deploy/vps ]; then
+            cd /var/www/mysaloon/source && git pull --ff-only origin main && sudo bash deploy/vps/deploy-backend.sh
+          else
+            echo "Backend checkout yo'q: /var/www/mysaloon/source" >&2
+            exit 1
+          fi
+          if [ -d /opt/mysaloon/Mybarber ]; then
+            cd /opt/mysaloon/Mybarber && git pull --ff-only && sudo bash deploy/vps/deploy-frontends.sh all
+          else
+            echo "Frontend checkout yo'q: /opt/mysaloon/Mybarber" >&2
+            exit 1
+          fi
+          curl -sS -o /dev/null -w 'api=%{http_code}\n' https://api.mysaloon.uz/health/ || true
+          curl -sS -o /dev/null -w 'www=%{http_code}\n' https://mysaloon.uz/ || true
+          REMOTE

@@ -74,7 +74,7 @@ const THREADS_KEY = "mysaloon.morphAi.chat.threads.v2";
 const LEGACY_THREADS_KEY = "mysaloon.morphAi.chat.threads.v1";
 const ACTIVE_KEY = "mysaloon.morphAi.chat.activeId";
 const SESSION_THREAD_KEY = "mysaloon.morphAi.chat.threadId";
-const MAX_THREADS = 8;
+const MAX_THREADS = 40;
 
 function newId() {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;

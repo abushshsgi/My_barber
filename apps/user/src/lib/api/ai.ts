@@ -468,6 +468,13 @@ export async function refreshAiStyleHistoryCache(): Promise<FaceProfileHistoryEn
   }
 }
 
+/** Login yoki try-on sahifasida — yuz tarixi serverdan. */
+export function primeAiStyleHistoryFromServer() {
+  const userId = getActiveUserId();
+  if (!userId) return;
+  void refreshAiStyleHistoryCache();
+}
+
 export async function persistAiStyleHistory(payload: SaveAiStyleHistoryPayload): Promise<void> {
   const userId = getActiveUserId();
   if (!userId) return;

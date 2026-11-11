@@ -18,6 +18,7 @@ import { isMorphPlanLimitMessage } from "@/lib/morph-plan-limit";
 import { presentSelfieError } from "@/lib/selfie-normalize";
 import { markMorphAiOnboarded } from "@/lib/morf-ai-session";
 import { pruneHeavyMorphLocalCaches } from "@/lib/morf-ai-gallery";
+import { primeAiStyleHistoryFromServer } from "@/lib/api/ai";
 import { loadSavedAiStyleIds, removeSavedAiStyle, saveAiStyle } from "@/lib/saved-ai-styles";
 import type { ExplorePersonaId } from "@/lib/explore-personas";
 import type { Audience } from "@/lib/mock-data";
@@ -131,6 +132,7 @@ export function AiStyleFlow({ audience, menPersonaId: menPersonaIdProp, focusSty
   useEffect(() => {
     document.documentElement.setAttribute("data-ai-style-flow", "open");
     pruneHeavyMorphLocalCaches();
+    primeAiStyleHistoryFromServer();
     return () => document.documentElement.removeAttribute("data-ai-style-flow");
   }, []);
 

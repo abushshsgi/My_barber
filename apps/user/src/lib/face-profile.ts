@@ -5,7 +5,10 @@ const FACE_PROFILE_KEY_PREFIX = "mysaloon.ai.faceProfile";
 const FACE_HISTORY_KEY_PREFIX = "mysaloon.ai.faceHistory";
 const LEGACY_FACE_PROFILE_KEY = "mysaloon.ai.faceProfile";
 const LEGACY_FACE_HISTORY_KEY = "mysaloon.ai.faceHistory";
-const FACE_HISTORY_MAX = 6;
+const FACE_HISTORY_MAX = 40;
+
+/** Joriy sessiya — selfi data URL faqat xotirada, serverga POST dan keyin /media URL. */
+const sessionFaceHistory = new Map<number, FaceProfileHistoryEntry[]>();
 export const FACE_HISTORY_UPDATED_EVENT = "mysaloon:face-history-updated";
 
 const USER_KEY = "mysaloon.auth.user";
@@ -128,17 +131,23 @@ export function loadFaceProfile(userId?: number): SavedFaceProfile | null {
   }
 }
 
-export function loadFaceProfileHistory(userId?: number): FaceProfileHistoryEntry[] {
-  const uid = userId ?? getActiveUserId();
-  if (!uid) return [];
+function readFaceHistoryUrlCache(userId: number): FaceProfileHistoryEntry[] {
   try {
-    const raw = localStorage.getItem(historyKey(uid));
+    const raw = localStorage.getItem(historyKey(userId));
     if (!raw) return [];
     const parsed = JSON.parse(raw) as FaceProfileHistoryEntry[];
     return Array.isArray(parsed) ? parsed.slice(0, FACE_HISTORY_MAX) : [];
   } catch {
     return [];
   }
+}
+
+export function loadFaceProfileHistory(userId?: number): FaceProfileHistoryEntry[] {
+  const uid = userId ?? getActiveUserId();
+  if (!uid) return [];
+  const session = sessionFaceHistory.get(uid);
+  if (session?.length) return session.slice(0, FACE_HISTORY_MAX);
+  return readFaceHistoryUrlCache(uid);
 }
 
 function compactFaceHistoryForStorage(entries: FaceProfileHistoryEntry[]): FaceProfileHistoryEntry[] {
@@ -149,17 +158,12 @@ function compactFaceHistoryForStorage(entries: FaceProfileHistoryEntry[]): FaceP
 }
 
 function persistFaceProfileHistory(userId: number, entries: FaceProfileHistoryEntry[]) {
+  const slice = entries.slice(0, FACE_HISTORY_MAX);
+  sessionFaceHistory.set(userId, slice);
   const key = historyKey(userId);
-  const attempts = [
-    compactFaceHistoryForStorage(entries),
-    compactFaceHistoryForStorage(entries).slice(0, 3),
-    compactFaceHistoryForStorage(entries).slice(0, 1),
-  ];
-  for (const payload of attempts) {
-    if (safeLocalStorageSet(key, JSON.stringify(payload))) {
-      window.dispatchEvent(new Event(FACE_HISTORY_UPDATED_EVENT));
-      return;
-    }
+  const urlOnly = compactFaceHistoryForStorage(slice);
+  if (safeLocalStorageSet(key, JSON.stringify(urlOnly))) {
+    window.dispatchEvent(new Event(FACE_HISTORY_UPDATED_EVENT));
   }
 }
 
@@ -251,6 +255,7 @@ export function enrichLatestFaceProfileHistory(
 
 export function clearFaceProfileForUser(userId: number) {
   try {
+    sessionFaceHistory.delete(userId);
     localStorage.removeItem(profileKey(userId));
     localStorage.removeItem(historyKey(userId));
     window.dispatchEvent(new Event(FACE_HISTORY_UPDATED_EVENT));
