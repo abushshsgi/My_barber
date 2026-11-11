@@ -1,8 +1,9 @@
 import { useEffect, useLayoutEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useSiteConfig } from "@/hooks/use-site-config";
+import { fetchSiteConfig } from "@/lib/api/site-config";
 
 const STORAGE_KEY = "mysaloon.maintenanceBanner.dismissed";
+const POLL_MS = 120_000;
 
 const BANNER_FONT = {
   fontSize: "14px",
@@ -22,14 +23,35 @@ function readVisible() {
 /** Barcha sahifalar tepasidagi bir xil texnik ishlar ogohlantirishi. */
 export function MaintenanceBanner() {
   const { t } = useTranslation();
-  const siteConfig = useSiteConfig();
-  const bannerEnabled = siteConfig.data?.maintenance_banner_enabled ?? false;
+  const [bannerEnabled, setBannerEnabled] = useState(false);
   const [dismissed, setDismissed] = useState(() => !readVisible());
   const [bar, setBar] = useState<HTMLDivElement | null>(null);
   const visible = bannerEnabled && !dismissed;
 
   useEffect(() => {
     setDismissed(!readVisible());
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    let cancelled = false;
+
+    const load = async () => {
+      try {
+        const cfg = await fetchSiteConfig();
+        if (!cancelled) setBannerEnabled(Boolean(cfg.maintenance_banner_enabled));
+      } catch {
+        if (!cancelled) setBannerEnabled(false);
+      }
+    };
+
+    void load();
+    const timer = window.setInterval(() => void load(), POLL_MS);
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
+    };
   }, []);
 
   useLayoutEffect(() => {
