@@ -33,5 +33,6 @@ if (!existsSync(dirname(publicRoot))) {
   mkdirSync(dirname(publicRoot), { recursive: true });
 }
 
-const r = spawnSync("python", ["-c", py], { stdio: "inherit" });
+const python = process.env.PYTHON ?? (process.platform === "win32" ? "python" : "python3");
+const r = spawnSync(python, ["-c", py], { stdio: "inherit" });
 process.exit(r.status ?? 1);
