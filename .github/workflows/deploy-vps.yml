@@ -29,7 +29,9 @@ jobs:
           ssh -o StrictHostKeyChecking=accept-new -i ~/.ssh/mysaloon "$VPS_USER@$VPS_HOST" bash -s <<'REMOTE'
           set -euo pipefail
           if [ -d /var/www/mysaloon/source/deploy/vps ]; then
-            cd /var/www/mysaloon/source && git pull --ff-only origin main && sudo bash deploy/vps/deploy-backend.sh
+            cd /var/www/mysaloon/source && git pull --ff-only origin main
+            sudo bash deploy/vps/ensure-tryon-pruna-env.sh
+            sudo bash deploy/vps/deploy-backend.sh
           else
             echo "Backend checkout yo'q: /var/www/mysaloon/source" >&2
             exit 1

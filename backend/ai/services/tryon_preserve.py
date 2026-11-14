@@ -1,6 +1,6 @@
 """Post-generation face preservation for models that cannot take a mask.
 
-FLUX 3 Image Klein and legacy Runware edit models accept reference images and a prompt. They do not accept
+Pruna P-Image-Edit and legacy Runware edit models accept reference images and a prompt. They do not accept
 mask, seedImage, or strength. This module never sends those fields.
 
 The original face is copied back only when a skin-region overlap check says
@@ -29,13 +29,8 @@ MAX_SHIFT_FRACTION = 0.035
 ASPECT_TOLERANCE = 0.02
 HAIRLINE_CUT = 0.20
 RESTORE_JPEG_QUALITY = 92
-# Only pixels inside this vertical band (minus protected skin) may keep model hair edits.
-HAIR_EDIT_BAND_FRACTION = 0.48
-SKIN_DILATE_FOR_HAIR_LOCK = 5
-
-
-def _skin_mask_full(image: Image.Image) -> Image.Image:
-    return _skin_mask(image).resize(image.size, Image.Resampling.NEAREST)
+# Upper frame that may keep generated hair, including fringe on the forehead.
+HAIR_EDIT_BAND_FRACTION = 0.58
 
 
 def preserve_hair_only_edit(
@@ -44,10 +39,12 @@ def preserve_hair_only_edit(
     *,
     apply: bool = True,
 ) -> tuple[bytes, dict[str, Any]]:
-    """Lock background, clothing, and skin; keep model output only in the hair band.
+    """Lock background and clothing below the hair band; keep generated hair + fringe.
 
-    Stops catalog-reference bleed into shoulders, backdrop, and face-adjacent pixels
-    when the edit model over-applies the second reference image.
+    Do not subtract the skin mask from this band: fringe and bangs sit on the
+    forehead (skin pixels). Subtracting them restored the original hairline and
+    made successful Runware edits look like the unedited selfie.
+    Inner face identity is restored afterwards by ``preserve_face``.
     """
     report: dict[str, Any] = {
         "status": "skipped",
@@ -74,12 +71,7 @@ def preserve_hair_only_edit(
     y_band = int(height * HAIR_EDIT_BAND_FRACTION)
     ImageDraw.Draw(band).rectangle((0, 0, width, max(1, y_band)), fill=255)
 
-    skin = _skin_mask_full(source)
-    if SKIN_DILATE_FOR_HAIR_LOCK > 1:
-        skin = skin.filter(ImageFilter.MaxFilter(SKIN_DILATE_FOR_HAIR_LOCK))
-
-    allowed = ImageChops.subtract(band, skin)
-    if _count(allowed) < 64:
+    if _count(band) < 64:
         report["reason"] = "no_hair_band"
         return generated, report
 
@@ -88,7 +80,7 @@ def preserve_hair_only_edit(
         report["reason"] = "scene_lock_disabled"
         return generated, report
 
-    allowed = allowed.filter(ImageFilter.GaussianBlur(radius=2.2))
+    allowed = band.filter(ImageFilter.GaussianBlur(radius=2.2))
     merged = Image.composite(edited, source, allowed)
     buffer = BytesIO()
     merged.save(buffer, format="JPEG", quality=RESTORE_JPEG_QUALITY, optimize=True)

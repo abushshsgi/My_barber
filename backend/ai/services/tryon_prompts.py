@@ -1,7 +1,6 @@
-"""Try-on prompts for FLUX 3 Image Klein (bfl:flux@3-image-klein) dual-reference transfer.
+"""Try-on prompts for Runware image-editing models (default: Pruna P-Image-Edit prunaai:2@1).
 
-positivePrompt max is 10000 characters. negativePrompt is only sent on legacy Runware
-edit models that document it (not FLUX 3 Image Klein).
+Pruna positivePrompt max is 2000 characters. Legacy FLUX / Runware klein stacks allow up to 10000.
 """
 
 from __future__ import annotations
@@ -15,7 +14,20 @@ from .tryon_style_lock import format_style_lock, resolve_style_lock
 logger = logging.getLogger(__name__)
 
 POSITIVE_PROMPT_MAX = 10000
+PRUNA_POSITIVE_PROMPT_MAX = 2000
 NEGATIVE_PROMPT_MAX = 3000
+
+PRUNA_TRYON_BASE_PROMPT = (
+    "Photorealistic hairstyle editing. Image 1 is the original user photo and the absolute "
+    "identity reference. Image 2 is the selected hairstyle reference. Transfer only the "
+    "hairstyle from Image 2 to Image 1. Preserve the exact original facial identity, face shape, "
+    "forehead, eyes, eyebrows, nose, lips, ears, skin tone, facial expression, clothing, "
+    "background, camera angle and lighting. Match the reference hairstyle's shape, length, curls, "
+    "texture, volume and direction. Keep the user's original hair color unless a color change was "
+    "requested. Modify only the hair region. Natural hairline, realistic individual strands, "
+    "accurate shadows, seamless blending, professional salon photography. No face changes, wigs, "
+    "plastic hair, artificial curls, skin smoothing or distorted features."
+)
 
 IDENTITY_PRESERVATION_PROMPT = """\
 CRITICAL IDENTITY PRESERVATION INSTRUCTIONS:
@@ -83,19 +95,19 @@ The requested transformation applies to the hairstyle only.
 ANATOMY_ANCHOR_PROMPT = """\
 FOREHEAD, HAIRLINE, AND HEAD ANATOMY:
 
-The original forehead height, forehead width, and forehead shape are fixed.
-The original hairline position is fixed.
-The original temples and side hairline boundaries are fixed.
-The original skull size and head proportions are fixed.
+The original forehead height, forehead width, forehead shape, and skull size are fixed.
+
+The hairstyle itself MUST change to the selected cut: length, volume, parting,
+fade, fringe, and silhouette may change. The hairline and temples may move
+only as required by that haircut.
 
 Do not enlarge, shrink, or reconstruct the forehead.
-Do not move the hairline forward or backward.
-Do not lower the hairline to make the hair look fuller.
-Do not invent follicles outside the natural growth boundary.
 Do not stretch the face or widen the head to fit the hairstyle.
+Do not invent a wig floating above the skull.
+Do not return the original haircut.
 
 Adapt the hairstyle to this head.
-Hair must grow from the existing scalp and transition from the original hairline.
+Hair must grow from the existing scalp.
 Keep the original forehead visible unless the selected style explicitly has a fringe.
 A fringe may lay natural strands over the forehead without changing the forehead underneath.
 """
@@ -439,6 +451,9 @@ different person, copied catalog model face, altered identity, changed facial pr
 MASTER_HAIRSTYLE_TRANSFER_PROMPT = """\
 You are performing a professional photorealistic hairstyle transformation using two reference images.
 
+The output haircut MUST visibly differ from the original hair in image 1.
+Returning the original hairstyle is a failed edit.
+
 IMAGE 1 — ORIGINAL PERSON:
 Use image 1 as the authoritative identity and photographic reference.
 Preserve the original person's recognizable facial identity, eyes, eyebrows, nose, mouth, ears, facial proportions, forehead anatomy, skin texture, expression, head pose, camera angle, clothing, background, and lighting.
@@ -539,7 +554,8 @@ jawline, skin tone, skin texture, apparent age, expression, gaze, head pose, and
 
 Do not face-swap, beautify, reshape features, or copy a catalog model.
 
-Only the hairstyle may change.
+Only the hairstyle may change — and it must change to the selected cut.
+Do not return the original haircut.
 """
 
 PHOTOREALISM_V2_PROMPT = """\
@@ -557,10 +573,39 @@ Only the hairstyle is authorized to change.
 
 
 def resolve_tryon_prompt_version() -> str:
-    raw = str(getattr(settings, "TRYON_PROMPT_VERSION", "v2") or "v2").strip().lower()
+    raw = str(getattr(settings, "TRYON_PROMPT_VERSION", "pruna") or "pruna").strip().lower()
     if raw in ("legacy", "v1", "1"):
         return "legacy"
+    if raw in ("pruna", "p-image", "p_image"):
+        return "pruna"
     return "v2"
+
+
+def build_pruna_tryon_prompt(
+    *,
+    title: str,
+    style_detail: str,
+    selected_hair_color: str | None = None,
+    include_catalog_image: bool = False,
+) -> str:
+    """Compact Pruna prompt (max 2000). Catalog image is still required via referenceImages."""
+    parts = [PRUNA_TRYON_BASE_PROMPT]
+    safe_title = " ".join(str(title or "").split())[:120]
+    safe_detail = " ".join(str(style_detail or "").split())[:280]
+    if safe_title or safe_detail:
+        parts.append(
+            f'Selected MySaloon hairstyle: "{safe_title}". Style detail: {safe_detail}.'
+        )
+    explicit = " ".join(str(selected_hair_color or "").split())
+    if explicit:
+        parts.append(f'Apply this hair color only: "{explicit[:80]}".')
+    elif not include_catalog_image:
+        parts.append("No catalog image attached; follow the style detail text for haircut shape.")
+    prompt = " ".join(parts)
+    if len(prompt) > PRUNA_POSITIVE_PROMPT_MAX:
+        prompt = prompt[: PRUNA_POSITIVE_PROMPT_MAX].rstrip()
+        logger.warning("Pruna try-on prompt truncated to %s characters", PRUNA_POSITIVE_PROMPT_MAX)
+    return prompt
 
 
 def style_guidance(title: str, style_detail: str) -> str:
@@ -637,6 +682,13 @@ def build_tryon_prompt(
 ) -> str:
     """Assemble the edit prompt. Contradictory color instructions are not combined."""
     version = (prompt_version or resolve_tryon_prompt_version()).strip().lower()
+    if version == "pruna":
+        return build_pruna_tryon_prompt(
+            title=title,
+            style_detail=style_detail,
+            selected_hair_color=selected_hair_color,
+            include_catalog_image=include_catalog_image,
+        )
     color_section = _color_section(
         title=title,
         style_detail=style_detail,

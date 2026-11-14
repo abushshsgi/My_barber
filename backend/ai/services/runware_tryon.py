@@ -1,13 +1,12 @@
 """Morf AI Try-On via Runware image editing.
 
-Primary: FLUX 3 Image Klein, AIR ``bfl:flux@3-image-klein``.
-Rollback reserve (overflow only, cost-checked): ``runware:400@6`` (FLUX.2 klein 9B KV).
+Primary: Pruna P-Image-Edit, AIR ``prunaai:2@1``.
 
 Dual-reference: ``inputs.referenceImages[0]`` = user selfie, ``[1]`` = Explore catalog.
-Width and height 128–4096 (step 16) on FLUX 3; legacy Runware edit models cap at 2048.
+Pruna documents fixed 1K dimension presets (not arbitrary width/height). FLUX models remain
+in ``VERIFIED_EDIT_MODELS`` for non–Try-On tooling only; Try-On defaults do not use them.
 
-``strength``, ``seedImage``, and masks are not supported on these models.
-Try-On never falls back to Gemini image APIs.
+``strength``, ``seedImage``, and masks are not supported. Try-On never falls back to Gemini.
 """
 
 from __future__ import annotations
@@ -46,14 +45,53 @@ logger = logging.getLogger(__name__)
 
 PUBLIC_ROOT = Path(settings.BASE_DIR).parent / "apps" / "user" / "public"
 
+PRUNA_TRYON_MODEL = "prunaai:2@1"
 FLUX3_TRYON_MODEL = "bfl:flux@3-image-klein"
-# FLUX 3 Image Klein — production Try-On. Reserve: prior KV edit model for rollback.
-DEFAULT_TRYON_MODEL = FLUX3_TRYON_MODEL
-DEFAULT_FALLBACK_MODELS = "runware:400@6"
+DEFAULT_TRYON_MODEL = PRUNA_TRYON_MODEL
+DEFAULT_FALLBACK_MODELS = ""
 
-# Verified against Runware docs on 2026-11-07. Do not add a model here
-# unless its page lists Edit (or image-to-image) and reference image input.
+# Runware OpenAPI: width/height must be exactly one of these pairs (additionalProperties false).
+PRUNA_DIMENSION_PRESETS: tuple[tuple[int, int], ...] = (
+    (1024, 1024),  # 1:1
+    (1184, 896),  # 4:3
+    (896, 1184),  # 3:4
+    (1376, 768),  # 16:9
+    (768, 1376),  # 9:16
+    (1248, 832),  # 3:2
+    (832, 1248),  # 2:3
+)
+# Task fields allowed by the P-Image-Edit OpenAPI request schema (before client envelope).
+PRUNA_TRYON_TASK_FIELDS = frozenset(
+    {
+        "model",
+        "positivePrompt",
+        "width",
+        "height",
+        "inputs",
+        "providerSettings",
+        "outputFormat",
+        "outputQuality",
+    }
+)
+
+# Verified against Runware docs. Do not add a model here unless its page lists
+# Edit (or image-to-image) and reference image input.
 VERIFIED_EDIT_MODELS: dict[str, dict[str, int | bool]] = {
+    PRUNA_TRYON_MODEL: {
+        "min_edge": 768,
+        "max_edge": 1376,
+        "step": 1,
+        "max_references": 4,
+        "default_steps": 1,
+        "supports_steps": False,
+        "supports_negative": False,
+        "supports_cfg": False,
+        "supports_scheduler": False,
+        "supports_seed": False,
+        "requires_dual_reference": True,
+        "positive_prompt_max": 2000,
+        "fixed_dimensions": True,
+    },
     FLUX3_TRYON_MODEL: {
         "min_edge": 128,
         "max_edge": 4096,
@@ -130,6 +168,12 @@ SAFER_RETRY_SUFFIX = (
     "Lower the hair volume. Do not cover the forehead with extra curls or a wig-like mass. "
     "Use catalog reference 2 for haircut shape only — keep the user's hair color, skin, clothing, "
     "and background from reference image 1; do not copy catalog edge colors or studio lighting."
+)
+HAIR_CHANGE_RETRY_SUFFIX = (
+    "HAIR TRANSFER RETRY: The previous result kept the original hair. "
+    "Replace the entire haircut with the selected MySaloon style from the prompt and catalog. "
+    "The new hair must be obviously different in length, silhouette, or fade. "
+    "Keep the same face, skin, clothing, and background from reference image 1."
 )
 CATALOG_HEAD_KEEP_FRACTION = 0.58
 CATALOG_DESATURATE_BLEND = 0.82
@@ -268,10 +312,14 @@ _DEFAULT_MODEL_SPEC: dict[str, int | bool] = {
     "step": 16,
     "max_references": 4,
     "default_steps": 16,
+    "supports_steps": True,
     "supports_negative": False,
     "supports_cfg": False,
     "supports_scheduler": False,
+    "supports_seed": True,
     "requires_dual_reference": False,
+    "fixed_dimensions": False,
+    "positive_prompt_max": 10000,
 }
 
 
@@ -280,11 +328,59 @@ def resolved_tryon_model() -> str:
     if model not in VERIFIED_EDIT_MODELS:
         raise AiStyleError(
             "RUNWARE_TRYON_MODEL Try-On uchun tasdiqlanmagan. "
-            f"Image editing modeli kerak ({FLUX3_TRYON_MODEL} — FLUX 3 Image Klein).",
+            f"Image editing modeli kerak ({PRUNA_TRYON_MODEL} — Pruna P-Image-Edit).",
             503,
             retryable=False,
         )
     return model
+
+
+def _is_pruna_model(model: str) -> bool:
+    return (model or "").strip() == PRUNA_TRYON_MODEL
+
+
+def _configured_tryon_dimensions() -> tuple[int, int]:
+    return (
+        int(getattr(settings, "RUNWARE_TRYON_WIDTH", 768) or 768),
+        int(getattr(settings, "RUNWARE_TRYON_HEIGHT", 1024) or 1024),
+    )
+
+
+def resolve_pruna_output_size(*, src_w: int = 0, src_h: int = 0) -> tuple[int, int]:
+    """Map env/selfie aspect to a documented Pruna 1K preset (768×1024 env → 896×1184 3:4)."""
+    preferred = _configured_tryon_dimensions()
+    if preferred in PRUNA_DIMENSION_PRESETS:
+        return preferred
+    if src_w > 0 and src_h > 0:
+        ratio = src_w / src_h
+
+        def _distance(wh: tuple[int, int]) -> float:
+            return abs(wh[0] / wh[1] - ratio)
+
+        return min(PRUNA_DIMENSION_PRESETS, key=_distance)
+    return (896, 1184)
+
+
+def assert_pruna_dimensions(width: int, height: int) -> tuple[int, int]:
+    """Reject non-preset pairs before HTTP (OpenAPI oneOf on width×height)."""
+    pair = (int(width), int(height))
+    if pair in PRUNA_DIMENSION_PRESETS:
+        return pair
+    snapped = resolve_pruna_output_size(src_w=int(width), src_h=int(height))
+    if snapped not in PRUNA_DIMENSION_PRESETS:
+        raise AiStyleError(
+            "Try-on o'lchamlari Pruna modeli uchun noto'g'ri.",
+            503,
+            retryable=False,
+        )
+    logger.info("Pruna dimensions snapped from=%sx%s to=%sx%s", width, height, *snapped)
+    return snapped
+
+
+def resolved_pruna_provider_settings() -> dict[str, Any] | None:
+    if not _flag("RUNWARE_TRYON_PRUNA_TURBO", False):
+        return None
+    return {"prunaai": {"turbo": True}}
 
 
 def _chain_within_cost_cap(chain: list[str], *, width: int, height: int, reference_count: int) -> list[str]:
@@ -365,6 +461,8 @@ def _model_spec(model: str) -> dict[str, int | bool]:
 def tryon_steps_for_model(model: str) -> int:
     spec = _model_spec(model)
     default = int(spec.get("default_steps") or 16)
+    if not bool(spec.get("supports_steps", True)):
+        return default
     if model != FLUX3_TRYON_MODEL:
         return default
     raw = getattr(settings, "RUNWARE_TRYON_STEPS", None)
@@ -390,7 +488,10 @@ def dual_reference_required(model: str | None = None) -> bool:
 
 
 def resolved_tryon_size(model: str | None = None) -> tuple[int, int]:
-    spec = _model_spec(model or resolved_tryon_model())
+    chosen = model or resolved_tryon_model()
+    if _is_pruna_model(chosen):
+        return resolve_pruna_output_size()
+    spec = _model_spec(chosen)
     width = snap_dimension(
         int(getattr(settings, "RUNWARE_TRYON_WIDTH", 1024) or 1024),
         step=spec["step"],
@@ -568,6 +669,8 @@ def _output_size_for_bytes(raw: bytes, model: str) -> tuple[int, int]:
         return fallback
     if src_w < 1 or src_h < 1:
         return fallback
+    if bool(spec.get("fixed_dimensions")):
+        return resolve_pruna_output_size(src_w=src_w, src_h=src_h)
     target_long = snap_dimension(
         max(fallback),
         step=spec["step"],
@@ -847,7 +950,13 @@ def resolved_scheduler(model: str) -> str | None:
 
 
 def resolved_output_format() -> str:
-    default = "WEBP" if resolved_tryon_model() == FLUX3_TRYON_MODEL else "PNG"
+    primary = resolved_tryon_model()
+    if _is_pruna_model(primary):
+        default = "JPG"
+    elif primary == FLUX3_TRYON_MODEL:
+        default = "WEBP"
+    else:
+        default = "PNG"
     raw = str(getattr(settings, "RUNWARE_TRYON_OUTPUT_FORMAT", default) or default).strip().upper()
     if raw == "JPEG":
         raw = "JPG"
@@ -874,21 +983,28 @@ def build_tryon_task(
     """Payload fields verified per model. Unsupported fields are left out."""
     _note_ignored_strength()
     spec = _model_spec(model)
-    if len(prompt) > PROMPT_MAX:
+    prompt_max = int(spec.get("positive_prompt_max") or PROMPT_MAX)
+    if len(prompt) > prompt_max:
         logger.warning(
             "positivePrompt length %s exceeds %s; request may be rejected",
             len(prompt),
-            PROMPT_MAX,
+            prompt_max,
         )
-    steps = tryon_steps_for_model(model)
+    if _is_pruna_model(model):
+        width, height = assert_pruna_dimensions(width, height)
     task: dict[str, Any] = {
         "model": model,
         "positivePrompt": prompt,
         "width": int(width),
         "height": int(height),
-        "steps": steps,
         "inputs": {"referenceImages": list(references)},
     }
+    if _is_pruna_model(model):
+        provider = resolved_pruna_provider_settings()
+        if provider is not None:
+            task["providerSettings"] = provider
+    if bool(spec.get("supports_steps", True)):
+        task["steps"] = tryon_steps_for_model(model)
     cfg = resolved_cfg_scale() if bool(spec.get("supports_cfg")) else None
     if cfg is not None:
         task["CFGScale"] = cfg
@@ -896,9 +1012,10 @@ def build_tryon_task(
         negative = resolved_negative_prompt(cfg)
         if negative:
             task["negativePrompt"] = negative
-    seed = resolved_seed()
-    if seed is not None:
-        task["seed"] = seed
+    if bool(spec.get("supports_seed", True)):
+        seed = resolved_seed()
+        if seed is not None:
+            task["seed"] = seed
     scheduler = resolved_scheduler(model)
     if scheduler:
         task["scheduler"] = scheduler
@@ -908,7 +1025,7 @@ def build_tryon_task(
         task["outputQuality"] = 95
     for key in FORBIDDEN_TASK_KEYS:
         task.pop(key, None)
-    allowed = set(DOCUMENTED_TASK_FIELDS)
+    allowed = PRUNA_TRYON_TASK_FIELDS if _is_pruna_model(model) else set(DOCUMENTED_TASK_FIELDS)
     unknown = sorted(set(task) - allowed)
     if unknown:
         logger.warning("Dropping undocumented Runware fields: %s", unknown)
@@ -1055,8 +1172,11 @@ def _infer_edit(
 
 
 def _switch_to_next_model(exc: AiStyleError) -> bool:
-    """To'lgan yoki tushgan modelni tashlab, keyingi modelga o'tish."""
-    if exc.status in (429, 502, 503, 504):
+    """Switch only when the model is down or invalid — not when it is merely busy.
+
+    HTTP 429 must not switch models in the same job. The queue already retries with Retry-After.
+    """
+    if exc.status in (502, 503, 504):
         return True
     message = (exc.message or "").lower()
     return exc.status == 400 and "model" in message
@@ -1088,25 +1208,35 @@ def _infer_with_fallback(
     )
     for index, model in enumerate(chain):
         width, height = _output_size_for_bytes(source, model)
-        try:
-            jpeg, cost, estimated, latency_ms = _infer_edit(
-                prompt=prompt,
-                images=images,
-                model=model,
-                width=width,
-                height=height,
-            )
-            return jpeg, cost, estimated, latency_ms, model
-        except AiStyleError as exc:
-            last = exc
-            if index >= len(chain) - 1 or not _switch_to_next_model(exc):
-                raise
-            logger.warning(
-                "Try-on model busy model=%s status=%s next=%s",
-                model,
-                exc.status,
-                chain[index + 1],
-            )
+        attempts = 2 if index == 0 else 1
+        for attempt in range(attempts):
+            try:
+                jpeg, cost, estimated, latency_ms = _infer_edit(
+                    prompt=prompt,
+                    images=images,
+                    model=model,
+                    width=width,
+                    height=height,
+                )
+                return jpeg, cost, estimated, latency_ms, model
+            except AiStyleError as exc:
+                last = exc
+                if (
+                    attempt + 1 < attempts
+                    and exc.retryable
+                    and exc.status in (502, 503, 504)
+                ):
+                    time.sleep(1.25)
+                    continue
+                break
+        if index >= len(chain) - 1 or not last or not _switch_to_next_model(last):
+            raise last or AiStyleError("Try-on rasm qaytarmadi. Qayta urinib ko'ring.", 502, retryable=True)
+        logger.warning(
+            "Try-on model busy model=%s status=%s next=%s",
+            model,
+            last.status if last else 0,
+            chain[index + 1],
+        )
     raise last or AiStyleError("Try-on rasm qaytarmadi. Qayta urinib ko'ring.", 502, retryable=True)
 
 
@@ -1294,7 +1424,18 @@ def generate_tryon_preview(
         latency_ms=latency_ms,
         inference_images=images,
     )
-    qc = assess_tryon_quality(prepared.payload, jpeg, face_report=report)
+    jpeg, report, quality_retries, cost, estimated, latency_ms, model, qc = _retry_if_hair_unchanged(
+        original=prepared.payload,
+        jpeg=jpeg,
+        report=report,
+        quality_retries=quality_retries,
+        prompt=prompt,
+        model=model,
+        cost=cost,
+        estimated=estimated,
+        latency_ms=latency_ms,
+        inference_images=images,
+    )
     log_tryon_diagnostics(
         tryon_diagnostic_record(
             input_source=source_name or "unknown",
@@ -1348,6 +1489,71 @@ def _apply_post_generation_preserve(original: bytes, generated: bytes) -> tuple[
     if scene_report.get("applied"):
         face_report = {**face_report, "scene_lock": scene_report}
     return jpeg, face_report
+
+
+def _retry_if_hair_unchanged(
+    *,
+    original: bytes,
+    jpeg: bytes,
+    report: dict[str, Any],
+    quality_retries: int,
+    prompt: str,
+    model: str,
+    cost: Decimal,
+    estimated: bool,
+    latency_ms: int,
+    inference_images: list[bytes] | None,
+) -> tuple[bytes, dict[str, Any], int, Decimal, bool, int, str, dict[str, Any]]:
+    """If the first edit still looks like the selfie, run one stronger hair-transfer pass."""
+    qc = assess_tryon_quality(original, jpeg, face_report=report)
+    if quality_retries or qc.get("overall") != "low_hair_change":
+        return jpeg, report, quality_retries, cost, estimated, latency_ms, model, qc
+    if not _flag("TRYON_HAIR_CHANGE_RETRY", True):
+        return jpeg, report, quality_retries, cost, estimated, latency_ms, model, qc
+
+    retry_prompt = f"{prompt}\n\n{HAIR_CHANGE_RETRY_SUFFIX}"
+    if len(retry_prompt) > PROMPT_MAX:
+        logger.info("Hair-change retry skipped: prompt exceeds %s characters", PROMPT_MAX)
+        return jpeg, report, quality_retries, cost, estimated, latency_ms, model, qc
+
+    ref_images = list(inference_images) if inference_images else [original]
+    width, height = _output_size_for_bytes(original, model)
+    try:
+        second, second_cost, second_estimated, second_latency = _infer_edit(
+            prompt=retry_prompt,
+            images=ref_images,
+            model=model,
+            width=width,
+            height=height,
+        )
+    except AiStyleError:
+        logger.warning("Hair-change retry failed; keeping the first try-on result")
+        return jpeg, report, quality_retries, cost, estimated, latency_ms, model, qc
+
+    second_jpeg, second_report = _apply_post_generation_preserve(original, second)
+    second_qc = assess_tryon_quality(original, second_jpeg, face_report=second_report)
+    first_ratio = qc.get("hair_band_change_ratio")
+    second_ratio = second_qc.get("hair_band_change_ratio")
+    first_score = first_ratio if isinstance(first_ratio, (int, float)) else -1
+    second_score = second_ratio if isinstance(second_ratio, (int, float)) else -1
+    if second_score >= first_score:
+        jpeg, report, qc = second_jpeg, second_report, second_qc
+    logger.info(
+        "Hair-change retry kept=%s first_ratio=%s second_ratio=%s",
+        "second" if second_score >= first_score else "first",
+        first_ratio,
+        second_ratio,
+    )
+    return (
+        jpeg,
+        report,
+        quality_retries + 1,
+        cost + second_cost,
+        estimated or second_estimated,
+        latency_ms + second_latency,
+        model,
+        qc,
+    )
 
 
 def _preserve_and_maybe_retry(

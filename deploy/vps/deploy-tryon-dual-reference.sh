@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Try-On FLUX 3 Image Klein: dual catalog reference + style-lock prompts on VPS backend.
+# Try-On Pruna P-Image-Edit (prunaai:2@1): dual catalog reference on VPS backend.
 # Server (root): sudo bash deploy/vps/deploy-tryon-dual-reference.sh
 set -euo pipefail
 
@@ -42,28 +42,27 @@ _ensure_env() {
   fi
 }
 
-_ensure_env "RUNWARE_TRYON_MODEL" "bfl:flux@3-image-klein"
-_ensure_env "RUNWARE_TRYON_FALLBACK_MODELS" "runware:400@6"
-_ensure_env "RUNWARE_TRYON_WIDTH" "1024"
+_ensure_env "RUNWARE_TRYON_MODEL" "prunaai:2@1"
+_ensure_env "RUNWARE_TRYON_FALLBACK_MODELS" ""
+_ensure_env "RUNWARE_TRYON_WIDTH" "768"
 _ensure_env "RUNWARE_TRYON_HEIGHT" "1024"
-_ensure_env "RUNWARE_TRYON_STEPS" "16"
-_ensure_env "RUNWARE_TRYON_MAX_COST_USD" "0.009"
+_ensure_env "RUNWARE_TRYON_MAX_COST_USD" "0.012"
 _ensure_env "RUNWARE_TRYON_OUTPUT_FORMAT" "JPG"
-_ensure_env "RUNWARE_TRYON_TIMEOUT" "180"
+_ensure_env "RUNWARE_TRYON_TIMEOUT" "120"
 _ensure_env "TRYON_LEASE_SECONDS" "480"
 _ensure_env "TRYON_TIMEOUT_MAX_ATTEMPTS" "2"
 _ensure_env "RUNWARE_TRYON_DUAL_REFERENCE" "true"
-_ensure_env "TRYON_PROMPT_VERSION" "v2"
+_ensure_env "TRYON_PROMPT_VERSION" "pruna"
 
 cat > "$ROLLBACK_FILE" << 'EOF'
 # Try-On tezkor orqaga qaytish:
 # 1) Quyidagi qatorlarni /var/www/mysaloon/source/backend/.env ga qo'ying
 # 2) systemctl restart mysaloon.service
 # 3) systemctl try-restart mysaloon-tryon-worker.service (agar bor bo'lsa)
-RUNWARE_TRYON_MODEL=runware:400@6
-RUNWARE_TRYON_FALLBACK_MODELS=
-RUNWARE_TRYON_DUAL_REFERENCE=false
-TRYON_PROMPT_VERSION=legacy
+RUNWARE_TRYON_MODEL=bfl:flux@3-image-klein
+RUNWARE_TRYON_FALLBACK_MODELS=runware:400@6
+RUNWARE_TRYON_DUAL_REFERENCE=true
+TRYON_PROMPT_VERSION=v2
 EOF
 chmod 644 "$ROLLBACK_FILE"
 

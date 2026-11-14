@@ -180,6 +180,7 @@ def merge_usage_tokens(*payloads: dict[str, Any] | None) -> dict[str, int]:
 # Larger output is scaled by megapixels. The API `cost` field is the real bill
 # when Runware returns it; this table is only the fallback.
 RUNWARE_USD_PER_1024 = {
+    "prunaai:2@1": Decimal("0.008800"),  # docs: P-Image-Edit reference-to-image from
     "bfl:flux@3-image-klein": Decimal("0.006000"),  # docs: 1024², 16 steps
     "runware:400@2": Decimal("0.000780"),  # FLUX.2 klein 9B
     "runware:400@6": Decimal("0.000780"),  # FLUX.2 klein 9B KV
@@ -230,7 +231,9 @@ def estimate_tryon_request_usd(
     key = (model or "").strip()
     base = RUNWARE_USD_PER_1024.get(key)
     if base is None:
-        if "flux@3-image-klein" in key:
+        if key.startswith("prunaai:"):
+            base = RUNWARE_USD_PER_1024["prunaai:2@1"]
+        elif "flux@3-image-klein" in key:
             base = RUNWARE_USD_PER_1024["bfl:flux@3-image-klein"]
         elif "400@4" in key:
             base = RUNWARE_USD_PER_1024["runware:400@4"]
@@ -240,9 +243,13 @@ def estimate_tryon_request_usd(
     h = max(128, int(height or 1024))
     pixels = Decimal(w * h)
     unit = pixels / Decimal(1024 * 1024)
-    step_scale = Decimal(max(1, int(steps or 16))) / Decimal("16")
     refs = max(1, int(reference_count or 1))
-    surcharge = RUNWARE_REFERENCE_SURCHARGE_PER_EXTRA_IMAGE * Decimal(max(0, refs - 1))
+    if key.startswith("prunaai:"):
+        step_scale = Decimal("1")
+        surcharge = Decimal("0")
+    else:
+        step_scale = Decimal(max(1, int(steps or 16))) / Decimal("16")
+        surcharge = RUNWARE_REFERENCE_SURCHARGE_PER_EXTRA_IMAGE * Decimal(max(0, refs - 1))
     total = base * unit * step_scale + surcharge
     return total.quantize(USD_QUANT, rounding=ROUND_HALF_UP)
 

@@ -198,20 +198,25 @@ TRYON_QUEUE_MAX_DEPTH = int(os.environ.get("TRYON_QUEUE_MAX_DEPTH", "20000"))
 TRYON_JOB_TTL_SECONDS = int(os.environ.get("TRYON_JOB_TTL_SECONDS", "21600"))
 # Process soni (RAM). Thread soni — slot kutish; Runware slotlari global limiterda.
 try:
-    _tryon_workers = int(os.environ.get("TRYON_WORKER_COUNT", "3") or "3")
+    _tryon_workers = int(os.environ.get("TRYON_WORKER_COUNT", "2") or "2")
 except ValueError:
-    _tryon_workers = 3
+    _tryon_workers = 2
 TRYON_WORKER_COUNT = max(1, min(_tryon_workers, 8))
 try:
-    _tryon_concurrency = int(os.environ.get("TRYON_WORKER_CONCURRENCY", "8") or "8")
+    _tryon_concurrency = int(os.environ.get("TRYON_WORKER_CONCURRENCY", "3") or "3")
 except ValueError:
-    _tryon_concurrency = 8
+    _tryon_concurrency = 3
 TRYON_WORKER_CONCURRENCY = max(1, min(_tryon_concurrency, 32))
 try:
-    _tryon_provider_conc = int(os.environ.get("TRYON_PROVIDER_CONCURRENCY", "8") or "8")
+    _tryon_provider_conc = int(os.environ.get("TRYON_PROVIDER_CONCURRENCY", "4") or "4")
 except ValueError:
-    _tryon_provider_conc = 8
+    _tryon_provider_conc = 4
 TRYON_PROVIDER_CONCURRENCY = max(1, min(_tryon_provider_conc, 32))
+try:
+    _tryon_provider_cap = int(os.environ.get("TRYON_PROVIDER_CONCURRENCY_CAP", "4") or "4")
+except ValueError:
+    _tryon_provider_cap = 4
+TRYON_PROVIDER_CONCURRENCY_CAP = max(1, min(_tryon_provider_cap, 16))
 try:
     _tryon_max_retries = int(os.environ.get("TRYON_MAX_RETRIES", "6") or "6")
 except ValueError:
@@ -258,24 +263,21 @@ RUNWARE_API_URL = (
     os.environ.get("RUNWARE_API_URL", "https://api.runware.ai/v1").strip()
     or "https://api.runware.ai/v1"
 )
-# Default: FLUX 3 Image Klein. Reserve runware:400@6 only under queue pressure (rollback).
+# Default: Pruna P-Image-Edit (prunaai:2@1). No FLUX fallback for Try-On.
 RUNWARE_TRYON_MODEL = (
-    os.environ.get("RUNWARE_TRYON_MODEL", "bfl:flux@3-image-klein").strip()
-    or "bfl:flux@3-image-klein"
+    os.environ.get("RUNWARE_TRYON_MODEL", "prunaai:2@1").strip() or "prunaai:2@1"
 )
-RUNWARE_TRYON_FALLBACK_MODELS = os.environ.get(
-    "RUNWARE_TRYON_FALLBACK_MODELS", "runware:400@6"
-).strip()
+RUNWARE_TRYON_FALLBACK_MODELS = os.environ.get("RUNWARE_TRYON_FALLBACK_MODELS", "").strip()
 try:
-    _runware_width = int(os.environ.get("RUNWARE_TRYON_WIDTH", "1024") or "1024")
+    _runware_width = int(os.environ.get("RUNWARE_TRYON_WIDTH", "768") or "768")
 except ValueError:
-    _runware_width = 1024
+    _runware_width = 768
 try:
     _runware_height = int(os.environ.get("RUNWARE_TRYON_HEIGHT", "1024") or "1024")
 except ValueError:
     _runware_height = 1024
 try:
-    _runware_timeout = int(os.environ.get("RUNWARE_TRYON_TIMEOUT", "180") or "180")
+    _runware_timeout = int(os.environ.get("RUNWARE_TRYON_TIMEOUT", "120") or "120")
 except ValueError:
     _runware_timeout = 120
 RUNWARE_TRYON_WIDTH = max(128, min(_runware_width, 4096))
@@ -298,8 +300,8 @@ RUNWARE_TRYON_SEED_MODE = (
 RUNWARE_TRYON_TEST_SEED = os.environ.get("RUNWARE_TRYON_TEST_SEED", "12345").strip() or "12345"
 # "default" is internal: the scheduler field is omitted and the model default is used.
 RUNWARE_TRYON_SCHEDULER = os.environ.get("RUNWARE_TRYON_SCHEDULER", "default").strip() or "default"
-RUNWARE_TRYON_OUTPUT_FORMAT = os.environ.get("RUNWARE_TRYON_OUTPUT_FORMAT", "WEBP").strip() or "WEBP"
-RUNWARE_TRYON_MAX_COST_USD = os.environ.get("RUNWARE_TRYON_MAX_COST_USD", "0.009").strip() or "0.009"
+RUNWARE_TRYON_OUTPUT_FORMAT = os.environ.get("RUNWARE_TRYON_OUTPUT_FORMAT", "JPG").strip() or "JPG"
+RUNWARE_TRYON_MAX_COST_USD = os.environ.get("RUNWARE_TRYON_MAX_COST_USD", "0.012").strip() or "0.012"
 # strength is unsupported on Try-On edit models; values are logged and never sent.
 RUNWARE_TRYON_STRENGTH = os.environ.get("RUNWARE_TRYON_STRENGTH", "").strip()
 # Paste the original inner face back only when alignment checks pass.
@@ -323,6 +325,13 @@ RUNWARE_TRYON_QUALITY_RETRY = os.environ.get("RUNWARE_TRYON_QUALITY_RETRY", "fal
     "yes",
     "on",
 )
+# One extra generation when QC says the hair barely changed (echoed selfie).
+TRYON_HAIR_CHANGE_RETRY = os.environ.get("TRYON_HAIR_CHANGE_RETRY", "true").strip().lower() in (
+    "1",
+    "true",
+    "yes",
+    "on",
+)
 # Empty follows DEBUG. Logs dimensions and pipeline flags, never image bytes.
 _tryon_diagnostics = os.environ.get("TRYON_DIAGNOSTICS", "").strip().lower()
 TRYON_DIAGNOSTICS = (
@@ -332,8 +341,8 @@ TRYON_DIAGNOSTICS = (
 )
 # Empty or 0 uses TRYON_PROVIDER_CONCURRENCY. Above that, new jobs start on a reserve model.
 RUNWARE_TRYON_OVERFLOW_DEPTH = os.environ.get("RUNWARE_TRYON_OVERFLOW_DEPTH", "").strip()
-# Try-On prompt pipeline: v2 = style lock + compact layers; legacy = pre-2026 long prompts.
-TRYON_PROMPT_VERSION = os.environ.get("TRYON_PROMPT_VERSION", "v2").strip().lower() or "v2"
+# Try-On prompt pipeline: pruna = P-Image-Edit (max 2000); v2 = style lock; legacy = long stack.
+TRYON_PROMPT_VERSION = os.environ.get("TRYON_PROMPT_VERSION", "pruna").strip().lower() or "pruna"
 # Selfie + exact catalog reference (referenceImages[0]=user, [1]=hairstyle). Off = text-only style lock.
 RUNWARE_TRYON_DUAL_REFERENCE = os.environ.get("RUNWARE_TRYON_DUAL_REFERENCE", "true").strip().lower() in (
     "1",
@@ -341,8 +350,15 @@ RUNWARE_TRYON_DUAL_REFERENCE = os.environ.get("RUNWARE_TRYON_DUAL_REFERENCE", "t
     "yes",
     "on",
 )
-# Grayscale-blend catalog reference so FLUX does not copy catalog hair/background color.
+# Grayscale-blend catalog reference so the model does not copy catalog hair/background color.
 RUNWARE_TRYON_CATALOG_DESATURATE = os.environ.get("RUNWARE_TRYON_CATALOG_DESATURATE", "true").strip().lower() in (
+    "1",
+    "true",
+    "yes",
+    "on",
+)
+# Pruna P-Image-Edit only: providerSettings.prunaai.turbo (faster, may reduce detail).
+RUNWARE_TRYON_PRUNA_TURBO = os.environ.get("RUNWARE_TRYON_PRUNA_TURBO", "false").strip().lower() in (
     "1",
     "true",
     "yes",

@@ -4398,6 +4398,8 @@ export async function fetchMorphAiGallery(limit = 40) {
       title?: string;
       photo_url: string | null;
       photo_missing?: boolean;
+      /** Admin-only: Runware AIR id used for try-on (e.g. prunaai:2@1). */
+      ai_model?: string;
       created_at: string;
     }>;
     media_note?: string | null;

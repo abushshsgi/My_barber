@@ -35,6 +35,14 @@ function GalleryImage({ src, alt }: { src: string | null; alt: string }) {
   );
 }
 
+function aiModelLabel(raw: unknown): string {
+  const v = String(raw || "").trim();
+  if (!v) return "";
+  if (v === "prunaai:2@1") return "Pruna";
+  if (v === "bfl:flux@3-image-klein") return "FLUX3";
+  return v;
+}
+
 function MorphGalleryPage() {
   const q = useQuery({
     queryKey: ["admin", "morph-ai", "gallery", "preview"],
@@ -109,6 +117,11 @@ function MorphGalleryPage() {
                       <Badge variant="secondary">{item.source}</Badge>
                       {item.kind === "generation" ? (
                         <Badge variant="outline">try-on</Badge>
+                      ) : null}
+                      {item.kind === "generation" && item.ai_model ? (
+                        <Badge variant="outline" className="font-mono text-[10px]" title={String(item.ai_model)}>
+                          {aiModelLabel(item.ai_model)}
+                        </Badge>
                       ) : null}
                       {item.face_shape_key ? (
                         <Badge variant="outline">{item.face_shape_key}</Badge>

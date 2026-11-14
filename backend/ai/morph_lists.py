@@ -13,7 +13,13 @@ from django.utils import timezone
 
 from ai.models import AiGenerationUsage, AiStyleHistoryEntry, MorphAiGenerationEntry, MorphAiSettings
 from ai.morph_analytics import charge_for_usage, load_usage_facts, public_charge, rollup_usage_facts
-from ai.morph_ops import _gallery_generation_item, _gallery_history_item, _money
+from ai.morph_ops import (
+    _gallery_generation_item,
+    _gallery_history_item,
+    _money,
+    enrich_gallery_items_with_models,
+    lookup_tryon_models_for_entries,
+)
 from control_panel.platform_analytics import resolve_range
 
 LIST_KINDS = (
@@ -185,6 +191,8 @@ def _list_errors(start_raw, end_raw, page, page_size) -> dict[str, Any]:
             ),
             "kind": item.kind,
             "style_title": item.style_title,
+            "model": item.model or "",
+            "provider": item.provider or "",
             "error_detail": item.error_detail,
             "created_at": item.created_at.isoformat(),
         }
@@ -305,13 +313,15 @@ def _list_gallery(page, page_size, request=None) -> dict[str, Any]:
         .select_related("user")
         .order_by("-created_at")[:500]
     )
+    model_map = lookup_tryon_models_for_entries(generation_rows)
     items = [_gallery_history_item(row) for row in history_rows] + [
-        _gallery_generation_item(row) for row in generation_rows
+        _gallery_generation_item(row, ai_model=model_map.get(row.id, "")) for row in generation_rows
     ]
     items.sort(key=lambda item: item["created_at"], reverse=True)
     count = len(items)
     start = (page - 1) * page_size
     page_items = items[start : start + page_size]
+    enrich_gallery_items_with_models(page_items)
     missing = sum(1 for item in page_items if item.get("photo_missing"))
     payload = _paginate(page_items, page=page, page_size=page_size, count=count)
     payload["kind"] = "gallery"
@@ -391,6 +401,7 @@ def build_morph_list_export_csv(
                 "kind",
                 "status",
                 "style_title",
+                "model",
                 "provider",
                 "charge_from",
                 "activity",
@@ -412,6 +423,7 @@ def build_morph_list_export_csv(
                     r.get("kind"),
                     r.get("status"),
                     r.get("style_title"),
+                    r.get("model"),
                     r.get("provider"),
                     r.get("charge_from"),
                     r.get("activity"),
@@ -442,7 +454,9 @@ def build_morph_list_export_csv(
                 ]
             )
     elif kind == "errors":
-        writer.writerow(["id", "created_at", "user_id", "user", "kind", "style_title", "error_detail"])
+        writer.writerow(
+            ["id", "created_at", "user_id", "user", "kind", "style_title", "model", "provider", "error_detail"]
+        )
         for r in all_rows:
             writer.writerow(
                 [
@@ -452,6 +466,8 @@ def build_morph_list_export_csv(
                     r.get("user_name"),
                     r.get("kind"),
                     r.get("style_title"),
+                    r.get("model"),
+                    r.get("provider"),
                     r.get("error_detail"),
                 ]
             )

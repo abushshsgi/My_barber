@@ -41,7 +41,7 @@ def get_settings_payload() -> dict[str, Any]:
         "gallery_public": s.gallery_public,
         "referral_generation_enabled": s.referral_generation_enabled,
         "runtime_model": getattr(settings, "GEMINI_MODEL", "") or "",
-        "tryon_model": getattr(settings, "RUNWARE_TRYON_MODEL", "") or "bfl:flux@3-image-klein",
+        "tryon_model": getattr(settings, "RUNWARE_TRYON_MODEL", "") or "prunaai:2@1",
         "tryon_provider": "runware",
         "updated_at": s.updated_at.isoformat() if s.updated_at else None,
     }
@@ -476,9 +476,47 @@ def _gallery_history_item(row: AiStyleHistoryEntry) -> dict[str, Any]:
     }
 
 
-def _gallery_generation_item(row: MorphAiGenerationEntry) -> dict[str, Any]:
+def lookup_tryon_models_for_entries(entries: list[MorphAiGenerationEntry]) -> dict[int, str]:
+    """Admin-only: map gallery generation rows to AiGenerationUsage.model."""
+    if not entries:
+        return {}
+    out: dict[int, str] = {}
+    window_before = timedelta(minutes=20)
+    window_after = timedelta(minutes=5)
+    for row in entries:
+        qs = AiGenerationUsage.objects.filter(
+            user_id=row.user_id,
+            kind=AiGenerationUsage.Kind.TRYON,
+            status=AiGenerationUsage.Status.SUCCESS,
+            created_at__gte=row.created_at - window_before,
+            created_at__lte=row.created_at + window_after,
+        ).exclude(model="")
+        style = (row.style_id or "").strip()
+        if style:
+            qs = qs.filter(style_id=style)
+        model = qs.order_by("-created_at").values_list("model", flat=True).first()
+        if not model and style:
+            model = (
+                AiGenerationUsage.objects.filter(
+                    user_id=row.user_id,
+                    kind=AiGenerationUsage.Kind.TRYON,
+                    status=AiGenerationUsage.Status.SUCCESS,
+                    created_at__gte=row.created_at - window_before,
+                    created_at__lte=row.created_at + window_after,
+                )
+                .exclude(model="")
+                .order_by("-created_at")
+                .values_list("model", flat=True)
+                .first()
+            )
+        if model:
+            out[row.id] = str(model)
+    return out
+
+
+def _gallery_generation_item(row: MorphAiGenerationEntry, *, ai_model: str = "") -> dict[str, Any]:
     photo_url, missing = _media_field_url(row.after_photo)
-    return {
+    payload: dict[str, Any] = {
         "id": f"g-{row.id}",
         "entry_id": row.id,
         "kind": "generation",
@@ -493,6 +531,34 @@ def _gallery_generation_item(row: MorphAiGenerationEntry) -> dict[str, Any]:
         "photo_missing": missing,
         "created_at": row.created_at.isoformat(),
     }
+    model = (ai_model or "").strip()
+    if model:
+        payload["ai_model"] = model
+    return payload
+
+
+def enrich_gallery_items_with_models(items: list[dict[str, Any]]) -> None:
+    """Attach ai_model to try-on gallery cards (admin list only)."""
+    entry_ids = [
+        int(item["entry_id"])
+        for item in items
+        if item.get("kind") == "generation" and item.get("entry_id") is not None
+    ]
+    if not entry_ids:
+        return
+    rows = list(MorphAiGenerationEntry.objects.filter(id__in=entry_ids).select_related("user"))
+    models = lookup_tryon_models_for_entries(rows)
+    for item in items:
+        eid = item.get("entry_id")
+        if eid is None:
+            continue
+        try:
+            key = int(eid)
+        except (TypeError, ValueError):
+            continue
+        model = models.get(key)
+        if model:
+            item["ai_model"] = model
 
 
 def build_gallery(*, limit: int = 40, request=None) -> dict[str, Any]:
@@ -509,8 +575,9 @@ def build_gallery(*, limit: int = 40, request=None) -> dict[str, Any]:
         .select_related("user")
         .order_by("-created_at")[:cap]
     )
+    model_map = lookup_tryon_models_for_entries(generation_rows)
     items = [_gallery_history_item(row) for row in history_rows] + [
-        _gallery_generation_item(row) for row in generation_rows
+        _gallery_generation_item(row, ai_model=model_map.get(row.id, "")) for row in generation_rows
     ]
     items.sort(key=lambda item: item["created_at"], reverse=True)
     items = items[:cap]

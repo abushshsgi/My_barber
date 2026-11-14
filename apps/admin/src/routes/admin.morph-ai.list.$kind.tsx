@@ -116,6 +116,14 @@ function sourceLabel(raw: unknown): string {
   return v || "—";
 }
 
+function aiModelLabel(raw: unknown): string {
+  const v = String(raw || "").trim();
+  if (!v) return "—";
+  if (v === "prunaai:2@1") return "Pruna P-Image-Edit";
+  if (v === "bfl:flux@3-image-klein") return "FLUX 3 Klein";
+  return v;
+}
+
 function GalleryThumb({ src, alt }: { src: string | null; alt: string }) {
   const [failed, setFailed] = useState(false);
   if (!src || failed) {
@@ -238,6 +246,11 @@ function MorphAiListPage() {
                     <div className="flex flex-wrap gap-1">
                       <Badge variant="secondary">{String(item.source || "—")}</Badge>
                       {item.kind === "generation" ? <Badge variant="outline">try-on</Badge> : null}
+                      {item.kind === "generation" && item.ai_model ? (
+                        <Badge variant="outline" className="font-mono text-[10px]" title={String(item.ai_model)}>
+                          {aiModelLabel(item.ai_model)}
+                        </Badge>
+                      ) : null}
                     </div>
                     <div className="text-xs text-muted-foreground">
                       {item.created_at
@@ -263,6 +276,7 @@ function MorphAiListPage() {
                       <TableHead>Tur</TableHead>
                       <TableHead>Uslub</TableHead>
                       <TableHead>Qayerdan</TableHead>
+                      <TableHead>Model</TableHead>
                       <TableHead>Hisob</TableHead>
                       <TableHead className="text-right">Narx</TableHead>
                       <TableHead>Holat</TableHead>
@@ -285,6 +299,7 @@ function MorphAiListPage() {
                       <TableHead>Vaqt</TableHead>
                       <TableHead>User</TableHead>
                       <TableHead>Tur</TableHead>
+                      <TableHead>Model</TableHead>
                       <TableHead>Xato</TableHead>
                     </>
                   ) : null}
@@ -337,6 +352,9 @@ function MorphAiListPage() {
                         </TableCell>
                         <TableCell>
                           <Badge variant="outline">{sourceLabel(row.charge_from)}</Badge>
+                        </TableCell>
+                        <TableCell className="max-w-[200px] font-mono text-xs" title={String(row.model || "")}>
+                          {aiModelLabel(row.model)}
                         </TableCell>
                         <TableCell className="max-w-[240px] text-xs text-muted-foreground">
                           {String(row.price_note || "—")}
@@ -397,6 +415,9 @@ function MorphAiListPage() {
                         <TableCell>{String(r.user_name || "—")}</TableCell>
                         <TableCell>
                           <Badge variant="secondary">{kindLabel(r.kind)}</Badge>
+                        </TableCell>
+                        <TableCell className="max-w-[200px] font-mono text-xs" title={String(r.model || "")}>
+                          {aiModelLabel(r.model)}
                         </TableCell>
                         <TableCell className="max-w-[420px] truncate text-sm">
                           {String(r.error_detail || "—")}
