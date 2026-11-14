@@ -64,8 +64,13 @@ class _Response:
     RUNWARE_API_URL="https://api.runware.ai/v1",
     RUNWARE_TRYON_MODEL="prunaai:2@1",
     RUNWARE_TRYON_FALLBACK_MODELS="",
-    RUNWARE_TRYON_WIDTH=768,
-    RUNWARE_TRYON_HEIGHT=1024,
+    RUNWARE_TRYON_WIDTH=896,
+    RUNWARE_TRYON_HEIGHT=1184,
+    RUNWARE_TRYON_INCLUDE_COST=False,
+    TRYON_RAW_OUTPUT=True,
+    TRYON_SCENE_LOCK=False,
+    TRYON_FACE_RESTORE=False,
+    TRYON_HAIR_CHANGE_RETRY=False,
     RUNWARE_TRYON_TIMEOUT=30,
     RUNWARE_TRYON_CFG_SCALE="3.5",
     RUNWARE_TRYON_NEGATIVE_PROMPT_ENABLED=True,
@@ -77,7 +82,7 @@ class _Response:
     TRYON_PROVIDER_CONCURRENCY=8,
     MEDIA_URL="/media/",
     TRYON_PROMPT_VERSION="pruna",
-    RUNWARE_TRYON_DUAL_REFERENCE=True,
+    RUNWARE_TRYON_DUAL_REFERENCE=False,
     RUNWARE_TRYON_MAX_COST_USD="0.012",
 )
 class RunwareTryOnTests(SimpleTestCase):
@@ -86,14 +91,14 @@ class RunwareTryOnTests(SimpleTestCase):
 
         self.assertEqual(resolved_tryon_model(), PRUNA_TRYON_MODEL)
 
-    def test_cost_estimate_1024_dual_reference_under_cap(self):
+    def test_cost_estimate_1024_single_reference_under_cap(self):
         from ai.usage_pricing import estimate_tryon_request_usd, tryon_cost_cap_usd
 
         estimate = estimate_tryon_request_usd(
             model="prunaai:2@1",
             width=896,
             height=1184,
-            reference_count=2,
+            reference_count=1,
             steps=1,
         )
         self.assertLessEqual(estimate, tryon_cost_cap_usd())
@@ -126,7 +131,7 @@ class RunwareTryOnTests(SimpleTestCase):
         buffer = BytesIO()
         Image.new("RGB", (768, 1024), (90, 70, 60)).save(buffer, format="JPEG", quality=80)
         self.assertEqual(resolved_tryon_size("prunaai:2@1"), (832, 1248))
-        self.assertEqual(_output_size_for_bytes(buffer.getvalue(), "prunaai:2@1"), (832, 1248))
+        self.assertEqual(_output_size_for_bytes(buffer.getvalue(), "prunaai:2@1"), (896, 1184))
 
     def test_output_size_keeps_square_selfie(self):
         from ai.services.runware_tryon import _output_size_for_bytes
@@ -189,7 +194,7 @@ class RunwareTryOnTests(SimpleTestCase):
     @patch("ai.services.runware_tryon.download_image")
     @patch("ai.services.runware_tryon.run_image_inference")
     @patch("ai.services.vertex_image.generate_image_content")
-    def test_preview_uses_reference_images_and_local_media(
+    def test_preview_uses_single_selfie_reference_and_local_media(
         self, vertex, infer, download, _save
     ):
         from ai.services.runware_tryon import generate_tryon_preview
@@ -200,25 +205,25 @@ class RunwareTryOnTests(SimpleTestCase):
             "cost": 0.0012,
             "seed": 7,
         }
-        catalog = _jpeg_bytes_color((40, 80, 120), (256, 256))
-        with override_settings(RUNWARE_TRYON_DUAL_REFERENCE=True), patch(
-            "ai.services.runware_tryon.load_public_image",
-            return_value=("image/png", catalog),
-        ):
+        buffer = BytesIO()
+        Image.new("RGB", (768, 1024), (90, 70, 60)).save(buffer, format="JPEG", quality=80)
+        portrait_url = _data_url(buffer.getvalue())
+        with patch("ai.services.runware_tryon.load_public_image") as load_catalog:
             result = generate_tryon_preview(
-                selfie_data_url=TINY_PNG,
+                selfie_data_url=portrait_url,
                 audience="men",
                 slug="mid-fade",
                 title="Mid Fade",
                 reference_image_url="/hairstyles/men/mid-fade.webp",
             )
 
+        load_catalog.assert_not_called()
         vertex.assert_not_called()
         task = infer.call_args.args[0]
         refs = task["inputs"]["referenceImages"]
         self.assertEqual(task["model"], "prunaai:2@1")
-        self.assertEqual(len(refs), 2)
-        self.assertTrue(all(item.startswith("data:image/jpeg;base64,") for item in refs))
+        self.assertEqual(len(refs), 1)
+        self.assertTrue(refs[0].startswith("data:image/jpeg;base64,"))
         self.assertNotIn("seedImage", task)
         self.assertNotIn("strength", task)
         self.assertNotIn("mask", task)
@@ -229,14 +234,16 @@ class RunwareTryOnTests(SimpleTestCase):
         self.assertNotIn("scheduler", task)
         self.assertNotIn("CFGScale", task)
         self.assertNotIn("negativePrompt", task)
+        self.assertEqual(task["width"], 896)
+        self.assertEqual(task["height"], 1184)
         self.assertEqual(task["outputFormat"], "JPG")
         self.assertEqual(task["outputQuality"], 95)
         self.assertLessEqual(len(task["positivePrompt"]), 2000)
         prompt = task["positivePrompt"].lower()
-        self.assertIn("image 1", prompt)
-        self.assertIn("image 2", prompt)
-        self.assertIn("photorealistic hairstyle editing", prompt)
+        self.assertIn("transform only the user's hair", prompt)
         self.assertIn("mid fade", prompt)
+        self.assertIn("preserve the exact same facial identity", prompt)
+        self.assertNotIn("image 2", prompt)
         self.assertTrue(result.preview_image.startswith("/media/ai-style/tryon-results/"))
         self.assertNotIn("runware.ai", result.preview_image)
         self.assertNotIn("super-secret-key", result.preview_image)
@@ -246,13 +253,38 @@ class RunwareTryOnTests(SimpleTestCase):
         self.assertGreaterEqual(result.latency_ms, 0)
         download.assert_called_once_with("https://im.runware.ai/image/example.jpg")
 
-    def test_dual_reference_requires_resolvable_catalog_image(self):
+    @patch("media_store.utils.save_media_bytes", return_value="stored.jpg")
+    @patch("ai.services.runware_tryon.download_image")
+    @patch("ai.services.runware_tryon.run_image_inference")
+    def test_pruna_ignores_catalog_even_when_dual_reference_flag_on(
+        self, infer, download, _save
+    ):
         from ai.services.runware_tryon import generate_tryon_preview
 
+        catalog = _jpeg_bytes_color((40, 80, 120), (256, 256))
+        download.return_value = _jpeg_bytes()
+        infer.return_value = {"imageURL": "https://im.runware.ai/x.jpg", "cost": 0.001}
         with override_settings(RUNWARE_TRYON_DUAL_REFERENCE=True), patch(
             "ai.services.runware_tryon.load_public_image",
-            return_value=None,
+            return_value=("image/png", catalog),
         ):
+            generate_tryon_preview(
+                selfie_data_url=TINY_PNG,
+                audience="men",
+                slug="mid-fade",
+                title="Mid Fade",
+                reference_image_url="/hairstyles/men/mid-fade.webp",
+            )
+        refs = infer.call_args.args[0]["inputs"]["referenceImages"]
+        self.assertEqual(len(refs), 1)
+
+    def test_dual_reference_requires_resolvable_catalog_image_for_flux(self):
+        from ai.services.runware_tryon import FLUX3_TRYON_MODEL, generate_tryon_preview
+
+        with override_settings(
+            RUNWARE_TRYON_MODEL=FLUX3_TRYON_MODEL,
+            RUNWARE_TRYON_DUAL_REFERENCE=True,
+        ), patch("ai.services.runware_tryon.load_public_image", return_value=None):
             with self.assertRaises(AiStyleError) as ctx:
                 generate_tryon_preview(
                     selfie_data_url=TINY_PNG,
@@ -267,8 +299,8 @@ class RunwareTryOnTests(SimpleTestCase):
     @patch("media_store.utils.save_media_bytes", return_value="stored.jpg")
     @patch("ai.services.runware_tryon.download_image")
     @patch("ai.services.runware_tryon.run_image_inference")
-    def test_dual_reference_order_selfie_then_catalog(self, infer, download, _save):
-        from ai.services.runware_tryon import generate_tryon_preview
+    def test_dual_reference_order_selfie_then_catalog_on_flux(self, infer, download, _save):
+        from ai.services.runware_tryon import FLUX3_TRYON_MODEL, generate_tryon_preview
 
         selfie_raw = _jpeg_bytes_color((200, 100, 50), (64, 64))
         catalog_raw = _jpeg_bytes_color((50, 100, 200), (128, 128))
@@ -296,7 +328,10 @@ class RunwareTryOnTests(SimpleTestCase):
             prepare_calls.append(prepared.payload)
             return prepared
 
-        with override_settings(RUNWARE_TRYON_DUAL_REFERENCE=True), patch(
+        with override_settings(
+            RUNWARE_TRYON_MODEL=FLUX3_TRYON_MODEL,
+            RUNWARE_TRYON_DUAL_REFERENCE=True,
+        ), patch(
             "ai.services.runware_tryon.load_public_image",
             side_effect=_fake_load,
         ), patch("ai.services.runware_tryon.prepare_selfie_bytes", side_effect=_track_prepare):
@@ -626,10 +661,13 @@ class RunwareTryOnTests(SimpleTestCase):
             title="Mid Fade",
             style_detail="mid fade haircut, clean taper",
             include_catalog_image=True,
+            audience="men",
+            slug="mid-fade",
         )
-        self.assertIn("Photorealistic hairstyle editing", pruna)
-        self.assertIn("Image 1", pruna)
-        self.assertIn("Image 2", pruna)
+        self.assertIn("change only", pruna.lower())
+        self.assertIn("mid fade", pruna.lower())
+        self.assertIn("facial identity", pruna.lower())
+        self.assertNotIn("Image 2", pruna)
         self.assertLessEqual(len(pruna), PRUNA_POSITIVE_PROMPT_MAX)
 
         with override_settings(TRYON_PROMPT_VERSION="v2"):
@@ -930,6 +968,7 @@ class RunwareTryOnTests(SimpleTestCase):
             RUNWARE_TRYON_QUALITY_RETRY=True,
             TRYON_FACE_RESTORE=True,
             TRYON_SCENE_LOCK=False,
+            TRYON_RAW_OUTPUT=False,
         ), patch(
             "ai.services.runware_tryon.load_public_image",
             return_value=("image/jpeg", catalog),
@@ -967,6 +1006,7 @@ class RunwareTryOnTests(SimpleTestCase):
             TRYON_HAIR_CHANGE_RETRY=True,
             TRYON_SCENE_LOCK=False,
             TRYON_FACE_RESTORE=False,
+            TRYON_RAW_OUTPUT=False,
         ), patch(
             "ai.services.runware_tryon.load_public_image",
             return_value=("image/jpeg", catalog),
@@ -1000,3 +1040,70 @@ class RunwareTryOnTests(SimpleTestCase):
                 reference_image_url="/hairstyles/men/mid-fade.webp",
             )
         self.assertEqual(infer.call_count, 1)
+
+    def test_runware_http_playground_envelope(self):
+        import uuid
+
+        from ai.services.runware_client import run_image_inference
+
+        captured: dict = {}
+        session = MagicMock()
+
+        def _post(_url, json=None, **_kwargs):
+            captured["json"] = json
+            return _Response(
+                200,
+                {"data": [{"imageURL": "https://im.runware.ai/out.jpg", "cost": 0.0088}]},
+            )
+
+        session.post = _post
+        task = {
+            "model": "prunaai:2@1",
+            "positivePrompt": "Transform only the user's hair.",
+            "width": 896,
+            "height": 1184,
+            "inputs": {"referenceImages": ["https://cdn.example/user.jpg"]},
+            "outputQuality": 95,
+        }
+        with patch("ai.services.runware_client.http_session", return_value=session):
+            result = run_image_inference(task)
+        self.assertIn("imageURL", result)
+        req = captured["json"][0]
+        self.assertEqual(req["taskType"], "imageInference")
+        self.assertEqual(req["model"], "prunaai:2@1")
+        self.assertEqual(req["deliveryMethod"], "sync")
+        self.assertEqual(req["outputType"], "URL")
+        self.assertEqual(req["outputFormat"], "JPG")
+        self.assertEqual(req["numberResults"], 1)
+        self.assertFalse(req["includeCost"])
+        self.assertEqual(req["width"], 896)
+        self.assertEqual(req["height"], 1184)
+        self.assertEqual(len(req["inputs"]["referenceImages"]), 1)
+        uuid.UUID(str(req["taskUUID"]))
+
+    def test_medium_curly_playground_prompt_3a_3b(self):
+        from ai.tryon_generation_prompts import assemble_pruna_positive_prompt
+
+        prompt = assemble_pruna_positive_prompt(
+            audience="men",
+            slug="medium-curly",
+            title="Medium Curly",
+        )
+        self.assertIn("3A", prompt)
+        self.assertIn("3B", prompt)
+        self.assertIn("medium-length curly", prompt.lower())
+        self.assertLessEqual(len(prompt), 2000)
+
+    @patch("subscriptions.services.record_morph_usage")
+    def test_failed_tryon_does_not_record_success_usage(self, record_usage):
+        from ai.usage_log import record_ai_generation
+
+        record_ai_generation(
+            user_id=42,
+            kind="tryon",
+            status="failed",
+            prompt="x",
+            model="prunaai:2@1",
+            provider="runware",
+        )
+        record_usage.assert_not_called()

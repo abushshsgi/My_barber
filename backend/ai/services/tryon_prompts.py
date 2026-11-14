@@ -18,15 +18,9 @@ PRUNA_POSITIVE_PROMPT_MAX = 2000
 NEGATIVE_PROMPT_MAX = 3000
 
 PRUNA_TRYON_BASE_PROMPT = (
-    "Photorealistic hairstyle editing. Image 1 is the original user photo and the absolute "
-    "identity reference. Image 2 is the selected hairstyle reference. Transfer only the "
-    "hairstyle from Image 2 to Image 1. Preserve the exact original facial identity, face shape, "
-    "forehead, eyes, eyebrows, nose, lips, ears, skin tone, facial expression, clothing, "
-    "background, camera angle and lighting. Match the reference hairstyle's shape, length, curls, "
-    "texture, volume and direction. Keep the user's original hair color unless a color change was "
-    "requested. Modify only the hair region. Natural hairline, realistic individual strands, "
-    "accurate shadows, seamless blending, professional salon photography. No face changes, wigs, "
-    "plastic hair, artificial curls, skin smoothing or distorted features."
+    "Photorealistic in-place hairstyle editing on the uploaded user photograph. "
+    "The selected hairstyle is defined only by the text below — no catalog model image is attached. "
+    "Change hair geometry, length, texture, and styling only."
 )
 
 IDENTITY_PRESERVATION_PROMPT = """\
@@ -587,24 +581,46 @@ def build_pruna_tryon_prompt(
     style_detail: str,
     selected_hair_color: str | None = None,
     include_catalog_image: bool = False,
+    audience: str | None = None,
+    slug: str | None = None,
 ) -> str:
-    """Compact Pruna prompt (max 2000). Catalog image is still required via referenceImages."""
-    parts = [PRUNA_TRYON_BASE_PROMPT]
-    safe_title = " ".join(str(title or "").split())[:120]
-    safe_detail = " ".join(str(style_detail or "").split())[:280]
-    if safe_title or safe_detail:
-        parts.append(
-            f'Selected MySaloon hairstyle: "{safe_title}". Style detail: {safe_detail}.'
+    """Compact Pruna prompt (max 2000). User selfie only in referenceImages."""
+    from ai.tryon_generation_prompts import assemble_pruna_positive_prompt
+
+    if audience and slug:
+        prompt = assemble_pruna_positive_prompt(
+            audience=audience,
+            slug=slug,
+            title=title,
+            selected_hair_color=selected_hair_color,
         )
-    explicit = " ".join(str(selected_hair_color or "").split())
-    if explicit:
-        parts.append(f'Apply this hair color only: "{explicit[:80]}".')
-    elif not include_catalog_image:
-        parts.append("No catalog image attached; follow the style detail text for haircut shape.")
-    prompt = " ".join(parts)
+    else:
+        parts = [PRUNA_TRYON_BASE_PROMPT]
+        safe_title = " ".join(str(title or "").split())[:120]
+        safe_detail = " ".join(str(style_detail or "").split())[:280]
+        if safe_title or safe_detail:
+            parts.append(f'Selected hairstyle: "{safe_title}". {safe_detail}.')
+        explicit = " ".join(str(selected_hair_color or "").split())
+        if explicit:
+            parts.append(f'Apply this hair color only: "{explicit[:80]}".')
+        prompt = " ".join(parts)
+    if include_catalog_image:
+        logger.warning("Pruna try-on prompt: catalog image must not be sent; ignoring dual-reference hint")
     if len(prompt) > PRUNA_POSITIVE_PROMPT_MAX:
-        prompt = prompt[: PRUNA_POSITIVE_PROMPT_MAX].rstrip()
-        logger.warning("Pruna try-on prompt truncated to %s characters", PRUNA_POSITIVE_PROMPT_MAX)
+        from ai.tryon_generation_prompts import GLOBAL_IDENTITY_PRESERVATION  # noqa: PLC0415
+        from ai.tryon_prompt_catalog import _join_with_budget  # noqa: PLC0415
+
+        identity = GLOBAL_IDENTITY_PRESERVATION
+        if prompt.endswith(identity):
+            style = prompt[: -len(identity)].strip()
+            room = PRUNA_POSITIVE_PROMPT_MAX - len(identity) - 1
+            style = _join_with_budget([(style, False)], limit=max(room, 200))
+            prompt = f"{style} {identity}"
+        logger.warning(
+            "Pruna try-on prompt exceeded limit; refit length=%s limit=%s",
+            len(prompt),
+            PRUNA_POSITIVE_PROMPT_MAX,
+        )
     return prompt
 
 
@@ -688,6 +704,8 @@ def build_tryon_prompt(
             style_detail=style_detail,
             selected_hair_color=selected_hair_color,
             include_catalog_image=include_catalog_image,
+            audience=audience,
+            slug=slug,
         )
     color_section = _color_section(
         title=title,
