@@ -6,7 +6,11 @@ import { AiStyleDesktopLayout } from "@/components/ai-style/AiStyleDesktopLayout
 import { AiStyleSplitLayout } from "@/components/ai-style/AiStyleSplitLayout";
 import { AiStylePhotoInput } from "@/components/ai-style/AiStyleUi";
 import { MorphLimitUpsell } from "@/components/ai-style/MorphLimitUpsell";
-import type { AiAnalysisResult, AiSuggestion } from "@/components/ai-style/ai-style-shared";
+import {
+  resolveTryOnPreview,
+  type AiAnalysisResult,
+  type AiSuggestion,
+} from "@/components/ai-style/ai-style-shared";
 import { useAiStyleFlow } from "@/components/ai-style/useAiStyleFlow";
 import { DesktopPageSplit } from "@/components/desktop/DesktopPageSplit";
 import { useActionAuth } from "@/hooks/use-action-auth";
@@ -173,7 +177,8 @@ export function AiStyleFlow({ audience, menPersonaId: menPersonaIdProp, focusSty
   const toggleSave = useCallback(
     (id: string, meta?: { title: string; previewImage?: string }) => {
       if (!allowAction()) return;
-      const previewImage = meta?.previewImage ?? flow.tryOnByStyle[id];
+      const previewImage =
+        meta?.previewImage ?? resolveTryOnPreview(flow.tryOnByStyle, id, menPersonaId);
       const title = meta?.title;
 
       if (saved.includes(id)) {

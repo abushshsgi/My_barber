@@ -70,7 +70,6 @@ _CLIENT_MESSAGES = {
 
 SLOT_WAIT_SECONDS = 10.0
 MAX_QUEUE_WAIT_SECONDS = 900
-PROVIDER_CONCURRENCY_CAP = 3
 
 _thread_local = threading.local()
 _WORKER_ID = (os.environ.get("TRYON_WORKER_ID") or "").strip() or uuid.uuid4().hex[:12]
@@ -146,8 +145,20 @@ def _lease_seconds() -> int:
     return int(getattr(settings, "TRYON_LEASE_SECONDS", 240))
 
 
+def _provider_concurrency_cap() -> int:
+    try:
+        cap = int(getattr(settings, "TRYON_PROVIDER_CONCURRENCY_CAP", 4) or 4)
+    except (TypeError, ValueError):
+        cap = 4
+    return max(1, min(cap, 16))
+
+
 def _provider_concurrency() -> int:
-    return max(1, min(int(getattr(settings, "TRYON_PROVIDER_CONCURRENCY", 3)), PROVIDER_CONCURRENCY_CAP))
+    try:
+        configured = int(getattr(settings, "TRYON_PROVIDER_CONCURRENCY", 4) or 4)
+    except (TypeError, ValueError):
+        configured = 4
+    return max(1, min(configured, _provider_concurrency_cap()))
 
 
 def _cooldown_seconds() -> int:

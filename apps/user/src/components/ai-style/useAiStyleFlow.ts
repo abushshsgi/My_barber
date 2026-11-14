@@ -338,7 +338,11 @@ export function useAiStyleFlow(options: UseAiStyleFlowOptions = {}) {
             effectivePersona,
             inputSourceRef.current,
           );
-          return data.preview_image;
+          const preview = data.preview_image;
+          if (!preview || preview === photo || preview === (photo || "").split("?")[0]) {
+            throw new Error("Rasm yaratilmadi. Qayta urinib ko'ring.");
+          }
+          return preview;
         })();
         tryOnInFlight.set(flightKey, run);
       } else {

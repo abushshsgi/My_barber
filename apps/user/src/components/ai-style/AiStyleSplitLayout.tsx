@@ -12,7 +12,7 @@ import { useTranslation } from "react-i18next";
 import { FaceAnalysisSummarySheet } from "@/components/ai-style/FaceAnalysisSummarySheet";
 import { AiStyleResultsPage } from "@/components/ai-style/AiStyleResultsPage";
 import { GalleryValidatingHero } from "@/components/ai-style/AiStyleUi";
-import type { AiAnalysisResult } from "@/components/ai-style/ai-style-shared";
+import { tryOnCacheKey, type AiAnalysisResult } from "@/components/ai-style/ai-style-shared";
 import { refreshAiStyleHistoryCache } from "@/lib/api";
 import {
   FACE_HISTORY_UPDATED_EVENT,
@@ -288,7 +288,10 @@ function UploadHistorySheet({ open }: { open: boolean }) {
 export function AiStyleSplitLayout(props: AiStyleSplitLayoutProps) {
   const { t } = useTranslation();
   const autoTryOn = Boolean(props.focusStyleId);
-  const tryOnBusy = autoTryOn && props.tryOnLoadingId === props.focusStyleId;
+  const tryOnBusy =
+    autoTryOn &&
+    props.focusStyleId != null &&
+    props.tryOnLoadingId === tryOnCacheKey(props.focusStyleId, props.menPersonaId);
   const busy = props.analyzing || props.validating || tryOnBusy;
   const showResults = props.done && !!props.result;
   const showSummary = Boolean(props.summaryReady && props.result && props.photo && !showResults);

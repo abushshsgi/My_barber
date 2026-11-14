@@ -9,10 +9,11 @@ User=www-data
 Group=www-data
 WorkingDirectory=/opt/mysaloon/Mybarber/backend
 EnvironmentFile=/opt/mysaloon/Mybarber/backend/.env
-Environment=TRYON_WORKER_CONCURRENCY=8
-Environment=TRYON_PROVIDER_CONCURRENCY=8
+Environment=TRYON_WORKER_CONCURRENCY=3
+Environment=TRYON_PROVIDER_CONCURRENCY=4
+Environment=TRYON_PROVIDER_CONCURRENCY_CAP=4
 Environment=TRYON_QUEUE_MAX_DEPTH=20000
-ExecStart=/opt/mysaloon/Mybarber/backend/.venv/bin/python manage.py run_tryon_worker --poll-seconds 5 --concurrency 8
+ExecStart=/opt/mysaloon/Mybarber/backend/.venv/bin/python manage.py run_tryon_worker --poll-seconds 5 --concurrency 3
 Restart=always
 RestartSec=3
 Nice=5

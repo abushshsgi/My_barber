@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { fetchSiteConfig } from "@/lib/api/site-config";
 
 const STORAGE_KEY = "mysaloon.maintenanceBanner.dismissed";
-const POLL_MS = 120_000;
+const POLL_MS = 30_000;
 
 const BANNER_FONT = {
   fontSize: "14px",
@@ -24,6 +24,7 @@ function readVisible() {
 export function MaintenanceBanner() {
   const { t } = useTranslation();
   const [bannerEnabled, setBannerEnabled] = useState(false);
+  const [configVersion, setConfigVersion] = useState<string | null>(null);
   const [dismissed, setDismissed] = useState(() => !readVisible());
   const [bar, setBar] = useState<HTMLDivElement | null>(null);
   const visible = bannerEnabled && !dismissed;
@@ -40,7 +41,22 @@ export function MaintenanceBanner() {
     const load = async () => {
       try {
         const cfg = await fetchSiteConfig();
-        if (!cancelled) setBannerEnabled(Boolean(cfg.maintenance_banner_enabled));
+        if (cancelled) return;
+        const enabled = Boolean(cfg.maintenance_banner_enabled);
+        const version = cfg.updated_at ?? (enabled ? "on" : "off");
+        setConfigVersion((prev) => {
+          if (prev !== null && prev !== version) {
+            try {
+              sessionStorage.removeItem(STORAGE_KEY);
+            } catch {
+              /* ignore */
+            }
+            setDismissed(false);
+          }
+          return version;
+        });
+        setBannerEnabled(enabled);
+        if (!enabled) setDismissed(true);
       } catch {
         if (!cancelled) setBannerEnabled(false);
       }

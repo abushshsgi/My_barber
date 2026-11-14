@@ -223,6 +223,9 @@ def run_image_inference(task: dict[str, Any]) -> dict[str, Any]:
         )
 
     model = str(task.get("model") or "")
+    include_cost = getattr(settings, "RUNWARE_TRYON_INCLUDE_COST", False)
+    if isinstance(include_cost, str):
+        include_cost = include_cost.strip().lower() in ("1", "true", "yes", "on")
     base_fields = {
         "taskType": "imageInference",
         "taskUUID": str(uuid.uuid4()),
@@ -230,7 +233,7 @@ def run_image_inference(task: dict[str, Any]) -> dict[str, Any]:
         "outputType": "URL",
         "outputFormat": "JPG",
         "numberResults": 1,
-        "includeCost": True,
+        "includeCost": bool(include_cost),
     }
     merged = {**base_fields, **task}
     # Task-level WEBP must not override: we always normalize to JPEG bytes server-side.

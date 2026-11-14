@@ -8,6 +8,15 @@ from control_panel.models import PlatformSettings
 from control_panel.platform_settings_views import SiteConfigView
 
 
+class PlatformSettingsCoerceTests(TestCase):
+    def test_coerce_bool_does_not_treat_string_false_as_true(self):
+        from control_panel.platform_settings_views import _coerce_bool
+
+        self.assertFalse(_coerce_bool("false"))
+        self.assertFalse(_coerce_bool("0"))
+        self.assertTrue(_coerce_bool("true"))
+
+
 class SiteConfigViewTests(TestCase):
     def test_public_config_reflects_setting(self):
         row = PlatformSettings.load()

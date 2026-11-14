@@ -110,7 +110,11 @@ export function useStyleTryOnFlow({
           personaId ?? undefined,
           inputSourceRef.current,
         );
-        return data.preview_image;
+        const preview = data.preview_image;
+        if (!preview || preview === dataUrl) {
+          throw new Error("Rasm yaratilmadi. Qayta urinib ko'ring.");
+        }
+        return preview;
       })();
       styleTryOnInFlight.set(flightKey, run);
     } else {
@@ -170,11 +174,13 @@ export function useStyleTryOnFlow({
     }
   };
 
-  useEffect(() => {
-    if (!styleId || !photo || preparing || autoTriggeredRef.current) return;
+  const startGeneration = () => {
+    if (!photo || preparing || generating) return;
     autoTriggeredRef.current = true;
-    void runTryOn(photo, "auto");
-  }, [styleId, photo, preparing]);
+    setTryOnPreview(null);
+    setError(null);
+    void runTryOn(photo, "manual");
+  };
 
   const onFile = async (file: File | null | undefined) => {
     if (!file) return;
@@ -244,5 +250,6 @@ export function useStyleTryOnFlow({
     closeCamera,
     reset,
     retryGeneration,
+    startGeneration,
   };
 }

@@ -14,6 +14,7 @@ import {
 import { Fragment, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { AiStyleSplitLayoutProps } from "@/components/ai-style/AiStyleSplitLayout";
+import { tryOnCacheKey } from "@/components/ai-style/ai-style-shared";
 import { AiStyleResultsPage } from "@/components/ai-style/AiStyleResultsPage";
 import { FaceAnalysisRings } from "@/components/ai-style/FaceAnalysisRings";
 import { FaceAnalysisSummarySheet } from "@/components/ai-style/FaceAnalysisSummarySheet";
@@ -263,7 +264,10 @@ function DesktopHistoryGrid() {
 export function AiStyleDesktopLayout(props: AiStyleSplitLayoutProps) {
   const { t } = useTranslation();
   const autoTryOn = Boolean(props.focusStyleId);
-  const tryOnBusy = autoTryOn && props.tryOnLoadingId === props.focusStyleId;
+  const tryOnBusy =
+    autoTryOn &&
+    props.focusStyleId != null &&
+    props.tryOnLoadingId === tryOnCacheKey(props.focusStyleId, props.menPersonaId);
   const busy = props.analyzing || props.validating || tryOnBusy;
   const showResults = props.done && !!props.result;
   const showSummary = Boolean(props.summaryReady && props.result && props.photo && !showResults);

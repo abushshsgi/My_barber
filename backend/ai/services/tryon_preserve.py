@@ -30,7 +30,8 @@ ASPECT_TOLERANCE = 0.02
 HAIRLINE_CUT = 0.20
 RESTORE_JPEG_QUALITY = 92
 # Upper frame that may keep generated hair, including fringe on the forehead.
-HAIR_EDIT_BAND_FRACTION = 0.58
+# Composite original pixels only on the lower frame (clothing/background), not across the jaw.
+BOTTOM_SCENE_LOCK_FRACTION = 0.68
 
 
 def preserve_hair_only_edit(
@@ -39,18 +40,16 @@ def preserve_hair_only_edit(
     *,
     apply: bool = True,
 ) -> tuple[bytes, dict[str, Any]]:
-    """Lock background and clothing below the hair band; keep generated hair + fringe.
+    """Paste original pixels on the lower frame only (shoulders, clothing, background).
 
-    Do not subtract the skin mask from this band: fringe and bangs sit on the
-    forehead (skin pixels). Subtracting them restored the original hairline and
-    made successful Runware edits look like the unedited selfie.
+    Avoids a horizontal seam through the jaw or mouth from a mid-frame composite mask.
     Inner face identity is restored afterwards by ``preserve_face``.
     """
     report: dict[str, Any] = {
         "status": "skipped",
         "reason": "not_run",
         "applied": False,
-        "band_fraction": HAIR_EDIT_BAND_FRACTION,
+        "band_fraction": BOTTOM_SCENE_LOCK_FRACTION,
     }
     try:
         source = _open_rgb(original)
@@ -67,20 +66,17 @@ def preserve_hair_only_edit(
         edited = edited.resize(source.size, Image.Resampling.LANCZOS)
 
     width, height = source.size
-    band = Image.new("L", (width, height), 0)
-    y_band = int(height * HAIR_EDIT_BAND_FRACTION)
-    ImageDraw.Draw(band).rectangle((0, 0, width, max(1, y_band)), fill=255)
-
-    if _count(band) < 64:
-        report["reason"] = "no_hair_band"
-        return generated, report
+    # 255 = keep generated; 0 = paste original (lower shoulders / background).
+    mask = Image.new("L", (width, height), 255)
+    y_cut = int(height * BOTTOM_SCENE_LOCK_FRACTION)
+    ImageDraw.Draw(mask).rectangle((0, max(0, y_cut), width, height), fill=0)
 
     if not apply:
         report["status"] = "skipped"
         report["reason"] = "scene_lock_disabled"
         return generated, report
 
-    allowed = band.filter(ImageFilter.GaussianBlur(radius=2.2))
+    allowed = mask.filter(ImageFilter.GaussianBlur(radius=3.0))
     merged = Image.composite(edited, source, allowed)
     buffer = BytesIO()
     merged.save(buffer, format="JPEG", quality=RESTORE_JPEG_QUALITY, optimize=True)
@@ -89,7 +85,7 @@ def preserve_hair_only_edit(
         report["reason"] = "encode_failed"
         return generated, report
     report["status"] = "locked"
-    report["reason"] = "hair_band_only"
+    report["reason"] = "lower_scene_lock"
     report["applied"] = True
     return payload, report
 

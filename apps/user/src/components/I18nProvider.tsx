@@ -1,6 +1,6 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { startTransition, useEffect, useState, type ReactNode } from "react";
 import { I18nextProvider } from "react-i18next";
-import i18n, { type AppLang } from "@/i18n/config";
+import i18n, { getInitialLang, type AppLang } from "@/i18n/config";
 
 function syncDocumentLang(lang: string) {
   const code = (lang.split("-")[0] || "uz") as AppLang;
@@ -12,14 +12,19 @@ export function I18nProvider({ children }: { children: ReactNode }) {
   const [lang, setLang] = useState("uz");
 
   useEffect(() => {
-    const resolved = i18n.resolvedLanguage || i18n.language || "uz";
-    setLang(resolved);
-    syncDocumentLang(resolved);
-
-    const onChange = (lng: string) => {
-      setLang(lng);
-      syncDocumentLang(lng);
+    const apply = (lng: string) => {
+      const code = (lng.split("-")[0] || "uz") as AppLang;
+      syncDocumentLang(code);
+      startTransition(() => setLang(code));
     };
+
+    const stored = getInitialLang();
+    if (stored !== (i18n.resolvedLanguage || i18n.language || "uz")) {
+      void i18n.changeLanguage(stored);
+    }
+    apply(stored);
+
+    const onChange = (lng: string) => apply(lng);
 
     i18n.on("languageChanged", onChange);
     i18n.on("loaded", onChange);

@@ -76,7 +76,10 @@ function MoreStyleCard({
           fetchPriority="high"
           decoding="async"
           className="h-full w-full object-contain object-center"
-          onError={() => setFallbackSrc(getTrendCoverUrl(item.entry.slug))}
+          onError={() => {
+            if (preview) return;
+            setFallbackSrc(getTrendCoverUrl(item.entry.slug));
+          }}
         />
 
         {loading ? (
@@ -161,12 +164,7 @@ export function AiStyleMoreStyles({
       }
     }
 
-    const ranked = out.sort((a, b) => resolveMatch(b.entry) - resolveMatch(a.entry));
-    for (let i = ranked.length - 1; i > 0; i -= 1) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [ranked[i], ranked[j]] = [ranked[j], ranked[i]];
-    }
-    return ranked;
+    return out.sort((a, b) => resolveMatch(b.entry) - resolveMatch(a.entry));
   }, [list, excludeIds, result.faceShapeKey, result.hairTypeKey, suggestionMatchById]);
 
   if (!onGenerateTryOn) return null;

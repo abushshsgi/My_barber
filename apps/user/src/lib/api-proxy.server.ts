@@ -71,6 +71,11 @@ function isPrivateMediaPath(pathname: string): boolean {
 /** Ommaviy GET — brauzer/CDN qisqa (API) yoki uzoq (media) keshlaydi. */
 function applyPublicCacheHeaders(request: Request, pathname: string, headers: Headers): void {
   if (request.method !== "GET" && request.method !== "HEAD") return;
+  if (pathname === "/api/v1/site/config" || pathname === "/api/v1/site/config/") {
+    headers.set("Cache-Control", "no-store, max-age=0, must-revalidate");
+    headers.set("Pragma", "no-cache");
+    return;
+  }
   if (pathname.startsWith("/media/") || pathname.startsWith("/covers/pexels/")) {
     if (pathname.startsWith("/media/") && isPrivateMediaPath(pathname)) {
       headers.set("Cache-Control", "private, max-age=3600");

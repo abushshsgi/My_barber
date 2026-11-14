@@ -258,7 +258,7 @@ class PlatformSettings(models.Model):
     """Singleton — mijoz sayti bo‘yicha global flaglar."""
 
     maintenance_banner_enabled = models.BooleanField(
-        default=True,
+        default=False,
         help_text="True bo‘lsa barcha sahifalar tepasida texnik ishlar banneri chiqadi.",
     )
     updated_at = models.DateTimeField(auto_now=True)

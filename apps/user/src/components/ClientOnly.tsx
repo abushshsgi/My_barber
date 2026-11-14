@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { startTransition, useEffect, useState, type ReactNode } from "react";
 
 export function ClientOnly({
   children,
@@ -8,6 +8,8 @@ export function ClientOnly({
   fallback?: ReactNode;
 }) {
   const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
+  useEffect(() => {
+    startTransition(() => setMounted(true));
+  }, []);
   return mounted ? children : fallback;
 }

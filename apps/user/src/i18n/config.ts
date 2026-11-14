@@ -9,7 +9,7 @@ const STORAGE_KEY = "mysaloon.lang";
 const SUPPORTED_LANGS = ["uz", "ru", "en"] as const;
 export type AppLang = (typeof SUPPORTED_LANGS)[number];
 
-const getInitialLang = (): AppLang => {
+export const getInitialLang = (): AppLang => {
   if (typeof window === "undefined") return "uz";
   try {
     const stored = window.localStorage.getItem(STORAGE_KEY);
@@ -27,7 +27,7 @@ if (!i18n.isInitialized) {
       ru: { translation: ru },
       en: { translation: en },
     },
-    lng: getInitialLang(),
+    lng: "uz",
     fallbackLng: "uz",
     supportedLngs: [...SUPPORTED_LANGS],
     load: "languageOnly",

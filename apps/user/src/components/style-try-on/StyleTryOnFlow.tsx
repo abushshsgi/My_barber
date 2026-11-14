@@ -7,6 +7,7 @@ import {
   ImagePlus,
   Loader2,
   RotateCcw,
+  Sparkles,
 } from "lucide-react";
 import { Fragment, useEffect } from "react";
 import { useTranslation } from "react-i18next";
@@ -347,6 +348,43 @@ export function StyleTryOnFlow({ flow, entry }: Props) {
           <StepRail step={2} />
           <div className="mt-5 flex-1">
             <ErrorPanel message={flow.error} onRetry={flow.retryGeneration} onReset={flow.reset} />
+          </div>
+        </div>
+        <AiStylePhotoInput fileRef={flow.fileRef} onFile={flow.onFile} />
+        <AiStyleCamera
+          open={flow.cameraOpen}
+          onClose={flow.closeCamera}
+          onCapture={flow.onCameraCapture}
+        />
+      </div>
+    );
+  }
+
+  if (flow.photo) {
+    return (
+      <div className="flex min-h-[100dvh] flex-col bg-background pb-[calc(5.5rem+env(safe-area-inset-bottom)+1rem)] lg:pb-8">
+        <div className="relative aspect-[3/4] shrink-0 overflow-hidden">
+          <img src={flow.photo} alt="" className="h-full w-full object-cover object-top" />
+        </div>
+        <div className="flex flex-1 flex-col px-5 py-5">
+          <StepRail step={2} />
+          <div className="mt-6 space-y-2">
+            <button
+              type="button"
+              onClick={flow.startGeneration}
+              className="flex w-full items-center justify-center gap-2 rounded-2xl bg-foreground py-4 text-sm font-bold text-background"
+            >
+              <Sparkles className="h-4 w-4" />
+              {t("aiStylePage.generateCta")}
+            </button>
+            <button
+              type="button"
+              onClick={flow.reset}
+              className="flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-border py-4 text-sm font-bold"
+            >
+              <RotateCcw className="h-4 w-4" />
+              {t("styleTryOnPage.newPhoto")}
+            </button>
           </div>
         </div>
         <AiStylePhotoInput fileRef={flow.fileRef} onFile={flow.onFile} />

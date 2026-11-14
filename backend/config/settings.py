@@ -269,13 +269,13 @@ RUNWARE_TRYON_MODEL = (
 )
 RUNWARE_TRYON_FALLBACK_MODELS = os.environ.get("RUNWARE_TRYON_FALLBACK_MODELS", "").strip()
 try:
-    _runware_width = int(os.environ.get("RUNWARE_TRYON_WIDTH", "768") or "768")
+    _runware_width = int(os.environ.get("RUNWARE_TRYON_WIDTH", "896") or "896")
 except ValueError:
-    _runware_width = 768
+    _runware_width = 896
 try:
-    _runware_height = int(os.environ.get("RUNWARE_TRYON_HEIGHT", "1024") or "1024")
+    _runware_height = int(os.environ.get("RUNWARE_TRYON_HEIGHT", "1184") or "1184")
 except ValueError:
-    _runware_height = 1024
+    _runware_height = 1184
 try:
     _runware_timeout = int(os.environ.get("RUNWARE_TRYON_TIMEOUT", "120") or "120")
 except ValueError:
@@ -304,15 +304,29 @@ RUNWARE_TRYON_OUTPUT_FORMAT = os.environ.get("RUNWARE_TRYON_OUTPUT_FORMAT", "JPG
 RUNWARE_TRYON_MAX_COST_USD = os.environ.get("RUNWARE_TRYON_MAX_COST_USD", "0.012").strip() or "0.012"
 # strength is unsupported on Try-On edit models; values are logged and never sent.
 RUNWARE_TRYON_STRENGTH = os.environ.get("RUNWARE_TRYON_STRENGTH", "").strip()
-# Paste the original inner face back only when alignment checks pass.
-TRYON_FACE_RESTORE = os.environ.get("TRYON_FACE_RESTORE", "true").strip().lower() in (
+# Off by default: show Runware output without face compositing (matches Playground).
+TRYON_FACE_RESTORE = os.environ.get("TRYON_FACE_RESTORE", "false").strip().lower() in (
     "1",
     "true",
     "yes",
     "on",
 )
-# Paste original pixels outside the hair band (background, clothing, lower frame).
-TRYON_SCENE_LOCK = os.environ.get("TRYON_SCENE_LOCK", "true").strip().lower() in (
+# Off by default: no lower-frame paste (avoids jaw-line seams).
+TRYON_SCENE_LOCK = os.environ.get("TRYON_SCENE_LOCK", "false").strip().lower() in (
+    "1",
+    "true",
+    "yes",
+    "on",
+)
+# Off by default: single inference like Playground (no hair-echo second pass).
+RUNWARE_TRYON_INCLUDE_COST = os.environ.get("RUNWARE_TRYON_INCLUDE_COST", "false").strip().lower() in (
+    "1",
+    "true",
+    "yes",
+    "on",
+)
+# When true, skip preserve/retry post-processing; only JPEG-normalize Runware bytes.
+TRYON_RAW_OUTPUT = os.environ.get("TRYON_RAW_OUTPUT", "true").strip().lower() in (
     "1",
     "true",
     "yes",
@@ -326,7 +340,7 @@ RUNWARE_TRYON_QUALITY_RETRY = os.environ.get("RUNWARE_TRYON_QUALITY_RETRY", "fal
     "on",
 )
 # One extra generation when QC says the hair barely changed (echoed selfie).
-TRYON_HAIR_CHANGE_RETRY = os.environ.get("TRYON_HAIR_CHANGE_RETRY", "true").strip().lower() in (
+TRYON_HAIR_CHANGE_RETRY = os.environ.get("TRYON_HAIR_CHANGE_RETRY", "false").strip().lower() in (
     "1",
     "true",
     "yes",
@@ -343,8 +357,8 @@ TRYON_DIAGNOSTICS = (
 RUNWARE_TRYON_OVERFLOW_DEPTH = os.environ.get("RUNWARE_TRYON_OVERFLOW_DEPTH", "").strip()
 # Try-On prompt pipeline: pruna = P-Image-Edit (max 2000); v2 = style lock; legacy = long stack.
 TRYON_PROMPT_VERSION = os.environ.get("TRYON_PROMPT_VERSION", "pruna").strip().lower() or "pruna"
-# Selfie + exact catalog reference (referenceImages[0]=user, [1]=hairstyle). Off = text-only style lock.
-RUNWARE_TRYON_DUAL_REFERENCE = os.environ.get("RUNWARE_TRYON_DUAL_REFERENCE", "true").strip().lower() in (
+# Legacy: selfie + catalog image for non-Pruna edit models only. Pruna always uses selfie + text prompt.
+RUNWARE_TRYON_DUAL_REFERENCE = os.environ.get("RUNWARE_TRYON_DUAL_REFERENCE", "false").strip().lower() in (
     "1",
     "true",
     "yes",

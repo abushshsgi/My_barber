@@ -1,5 +1,5 @@
 import { useNavigate, useRouterState } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { startTransition, useEffect, useState } from "react";
 import {
   type AppShell,
   isMorphPath,
@@ -23,8 +23,11 @@ export function useAppShell() {
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
-    setStoredShell(readAppShell());
-    setHydrated(true);
+    const next = readAppShell();
+    startTransition(() => {
+      setStoredShell(next);
+      setHydrated(true);
+    });
   }, []);
 
   useEffect(() => {

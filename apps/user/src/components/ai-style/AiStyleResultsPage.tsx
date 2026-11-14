@@ -1,6 +1,6 @@
 import { useNavigate } from "@tanstack/react-router";
 import { ChevronLeft, ChevronRight, Loader2, MessageCircle, Share2, Sparkles } from "lucide-react";
-import { useMemo, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { FaceAnalysisRings } from "@/components/ai-style/FaceAnalysisRings";
 import { AiStyleGeneratedLookPage } from "@/components/ai-style/AiStyleGeneratedLookPage";
@@ -17,15 +17,6 @@ import type { ExplorePersonaId } from "@/lib/explore-personas";
 import type { Audience } from "@/lib/mock-data";
 import { cn } from "@/lib/utils";
 
-function shuffle<T>(items: T[]): T[] {
-  const next = [...items];
-  for (let i = next.length - 1; i > 0; i -= 1) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [next[i], next[j]] = [next[j], next[i]];
-  }
-  return next;
-}
-
 type Props = {
   result: AiAnalysisResult;
   photo: string | null;
@@ -39,6 +30,7 @@ type Props = {
 
 export function AiStyleResultsPage({
   result,
+  photo,
   tryOnByStyle,
   tryOnLoadingId,
   menPersonaId,
@@ -53,13 +45,8 @@ export function AiStyleResultsPage({
   const [shareOpen, setShareOpen] = useState(false);
   const [look, setLook] = useState<{ styleId: string; title: string; image: string } | null>(null);
 
-  const suggestionKey = result.suggestions.map((item) => item.id).join("|");
-  const { featured, others } = useMemo(() => {
-    const all = shuffle(result.suggestions);
-    return { featured: all.slice(0, 3), others: all.slice(3) };
-    // suggestionKey ushlab turadi: bir tahlil davomida 3 ta tavsiya o'zgarmaydi.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [suggestionKey]);
+  const featured = result.suggestions.slice(0, 3);
+  const others = result.suggestions.slice(3);
 
   const active = featured[index] ?? featured[0] ?? null;
   const activePreview = active

@@ -1,10 +1,14 @@
 """Morf AI Try-On via Runware image editing.
 
-Primary: Pruna P-Image-Edit, AIR ``prunaai:2@1``.
+Primary: Pruna P-Image-Edit, AIR ``prunaai:2@1`` (``taskType`` ``imageInference``).
 
-Dual-reference: ``inputs.referenceImages[0]`` = user selfie, ``[1]`` = Explore catalog.
-Pruna documents fixed 1K dimension presets (not arbitrary width/height). FLUX models remain
-in ``VERIFIED_EDIT_MODELS`` for non–Try-On tooling only; Try-On defaults do not use them.
+Production payload: ``inputs.referenceImages`` = **[user selfie only]** + ``positivePrompt`` =
+per-slug English hairstyle edit + global identity preservation. Explore catalog images are
+**not** sent to Runware (preview-only on the frontend).
+
+Pruna documents fixed 1K dimension presets (not arbitrary width/height). Optional legacy
+dual-reference (selfie + catalog) exists only for non-Pruna models when
+``RUNWARE_TRYON_DUAL_REFERENCE=true``.
 
 ``strength``, ``seedImage``, and masks are not supported. Try-On never falls back to Gemini.
 """
@@ -88,7 +92,7 @@ VERIFIED_EDIT_MODELS: dict[str, dict[str, int | bool]] = {
         "supports_cfg": False,
         "supports_scheduler": False,
         "supports_seed": False,
-        "requires_dual_reference": True,
+        "requires_dual_reference": False,
         "positive_prompt_max": 2000,
         "fixed_dimensions": True,
     },
@@ -166,14 +170,14 @@ DOCUMENTED_TASK_FIELDS = frozenset(
 SAFER_RETRY_SUFFIX = (
     "SAFER REVISION: Keep the original forehead height, hairline, temples, and head shape. "
     "Lower the hair volume. Do not cover the forehead with extra curls or a wig-like mass. "
-    "Use catalog reference 2 for haircut shape only — keep the user's hair color, skin, clothing, "
-    "and background from reference image 1; do not copy catalog edge colors or studio lighting."
+    "Follow the hairstyle text in the prompt only — keep the user's hair color, skin, clothing, "
+    "and background unchanged."
 )
 HAIR_CHANGE_RETRY_SUFFIX = (
     "HAIR TRANSFER RETRY: The previous result kept the original hair. "
-    "Replace the entire haircut with the selected MySaloon style from the prompt and catalog. "
+    "Replace the entire haircut with the selected MySaloon style from the text prompt. "
     "The new hair must be obviously different in length, silhouette, or fade. "
-    "Keep the same face, skin, clothing, and background from reference image 1."
+    "Keep the same face, skin, clothing, and background."
 )
 CATALOG_HEAD_KEEP_FRACTION = 0.58
 CATALOG_DESATURATE_BLEND = 0.82
@@ -341,16 +345,13 @@ def _is_pruna_model(model: str) -> bool:
 
 def _configured_tryon_dimensions() -> tuple[int, int]:
     return (
-        int(getattr(settings, "RUNWARE_TRYON_WIDTH", 768) or 768),
-        int(getattr(settings, "RUNWARE_TRYON_HEIGHT", 1024) or 1024),
+        int(getattr(settings, "RUNWARE_TRYON_WIDTH", 896) or 896),
+        int(getattr(settings, "RUNWARE_TRYON_HEIGHT", 1184) or 1184),
     )
 
 
 def resolve_pruna_output_size(*, src_w: int = 0, src_h: int = 0) -> tuple[int, int]:
-    """Map env/selfie aspect to a documented Pruna 1K preset (768×1024 env → 896×1184 3:4)."""
-    preferred = _configured_tryon_dimensions()
-    if preferred in PRUNA_DIMENSION_PRESETS:
-        return preferred
+    """Map selfie aspect to nearest documented Pruna 1K preset (default env 896×1184 for 3:4)."""
     if src_w > 0 and src_h > 0:
         ratio = src_w / src_h
 
@@ -358,6 +359,9 @@ def resolve_pruna_output_size(*, src_w: int = 0, src_h: int = 0) -> tuple[int, i
             return abs(wh[0] / wh[1] - ratio)
 
         return min(PRUNA_DIMENSION_PRESETS, key=_distance)
+    preferred = _configured_tryon_dimensions()
+    if preferred in PRUNA_DIMENSION_PRESETS:
+        return preferred
     return (896, 1184)
 
 
@@ -697,7 +701,34 @@ def _output_size_for_bytes(raw: bytes, model: str) -> tuple[int, int]:
 
 
 def dual_reference_enabled() -> bool:
-    return _flag("RUNWARE_TRYON_DUAL_REFERENCE", True)
+    return _flag("RUNWARE_TRYON_DUAL_REFERENCE", False)
+
+
+def _inference_images_for_tryon(
+    *,
+    selfie: bytes,
+    model: str,
+    reference_image_url: str | None,
+) -> tuple[list[bytes], bool]:
+    """User selfie only for Pruna; optional catalog second ref for legacy FLUX edit models."""
+    if _is_pruna_model(model):
+        if reference_image_url:
+            logger.info(
+                "Catalog reference ignored for Pruna try-on (text-only style) slug_url=%s",
+                str(reference_image_url)[:120],
+            )
+        return [selfie], False
+    images: list[bytes] = [selfie]
+    if dual_reference_enabled() and reference_image_url:
+        catalog_bytes = load_catalog_reference_bytes(reference_image_url)
+        images.append(catalog_bytes)
+        return images, True
+    if reference_image_url:
+        logger.info(
+            "Catalog reference omitted: dual reference off model=%s",
+            model,
+        )
+    return images, False
 
 
 def prepare_catalog_hair_reference(raw: bytes) -> bytes:
@@ -1360,21 +1391,11 @@ def generate_tryon_preview(
     style_detail = style_detail_for(audience, slug)
     prepared = prepare_selfie_bytes(selfie, style_detail=style_detail)
     primary_model = resolved_tryon_model()
-    include_catalog = False
-    images: list[bytes] = [prepared.payload]
-    if dual_reference_required(primary_model):
-        catalog_bytes = load_catalog_reference_bytes(reference_image_url)
-        images = [prepared.payload, catalog_bytes]
-        include_catalog = True
-    elif dual_reference_enabled():
-        catalog_bytes = load_catalog_reference_bytes(reference_image_url)
-        images = [prepared.payload, catalog_bytes]
-        include_catalog = True
-    elif reference_image_url:
-        logger.info(
-            "Catalog reference omitted: RUNWARE_TRYON_DUAL_REFERENCE is off slug=%s",
-            slug,
-        )
+    images, include_catalog = _inference_images_for_tryon(
+        selfie=prepared.payload,
+        model=primary_model,
+        reference_image_url=reference_image_url,
+    )
     prompt = _build_tryon_prompt(
         title=title,
         style_detail=style_detail,
@@ -1414,28 +1435,34 @@ def generate_tryon_preview(
             )
         )
         raise
-    jpeg, report, quality_retries, cost, estimated, latency_ms, model = _preserve_and_maybe_retry(
-        original=prepared.payload,
-        generated=jpeg,
-        prompt=prompt,
-        model=model,
-        cost=cost,
-        estimated=estimated,
-        latency_ms=latency_ms,
-        inference_images=images,
-    )
-    jpeg, report, quality_retries, cost, estimated, latency_ms, model, qc = _retry_if_hair_unchanged(
-        original=prepared.payload,
-        jpeg=jpeg,
-        report=report,
-        quality_retries=quality_retries,
-        prompt=prompt,
-        model=model,
-        cost=cost,
-        estimated=estimated,
-        latency_ms=latency_ms,
-        inference_images=images,
-    )
+    if _flag("TRYON_RAW_OUTPUT", True):
+        jpeg = _normalize_output(jpeg)
+        report = {"status": "skipped", "reason": "raw_output", "applied": False}
+        quality_retries = 0
+        qc = assess_tryon_quality(prepared.payload, jpeg, face_report=report)
+    else:
+        jpeg, report, quality_retries, cost, estimated, latency_ms, model = _preserve_and_maybe_retry(
+            original=prepared.payload,
+            generated=jpeg,
+            prompt=prompt,
+            model=model,
+            cost=cost,
+            estimated=estimated,
+            latency_ms=latency_ms,
+            inference_images=images,
+        )
+        jpeg, report, quality_retries, cost, estimated, latency_ms, model, qc = _retry_if_hair_unchanged(
+            original=prepared.payload,
+            jpeg=jpeg,
+            report=report,
+            quality_retries=quality_retries,
+            prompt=prompt,
+            model=model,
+            cost=cost,
+            estimated=estimated,
+            latency_ms=latency_ms,
+            inference_images=images,
+        )
     log_tryon_diagnostics(
         tryon_diagnostic_record(
             input_source=source_name or "unknown",

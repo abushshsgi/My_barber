@@ -13,6 +13,7 @@ import { KPICard } from "@/components/admin/KPICard";
 import { CardSkeleton } from "@/components/admin/Skeletons";
 import { StatusBadge } from "@/components/admin/StatusBadge";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import {
   Download,
   TrendingUp,
@@ -37,6 +38,9 @@ function DashboardPage() {
   const platformQ = useQuery({
     queryKey: ["admin", "platform-settings"],
     queryFn: fetchPlatformSettings,
+    staleTime: 0,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: true,
   });
 
   const maintenanceMut = useMutation({
@@ -140,17 +144,33 @@ function DashboardPage() {
               </p>
             </div>
           </div>
-          <label className="flex items-center gap-3 rounded-xl border border-border bg-muted/30 px-4 py-3 text-sm font-medium shrink-0 cursor-pointer">
-            <span className={platformQ.data?.maintenance_banner_enabled ? "text-red-600" : "text-muted-foreground"}>
+          <label
+            className={cn(
+              "flex items-center gap-3 rounded-xl border border-border bg-muted/30 px-4 py-3 text-sm font-medium shrink-0",
+              platformQ.isError || !platformQ.data ? "cursor-not-allowed opacity-70" : "cursor-pointer",
+            )}
+          >
+            <span
+              className={
+                platformQ.data?.maintenance_banner_enabled ? "text-red-600" : "text-muted-foreground"
+              }
+            >
               {platformQ.isLoading
                 ? "…"
-                : platformQ.data?.maintenance_banner_enabled
-                  ? "Yoniq"
-                  : "O‘chiq"}
+                : platformQ.isError || !platformQ.data
+                  ? "Noma'lum"
+                  : platformQ.data.maintenance_banner_enabled
+                    ? "Yoniq"
+                    : "O‘chiq"}
             </span>
             <Switch
-              checked={platformQ.data?.maintenance_banner_enabled ?? false}
-              disabled={platformQ.isLoading || maintenanceMut.isPending}
+              checked={platformQ.data?.maintenance_banner_enabled === true}
+              disabled={
+                platformQ.isLoading ||
+                platformQ.isError ||
+                !platformQ.data ||
+                maintenanceMut.isPending
+              }
               onCheckedChange={(v) => maintenanceMut.mutate(v)}
             />
           </label>
