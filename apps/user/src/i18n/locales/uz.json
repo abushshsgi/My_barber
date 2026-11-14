@@ -792,7 +792,7 @@
     "inactive": "Faol emas",
     "lockedTitle": "Yo'q — Morf AI yopiq",
     "lockedBody": "Yangi hisobda Morf AI ishlamaydi. Obuna sotib oling.",
-    "freePlanBody": "Ro'yxatdan o'tganingizda Free tarif avtomatik yoqiladi: 10 000 chat token. Try-on uchun obuna kerak.",
+    "freePlanBody": "Ro'yxatdan o'tganingizda Free tarif avtomatik yoqiladi: 10 000 chat token va 1 marta bepul try-on.",
     "usageChat": "Chat token",
     "lockedBodyReferral": "Yangi hisobda Morf AI ishlamaydi. Obuna sotib oling yoki 1 ta do'stni taklif qilib 1 generatsiya oling.",
     "referralOne": "1 do'st = 1 generatsiya",

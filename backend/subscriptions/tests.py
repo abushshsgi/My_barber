@@ -64,14 +64,14 @@ class SubscriptionServiceTests(TestCase):
         self.user.save(update_fields=["morph_free_tryon_eligible"])
         MorphAiSettings.load()
 
-    def test_new_user_tryon_requires_subscription(self):
+    def test_new_user_gets_one_free_tryon(self):
         self.user.morph_free_tryon_eligible = True
         self.user.save(update_fields=["morph_free_tryon_eligible"])
-        msg = check_morph_entitlement(user=self.user, kind="tryon") or ""
-        self.assertIn("obuna", msg.lower())
+        self.assertIsNone(check_morph_entitlement(user=self.user, kind="tryon"))
         record_morph_usage(user=self.user, kind="tryon")
         self.user.refresh_from_db()
-        self.assertEqual(self.user.morph_free_tryon_used, 0)
+        self.assertEqual(self.user.morph_free_tryon_used, 1)
+        self.assertIn("obuna", (check_morph_entitlement(user=self.user, kind="tryon") or "").lower())
         self.assertIsNone(check_morph_entitlement(user=self.user, kind="analyze"))
         self.assertIsNone(check_morph_entitlement(user=self.user, kind="face_check"))
         self.assertIsNone(check_morph_entitlement(user=self.user, kind="chat"))
@@ -86,13 +86,12 @@ class SubscriptionServiceTests(TestCase):
         msg = check_morph_entitlement(user=self.user, kind="tryon") or ""
         self.assertIn("obuna", msg.lower())
 
-    def test_new_user_cannot_use_free_tryon(self):
+    def test_free_tryon_consumed_once(self):
         self.user.morph_free_tryon_eligible = True
         self.user.save(update_fields=["morph_free_tryon_eligible"])
-        self.assertIsNotNone(check_morph_entitlement(user=self.user, kind="tryon"))
         record_morph_usage(user=self.user, kind="tryon")
         self.user.refresh_from_db()
-        self.assertEqual(self.user.morph_free_tryon_used, 0)
+        self.assertEqual(self.user.morph_free_tryon_used, 1)
         self.assertIsNotNone(check_morph_entitlement(user=self.user, kind="tryon"))
 
     def test_activate_and_limits(self):
@@ -623,7 +622,7 @@ class SubscriptionAPITests(TestCase):
         )
         self.assertEqual(wallet_up.status_code, 400, wallet_up.data)
 
-    def test_me_locked_for_new_user(self):
+    def test_me_free_tryon_for_eligible_new_user(self):
         self.user.morph_free_tryon_eligible = True
         self.user.save(update_fields=["morph_free_tryon_eligible"])
         me = self.client.get("/api/v1/subscriptions/me/")
@@ -632,14 +631,14 @@ class SubscriptionAPITests(TestCase):
         self.assertEqual(me.data["current_plan_code"], "free")
         self.assertEqual(me.data["current_plan"]["code"], "free")
         self.assertEqual(me.data["current_plan"]["morph_chat_tokens_monthly"], 10000)
-        self.assertEqual(me.data["current_plan"]["morph_ai_monthly"], 0)
+        self.assertEqual(me.data["current_plan"]["morph_ai_monthly"], 1)
         self.assertFalse(me.data["current_plan"]["purchasable"])
-        self.assertFalse(me.data["access"]["morph_ai_allowed"])
-        self.assertEqual(me.data["access"]["free_tryon_remaining"], 0)
+        self.assertTrue(me.data["access"]["morph_ai_allowed"])
+        self.assertEqual(me.data["access"]["free_tryon_remaining"], 1)
         self.assertTrue(me.data["access"]["morph_chat_allowed"])
         self.assertFalse(me.data["access"]["morph_voice_allowed"])
-        self.assertEqual(me.data["usage"]["morph_ai_limit"], 0)
-        self.assertEqual(me.data["usage"]["morph_ai_remaining"], 0)
+        self.assertEqual(me.data["usage"]["morph_ai_limit"], 1)
+        self.assertEqual(me.data["usage"]["morph_ai_remaining"], 1)
         self.assertEqual(me.data["usage"]["morph_chat_tokens_limit"], 10000)
         self.assertEqual(me.data["usage"]["morph_chat_tokens_remaining"], 10000)
         self.assertTrue(me.data["referral_generation_enabled"])
@@ -652,7 +651,7 @@ class SubscriptionAPITests(TestCase):
         )
         self.assertEqual(denied.status_code, 400)
 
-    def test_me_locked_without_paid_tryon(self):
+    def test_me_locked_after_free_tryon_used(self):
         self.user.morph_free_tryon_eligible = True
         self.user.save(update_fields=["morph_free_tryon_eligible"])
         record_morph_usage(user=self.user, kind="tryon")
@@ -660,7 +659,7 @@ class SubscriptionAPITests(TestCase):
         self.assertEqual(me.status_code, 200)
         self.assertFalse(me.data["access"]["morph_ai_allowed"])
         self.assertEqual(me.data["access"]["free_tryon_remaining"], 0)
-        self.assertEqual(me.data["usage"]["morph_free_tryon_used"], 0)
+        self.assertEqual(me.data["usage"]["morph_free_tryon_used"], 1)
 
     def test_me_chat_blocked_after_free_tokens(self):
         record_morph_chat_tokens(user=self.user, tokens=10_000)
@@ -679,18 +678,18 @@ class FreeTryOnTests(TestCase):
         self.client = APIClient()
         self.client.force_authenticate(user=self.user)
 
-    def test_new_user_has_no_free_tryon(self):
-        self.assertFalse(self.user.morph_free_tryon_eligible)
-        self.assertIn("obuna", (check_morph_entitlement(user=self.user, kind="tryon") or "").lower())
+    def test_new_user_has_one_free_tryon(self):
+        self.assertTrue(self.user.morph_free_tryon_eligible)
+        self.assertIsNone(check_morph_entitlement(user=self.user, kind="tryon"))
         me = self.client.get("/api/v1/subscriptions/me/").data
-        self.assertFalse(me["access"]["morph_ai_allowed"])
-        self.assertFalse(me["free_tryon"]["available"])
-        self.assertFalse(me["free_tryon"]["eligible"])
-        self.assertEqual(me["usage"]["morph_ai_remaining"], 0)
+        self.assertTrue(me["access"]["morph_ai_allowed"])
+        self.assertTrue(me["free_tryon"]["available"])
+        self.assertTrue(me["free_tryon"]["eligible"])
+        self.assertEqual(me["usage"]["morph_ai_remaining"], 1)
 
         record_morph_usage(user=self.user, kind="tryon")
         self.user.refresh_from_db()
-        self.assertIsNone(self.user.morph_free_tryon_used_at)
+        self.assertIsNotNone(self.user.morph_free_tryon_used_at)
         self.assertIn("obuna", (check_morph_entitlement(user=self.user, kind="tryon") or "").lower())
 
     def test_studio_not_covered_by_free_tryon(self):

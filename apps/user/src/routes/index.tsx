@@ -3,6 +3,7 @@ import { DesktopPageSplit } from "@/components/desktop/DesktopPageSplit";
 import { HomeDesktopRoot } from "@/components/desktop/home/HomeDesktopRoot";
 import { MysaloonPausedScreen } from "@/components/mobile/MysaloonPausedScreen";
 import { useHomeData } from "@/components/home/useHomeData";
+import { TRY_ON_HERO_PRELOAD } from "@/components/ai-style/TryOnHeroImage";
 import { shouldRedirectHomeToMorph } from "@/lib/app-shell";
 import { parseReferralFromLocationSearch, stashReferralCode } from "@/lib/referral-storage";
 
@@ -16,6 +17,15 @@ export const Route = createFileRoute("/")({
     }
   },
   head: () => ({
+    links: [
+      {
+        rel: "preload",
+        href: TRY_ON_HERO_PRELOAD,
+        as: "image",
+        type: "image/webp",
+        fetchPriority: "high",
+      },
+    ],
     meta: [
       { title: "mysaloon.uz — Sartaroshxona va salon bron qiling" },
       {

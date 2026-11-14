@@ -7,6 +7,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Link, createRootRouteWithContext, HeadContent, Scripts } from "@tanstack/react-router";
 
 import appCss from "../styles.css?url";
+import { TRY_ON_HERO_PRELOAD } from "@/components/ai-style/TryOnHeroImage";
 import { I18nProvider } from "../components/I18nProvider";
 import { LangAwareOutlet } from "../components/LangAwareOutlet";
 import { UserLayout } from "../components/UserLayout";
@@ -140,6 +141,13 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
   head: () => ({
     links: [
       { rel: "stylesheet", href: appCss },
+      {
+        rel: "preload",
+        href: TRY_ON_HERO_PRELOAD,
+        as: "image",
+        type: "image/webp",
+        fetchPriority: "high",
+      },
       { rel: "icon", href: "/favicon.ico", sizes: "any" },
       { rel: "icon", href: "/favicon-32.png", type: "image/png", sizes: "32x32" },
       { rel: "apple-touch-icon", href: "/apple-touch-icon.png", sizes: "180x180" },
@@ -174,6 +182,13 @@ function RootShell({ children }: { children: React.ReactNode }) {
   return (
     <html lang="uz">
       <head>
+        <link
+          rel="preload"
+          href="/ai-style/try-on-selfie-hero-720.webp"
+          as="image"
+          type="image/webp"
+          fetchPriority="high"
+        />
         <HeadContent />
         <script dangerouslySetInnerHTML={{ __html: APPEARANCE_BOOT_SCRIPT }} />
         <script dangerouslySetInnerHTML={{ __html: CLIENT_BOOT_SCRIPT }} />

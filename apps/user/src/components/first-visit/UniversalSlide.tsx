@@ -1,7 +1,16 @@
 import { motion, useReducedMotion } from "framer-motion";
 import { UNIVERSAL_COPY } from "@/components/first-visit/first-visit-copy";
 
-const HERO_SRC = "/images/onboarding/universal.webp";
+const HERO_BASE = "/images/onboarding/universal";
+const HERO_SRC = `${HERO_BASE}.webp`;
+const HERO_SRCSET = [
+  `${HERO_BASE}-384.webp 384w`,
+  `${HERO_BASE}-576.webp 576w`,
+  `${HERO_BASE}-768.webp 768w`,
+  `${HERO_BASE}.webp 576w`,
+]
+  .filter(Boolean)
+  .join(", ");
 const ART_WIDTH = 576;
 const ART_HEIGHT = 1024;
 
@@ -37,12 +46,14 @@ export function UniversalSlide({ onContinue, onSkip }: Props) {
       >
         <img
           src={HERO_SRC}
+          srcSet={HERO_SRCSET}
+          sizes="(max-width: 480px) 100vw, 576px"
           alt=""
           width={ART_WIDTH}
           height={ART_HEIGHT}
           draggable={false}
           decoding="async"
-          fetchPriority="high"
+          loading="lazy"
           className="pointer-events-none absolute inset-0 h-full w-full select-none"
         />
         <div className="sr-only">

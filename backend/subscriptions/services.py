@@ -96,15 +96,17 @@ def _spend_referral_credit(user: User) -> bool:
 
 
 def free_tryon_available(user: User) -> bool:
-    """Bir martalik bepul try-on o'chirilgan — faqat obuna yoki referal."""
-    return False
+    """Yangi user — bir martalik bepul try-on hali ishlatilmagan."""
+    return bool(getattr(user, "morph_free_tryon_eligible", False)) and (
+        getattr(user, "morph_free_tryon_used_at", None) is None
+    )
 
 
 def free_tryon_payload(user: User, *, has_subscription: bool) -> dict[str, Any]:
     used_at = getattr(user, "morph_free_tryon_used_at", None)
     return {
-        "eligible": False,
-        "available": False,
+        "eligible": bool(getattr(user, "morph_free_tryon_eligible", False)),
+        "available": (not has_subscription) and free_tryon_available(user),
         "used": used_at is not None,
         "used_at": used_at.isoformat() if used_at else None,
     }
@@ -496,7 +498,7 @@ def _free_tryon_used(user: User) -> int:
 
 
 def free_tryon_snapshot(user: User) -> dict[str, Any]:
-    """Bepul try-on kvotasi 0 — yangi user ham to'lovsiz generatsiya olmaydi."""
+    """Yangi user umrbod 1 marta bepul try-on."""
     used = _free_tryon_used(user)
     limit = FREE_MORPH_TRYON
     remaining = max(0, limit - used)
@@ -1064,7 +1066,7 @@ def check_morph_entitlement(*, user: User, kind: str, flash_inflight: bool = Fal
     - analyze / face_check — obunasiz ochiq (tahlil → keyin generatsiya paywall).
     - chat — obunasiz bir martalik 10k token; tugagach obuna majburiy.
     - voice — faqat faol pullik obuna.
-    - tryon — faol obuna kvotasi, referal krediti, yoki to'langan 30 daqiqalik 1 rasm.
+    - tryon — faol obuna kvotasi, yangi user uchun 1 marta bepul, YOKI referal krediti, yoki flash.
     - studio — faol obuna majburiy. 1 000 so'mlik rasm studio ochmaydi.
     """
     if kind not in ("tryon", "studio", "analyze", "face_check", "chat", "voice"):
@@ -1159,6 +1161,8 @@ def check_morph_entitlement(*, user: User, kind: str, flash_inflight: bool = Fal
             )
         )
 
+    if free_tryon_available(user):
+        return None
     if credits > 0:
         return None
     from subscriptions.flash_tryon import flash_tryon_block
@@ -1205,7 +1209,11 @@ def record_morph_usage(*, user: User, kind: str) -> None:
             period_start=start,
             defaults={"period_end": end},
         )
-        if not _spend_referral_credit(user):
+        if _consume_free_tryon(user):
+            free_used = True
+            user_id = user.pk
+            transaction.on_commit(lambda uid=user_id: _notify_free_tryon_used(uid))
+        elif not _spend_referral_credit(user):
             return
     elif sub:
         usage = align_usage_to_plan(user, sub)
