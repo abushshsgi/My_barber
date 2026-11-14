@@ -1,0 +1,23 @@
+# Optional: sudo systemctl enable --now mysaloon-tryon-worker@1 mysaloon-tryon-worker@2
+# Use only with MYSALOON_STANDALONE_TRYON_WORKER=1 (disable start.sh embedded workers via TRYON_WORKER_COUNT=0 — not default).
+[Unit]
+Description=Mysaloon Try-On worker instance %i
+After=network.target postgresql.service redis-server.service
+Requires=redis-server.service
+
+[Service]
+Type=simple
+User=mysaloon
+Group=mysaloon
+WorkingDirectory=/var/www/mysaloon/source/backend
+EnvironmentFile=/var/www/mysaloon/source/backend/.env
+Environment=PATH=/var/www/mysaloon/venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+Environment=TRYON_WORKER_ID=vps-%i
+Environment=TRYON_WORKER_CONCURRENCY=3
+ExecStart=/var/www/mysaloon/venv/bin/python manage.py run_tryon_worker --poll-seconds 5 --concurrency 3
+Restart=on-failure
+RestartSec=5
+Nice=5
+
+[Install]
+WantedBy=multi-user.target

@@ -1,25 +1,26 @@
+# VPS production paths (mysaloon.service + start.sh embedded workers is the default).
+# Enable only when TRYON embedded workers are off: MYSALOON_STANDALONE_TRYON_WORKER=1 on deploy-backend.sh
 [Unit]
-Description=Mysaloon Try-On worker
-After=network.target redis.service postgresql.service
-Requires=redis.service
+Description=Mysaloon Try-On worker (standalone)
+After=network.target postgresql.service redis-server.service
+Requires=redis-server.service
+PartOf=mysaloon.service
 
 [Service]
 Type=simple
-User=www-data
-Group=www-data
-WorkingDirectory=/opt/mysaloon/Mybarber/backend
-EnvironmentFile=/opt/mysaloon/Mybarber/backend/.env
+User=mysaloon
+Group=mysaloon
+WorkingDirectory=/var/www/mysaloon/source/backend
+EnvironmentFile=/var/www/mysaloon/source/backend/.env
+Environment=PATH=/var/www/mysaloon/venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 Environment=TRYON_WORKER_CONCURRENCY=3
 Environment=TRYON_PROVIDER_CONCURRENCY=4
 Environment=TRYON_PROVIDER_CONCURRENCY_CAP=4
 Environment=TRYON_QUEUE_MAX_DEPTH=20000
-ExecStart=/opt/mysaloon/Mybarber/backend/.venv/bin/python manage.py run_tryon_worker --poll-seconds 5 --concurrency 3
-Restart=always
-RestartSec=3
+ExecStart=/var/www/mysaloon/venv/bin/python manage.py run_tryon_worker --poll-seconds 5 --concurrency 3
+Restart=on-failure
+RestartSec=5
 Nice=5
-
-# 4 vCPU / 8 GB VPS: 2 ta shu unit (mysaloon-tryon-worker@1 va @2) yoki
-# bin/start.sh orqali TRYON_WORKER_COUNT=2. Global slotlar Redis da ulashiladi.
 
 [Install]
 WantedBy=multi-user.target
