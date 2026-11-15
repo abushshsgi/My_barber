@@ -1,7 +1,6 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, type ReactNode } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { useNavigate, useRouterState } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
-import { refreshAiStyleHistoryCache } from "@/lib/api/ai";
 import {
   bootstrapUserSession,
   handleAuthFailure,
@@ -11,7 +10,6 @@ import {
 import { guestMustLogin } from "@/lib/auth-routes";
 import { getActiveUserId, prepareFaceProfileStorageForUser } from "@/lib/face-profile";
 import { useNotificationsWebSocket } from "@/hooks/use-notifications-websocket";
-import { registerPushNotifications } from "@/lib/native-push";
 import { clearQueryClientCache } from "@/lib/query-client";
 import { buildAuthReturnPath } from "@/lib/require-auth";
 import { prepareUserPrefsStorageForUser } from "@/lib/user-prefs";
@@ -27,7 +25,16 @@ function isAuthRoute(): boolean {
 }
 
 function NotificationsRealtimeBridge() {
-  useNotificationsWebSocket();
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    const enable = () => setReady(true);
+    if (document.readyState === "complete") enable();
+    else window.addEventListener("load", enable, { once: true });
+    return () => window.removeEventListener("load", enable);
+  }, []);
+
+  useNotificationsWebSocket(ready);
   return null;
 }
 
@@ -90,10 +97,12 @@ export function AuthSessionGuard({ children }: { children: ReactNode }) {
         if (uid) {
           prepareFaceProfileStorageForUser(uid, { allowLegacyClaim: true });
           prepareUserPrefsStorageForUser(uid, { allowLegacyClaim: true });
-          if (refreshHistory) void refreshAiStyleHistoryCache();
+          if (refreshHistory) {
+            void import("@/lib/api/ai").then((m) => m.refreshAiStyleHistoryCache());
+          }
         }
         window.dispatchEvent(new CustomEvent("mysaloon:auth-ready"));
-        void registerPushNotifications();
+        void import("@/lib/native-push").then((m) => m.registerPushNotifications());
       });
     };
 

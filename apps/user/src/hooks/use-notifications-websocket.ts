@@ -192,10 +192,11 @@ function teardownSocket() {
 }
 
 /** Real-time notification refresh when Django Channels + REDIS_URL are enabled. */
-export function useNotificationsWebSocket() {
+export function useNotificationsWebSocket(enabled = true) {
   const qc = useQueryClient();
 
   useEffect(() => {
+    if (!enabled) return;
     if (closeTimer) {
       clearTimeout(closeTimer);
       closeTimer = null;
@@ -227,5 +228,5 @@ export function useNotificationsWebSocket() {
         }, 1000);
       }
     };
-  }, [qc]);
+  }, [qc, enabled]);
 }

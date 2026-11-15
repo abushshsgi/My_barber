@@ -53,7 +53,8 @@ export function UniversalSlide({ onContinue, onSkip }: Props) {
           height={ART_HEIGHT}
           draggable={false}
           decoding="async"
-          loading="lazy"
+          loading="eager"
+          fetchPriority="high"
           className="pointer-events-none absolute inset-0 h-full w-full select-none"
         />
         <div className="sr-only">

@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { lazy, Suspense, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import "@fontsource-variable/space-grotesk";
 import "../i18n/config";
@@ -7,15 +7,20 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Link, createRootRouteWithContext, HeadContent, Scripts } from "@tanstack/react-router";
 
 import appCss from "../styles.css?url";
-import { TRY_ON_HERO_PRELOAD } from "@/components/ai-style/TryOnHeroImage";
+import {
+  MORPH_LCP_BOOT_SCRIPT,
+  TRY_ON_HERO_PRELOAD,
+  TRY_ON_HERO_SRCSET,
+} from "@/lib/try-on-hero-assets";
+import { DeferredClientWidgets } from "@/components/DeferredClientWidgets";
+import spaceGroteskLatin from "@fontsource-variable/space-grotesk/files/space-grotesk-latin-wght-normal.woff2?url";
 import { I18nProvider } from "../components/I18nProvider";
 import { LangAwareOutlet } from "../components/LangAwareOutlet";
 import { UserLayout } from "../components/UserLayout";
-import { DeployRecovery } from "../components/DeployRecovery";
 import { ClientOnly } from "../components/ClientOnly";
 import { CLIENT_BOOT_SCRIPT } from "../lib/client-boot-script";
 import { APPEARANCE_BOOT_SCRIPT } from "../lib/morph-appearance";
-import { Toaster } from "sonner";
+const Toaster = lazy(() => import("sonner").then((m) => ({ default: m.Toaster })));
 import { APP_BUILD_ID } from "../lib/app-build-id";
 import { isChunkLoadError, reloadForChunkError } from "../lib/chunk-reload";
 import { requireAuth } from "../lib/require-auth";
@@ -23,12 +28,7 @@ import { AudienceProvider } from "../hooks/use-audience";
 import { CurrencyProvider } from "../hooks/use-currency";
 import { AuthSessionGuard } from "../components/AuthSessionGuard";
 import { OnboardingGuard } from "../components/OnboardingGuard";
-import { GoogleAnalytics } from "../components/GoogleAnalytics";
-import { SiteTelemetry } from "../components/SiteTelemetry";
-import { ExternalBrowserPrompt } from "../components/ExternalBrowserPrompt";
-import { FirstVisitOnboarding } from "../components/first-visit/FirstVisitOnboarding";
 import { MaintenanceBanner } from "../components/MaintenanceBanner";
-import { FirebaseInit } from "../components/FirebaseInit";
 function NotFoundComponent() {
   const { t } = useTranslation();
   return (
@@ -143,10 +143,10 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "stylesheet", href: appCss },
       {
         rel: "preload",
-        href: TRY_ON_HERO_PRELOAD,
-        as: "image",
-        type: "image/webp",
-        fetchPriority: "high",
+        href: spaceGroteskLatin,
+        as: "font",
+        type: "font/woff2",
+        crossOrigin: "anonymous",
       },
       { rel: "icon", href: "/favicon.ico", sizes: "any" },
       { rel: "icon", href: "/favicon-32.png", type: "image/png", sizes: "32x32" },
@@ -184,16 +184,37 @@ function RootShell({ children }: { children: React.ReactNode }) {
       <head>
         <link
           rel="preload"
-          href="/ai-style/try-on-selfie-hero-720.webp"
+          href={TRY_ON_HERO_PRELOAD}
           as="image"
           type="image/webp"
           fetchPriority="high"
+          imageSrcSet={TRY_ON_HERO_SRCSET}
+          imageSizes="100vw"
         />
         <HeadContent />
+        <style
+          dangerouslySetInnerHTML={{
+            __html:
+              "html:not([data-morph-lcp]) #morph-lcp-static{display:none!important}#morph-lcp-static{position:fixed;inset:0;z-index:1;pointer-events:none;overflow:hidden;background:#f6f3f0}#morph-lcp-static img{position:absolute;inset:0;height:100%;width:100%;object-fit:cover;object-position:top}",
+          }}
+        />
+        <script dangerouslySetInnerHTML={{ __html: MORPH_LCP_BOOT_SCRIPT }} />
         <script dangerouslySetInnerHTML={{ __html: APPEARANCE_BOOT_SCRIPT }} />
         <script dangerouslySetInnerHTML={{ __html: CLIENT_BOOT_SCRIPT }} />
       </head>
       <body>
+        <div id="morph-lcp-static">
+          <img
+            src={TRY_ON_HERO_PRELOAD}
+            srcSet={TRY_ON_HERO_SRCSET}
+            sizes="100vw"
+            alt=""
+            width={864}
+            height={1152}
+            decoding="async"
+            fetchPriority="high"
+          />
+        </div>
         <MaintenanceBanner />
         {children}
         <Scripts />
@@ -217,13 +238,10 @@ function AppShell() {
             </OnboardingGuard>
           </AuthSessionGuard>
           <ClientOnly>
-            <FirstVisitOnboarding />
-            <ExternalBrowserPrompt />
-            <FirebaseInit />
-            <GoogleAnalytics />
-            <SiteTelemetry />
-            <DeployRecovery />
-            <Toaster position="top-center" />
+            <DeferredClientWidgets />
+            <Suspense fallback={null}>
+              <Toaster position="top-center" />
+            </Suspense>
           </ClientOnly>
         </CurrencyProvider>
       </AudienceProvider>

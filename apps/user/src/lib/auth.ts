@@ -5,13 +5,11 @@ import {
   setUserTokens,
   type ApiUser,
 } from "@/lib/api";
-import { refreshAiStyleHistoryCache } from "@/lib/api/ai";
 import { migrateFaceProfileOnLogout, prepareFaceProfileStorageForUser } from "@/lib/face-profile";
 import {
   migrateGuestMorphAiGenerations,
   refreshMorphAiGenerationsCache,
 } from "@/lib/morf-ai-gallery";
-import { unregisterPushToken } from "@/lib/native-push";
 import { clearQueryClientCache, getQueryClient } from "@/lib/query-client";
 import {
   notifyAudienceReset,
@@ -77,7 +75,7 @@ export function setSession(access: string, refresh: string, user: ApiUser, sessi
     prepareUserPrefsStorageForUser(user.id);
     migrateGuestMorphAiGenerations(user.id);
     notifyAudienceReset(user.id);
-    void refreshAiStyleHistoryCache();
+    void import("@/lib/api/ai").then((m) => m.refreshAiStyleHistoryCache());
     void refreshMorphAiGenerationsCache();
   }
 
@@ -107,7 +105,7 @@ export function logout() {
     migrateFaceProfileOnLogout(user.id);
     migrateUserPrefsOnLogout(user.id);
   }
-  void unregisterPushToken();
+  void import("@/lib/native-push").then((m) => m.unregisterPushToken());
   clearUserTokens();
   clearQueryClientCache();
   try {

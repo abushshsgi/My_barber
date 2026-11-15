@@ -1,6 +1,29 @@
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 
 export default defineConfig({
+  tanstackStart: {
+    server: { entry: "server" },
+    router: {
+      autoCodeSplitting: true,
+    },
+  },
+  vite: {
+    build: {
+      chunkSizeWarningLimit: 600,
+      rollupOptions: {
+        output: {
+          manualChunks(id) {
+            if (!id.includes("node_modules")) return;
+            if (id.includes("firebase")) return "vendor-firebase";
+            if (id.includes("framer-motion")) return "vendor-motion";
+            if (id.includes("@mediapipe")) return "vendor-mediapipe";
+            if (id.includes("@react-three") || /[/\\]three[/\\]/.test(id)) return "vendor-three";
+            if (id.includes("recharts")) return "vendor-recharts";
+          },
+        },
+      },
+    },
+  },
   server: {
     port: 3000,
     host: true,
@@ -31,8 +54,5 @@ export default defineConfig({
   },
   nitro: {
     preset: "node-server",
-  },
-  tanstackStart: {
-    server: { entry: "server" },
   },
 });

@@ -11,6 +11,7 @@
     "preview": "vite preview",
     "lint": "eslint .",
     "format": "prettier --write .",
+    "build:analyze": "vite build && npx vite-bundle-visualizer -o dist/bundle-stats.html",
     "test": "vitest run",
     "test:watch": "vitest"
   },

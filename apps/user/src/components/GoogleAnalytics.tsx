@@ -32,13 +32,21 @@ export function GoogleAnalytics() {
 
   useEffect(() => {
     if (!GA_ENABLED) return;
-    const run = () => loadGoogleAnalytics();
-    if ("requestIdleCallback" in window) {
-      const id = window.requestIdleCallback(run, { timeout: 2500 });
-      return () => window.cancelIdleCallback(id);
-    }
-    const id = window.setTimeout(run, 1200);
-    return () => window.clearTimeout(id);
+
+    const schedule = () => {
+      const run = () => loadGoogleAnalytics();
+      if ("requestIdleCallback" in window) {
+        window.requestIdleCallback(run, { timeout: 5000 });
+      } else {
+        window.setTimeout(run, 2500);
+      }
+    };
+
+    const onLoad = () => schedule();
+    if (document.readyState === "complete") onLoad();
+    else window.addEventListener("load", onLoad, { once: true });
+
+    return () => window.removeEventListener("load", onLoad);
   }, []);
 
   useEffect(() => {

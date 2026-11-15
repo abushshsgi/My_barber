@@ -3,7 +3,7 @@ import { DesktopPageSplit } from "@/components/desktop/DesktopPageSplit";
 import { HomeDesktopRoot } from "@/components/desktop/home/HomeDesktopRoot";
 import { MysaloonPausedScreen } from "@/components/mobile/MysaloonPausedScreen";
 import { useHomeData } from "@/components/home/useHomeData";
-import { TRY_ON_HERO_PRELOAD } from "@/components/ai-style/TryOnHeroImage";
+import { TRY_ON_HERO_PRELOAD, TRY_ON_HERO_SRCSET } from "@/lib/try-on-hero-assets";
 import { shouldRedirectHomeToMorph } from "@/lib/app-shell";
 import { parseReferralFromLocationSearch, stashReferralCode } from "@/lib/referral-storage";
 
@@ -24,6 +24,8 @@ export const Route = createFileRoute("/")({
         as: "image",
         type: "image/webp",
         fetchPriority: "high",
+        imageSrcSet: TRY_ON_HERO_SRCSET,
+        imageSizes: "100vw",
       },
     ],
     meta: [

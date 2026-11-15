@@ -1,6 +1,4 @@
-import { getMessaging, getToken, isSupported } from "firebase/messaging";
 import { apiJson, hasValidUserSession } from "@/lib/api/client";
-import { getFirebaseApp } from "@/lib/firebase";
 
 const VAPID =
   (
@@ -26,6 +24,8 @@ export async function registerPushNotifications(): Promise<void> {
   if (!("Notification" in window) || Notification.permission !== "granted") return;
   if (!VAPID) return;
   try {
+    const { getMessaging, getToken, isSupported } = await import("firebase/messaging");
+    const { getFirebaseApp } = await import("@/lib/firebase");
     const ok = await isSupported();
     if (!ok) return;
     const app = getFirebaseApp();

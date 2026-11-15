@@ -1,21 +1,29 @@
+import { useEffect } from "react";
+import {
+  TRY_ON_HERO_DEFAULT_SRC,
+  TRY_ON_HERO_SRCSET,
+  TRY_ON_HERO_WIDTHS,
+} from "@/lib/try-on-hero-assets";
+
 /** LCP image on /ai-style mobile — responsive WebP, PNG fallback only when needed. */
 
-const BASE = "/ai-style/try-on-selfie-hero";
-const WIDTHS = [480, 720, 864] as const;
-
-const SRCSET = WIDTHS.map((w) => `${BASE}-${w}.webp ${w}w`).join(", ");
+const STATIC_LCP_ID = "morph-lcp-static";
 
 type Props = {
   className?: string;
 };
 
 export function TryOnHeroImage({ className }: Props) {
+  useEffect(() => {
+    document.getElementById(STATIC_LCP_ID)?.remove();
+  }, []);
+
   return (
     <picture>
-      <source type="image/webp" srcSet={SRCSET} sizes="100vw" />
+      <source type="image/webp" srcSet={TRY_ON_HERO_SRCSET} sizes="100vw" />
       <img
-        src={`${BASE}-720.webp`}
-        srcSet={SRCSET}
+        src={TRY_ON_HERO_DEFAULT_SRC}
+        srcSet={TRY_ON_HERO_SRCSET}
         sizes="100vw"
         alt=""
         width={864}
@@ -28,5 +36,3 @@ export function TryOnHeroImage({ className }: Props) {
     </picture>
   );
 }
-
-export const TRY_ON_HERO_PRELOAD = `${BASE}-720.webp`;
