@@ -18,11 +18,25 @@ install -m 644 "${ROOT}/backend/deploy/mysaloon-tryon-worker.service" /etc/syste
 install -m 644 "${ROOT}/backend/deploy/mysaloon-tryon-worker@.service" /etc/systemd/system/mysaloon-tryon-worker@.service
 systemctl daemon-reload
 # Default: try-on workers run inside mysaloon.service (backend/bin/start.sh). Standalone unit stays disabled.
+_ensure_env_key() {
+  local key="$1" val="$2"
+  local env_file="${ROOT}/backend/.env"
+  if grep -q "^${key}=" "$env_file"; then
+    sed -i "s|^${key}=.*|${key}=${val}|" "$env_file"
+  else
+    echo "${key}=${val}" >>"$env_file"
+  fi
+}
+
 if [ "${MYSALOON_STANDALONE_TRYON_WORKER:-0}" = "1" ]; then
+  _ensure_env_key "TRYON_WORKER_COUNT" "0"
+  echo "TRYON_WORKER_COUNT=0 (embedded off; standalone systemd worker on)"
   systemctl enable mysaloon-tryon-worker.service
   systemctl restart mysaloon-tryon-worker.service
   systemctl is-active mysaloon-tryon-worker.service
 else
+  _ensure_env_key "TRYON_WORKER_COUNT" "2"
+  echo "TRYON_WORKER_COUNT=2 (embedded workers via ${SVC})"
   systemctl disable --now mysaloon-tryon-worker.service 2>/dev/null || true
   systemctl stop 'mysaloon-tryon-worker@*' 2>/dev/null || true
   systemctl disable 'mysaloon-tryon-worker@*' 2>/dev/null || true

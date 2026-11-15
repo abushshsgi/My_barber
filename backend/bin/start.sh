@@ -21,7 +21,12 @@ if [ -n "${REDIS_URL:-}" ] && [ "${TRYON_QUEUE_ENABLED:-true}" != "false" ]; the
   case "$concurrency" in
     ''|*[!0-9]*) concurrency=4 ;;
   esac
-  if [ "$workers" -lt 1 ]; then workers=1; fi
+  if [ "$workers" -eq 0 ]; then
+    echo "[start] Embedded try-on workers disabled (TRYON_WORKER_COUNT=0; use systemd worker if enabled)."
+    workers=0
+  elif [ "$workers" -lt 1 ]; then
+    workers=1
+  fi
   if [ "$workers" -gt 4 ]; then workers=4; fi
   if [ "$concurrency" -lt 1 ]; then concurrency=1; fi
   if [ "$concurrency" -gt 8 ]; then concurrency=8; fi
@@ -47,12 +52,14 @@ if [ -n "${REDIS_URL:-}" ] && [ "${TRYON_QUEUE_ENABLED:-true}" != "false" ]; the
     echo "[start] Try-on threads clamped: ${workers}x${concurrency} -> ${workers}x${new_concurrency} (Runware slots=${provider_slots})" >&2
     concurrency="$new_concurrency"
   fi
-  echo "[start] Starting ${workers} try-on workers x ${concurrency} threads (global provider slots=${provider_slots})..."
-  i=1
-  while [ "$i" -le "$workers" ]; do
-    python manage.py run_tryon_worker --poll-seconds 5 --concurrency "${concurrency}" &
-    i=$((i + 1))
-  done
+  if [ "$workers" -gt 0 ]; then
+    echo "[start] Starting ${workers} try-on workers x ${concurrency} threads (global provider slots=${provider_slots})..."
+    i=1
+    while [ "$i" -le "$workers" ]; do
+      python manage.py run_tryon_worker --poll-seconds 5 --concurrency "${concurrency}" &
+      i=$((i + 1))
+    done
+  fi
 fi
 
 echo "[start] Syncing exchange rates (if stale)..."
