@@ -7,13 +7,15 @@ import {
   ActivityIndicator,
   Animated,
   Easing,
+  Modal,
   Pressable,
+  ScrollView,
   StyleSheet,
   Text,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { createHairScan } from "../../../api/hair-advisor";
+import { createHairScan, fetchHairScanHistory, type HairScan } from "../../../api/hair-advisor";
 import { useHideTabBar } from "../../../hooks/useHideTabBar";
 import { pickProductLabelFromGallery } from "../../../lib/product-label";
 import { playBarcodeBeep, primeBarcodeBeep } from "../../../lib/barcode-beep";
@@ -38,6 +40,8 @@ export function HairAdvisor2ScanScreen({ navigation }: Props) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [torch, setTorch] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [history, setHistory] = useState<HairScan[]>([]);
 
   useEffect(() => {
     void primeBarcodeBeep();
@@ -68,15 +72,18 @@ export function HairAdvisor2ScanScreen({ navigation }: Props) {
       setError(null);
       try {
         const scan = await createHairScan({ input_method: "barcode", barcode: code, idempotency_key: `ha2-${code}` });
-        if (scan.status === "product_not_found" || scan.status === "failed") {
-          setError(scan.message_uz || scan.error_message || "Mahsulot topilmadi");
+        if (scan.status === "failed") {
+          setError(scan.error_message || "Shtrix-kod aniqlanmadi");
           barcodeLock.current = false;
+          return;
+        }
+        if (scan.status === "product_not_found") {
+          navigation.navigate("HairAdvisorRecover", { scanId: scan.id });
           return;
         }
         const resolved = await resolveScanToAnalysis(scan);
         if ("needIngredients" in resolved) {
-          setError("Mahsulot tarkibi hali tasdiqlanmagan.");
-          barcodeLock.current = false;
+          navigation.navigate("HairAdvisorRecover", { scanId: scan.id });
           return;
         }
         navigation.navigate("HairAdvisorResult", { scanId: resolved.scan.id });
@@ -102,7 +109,16 @@ export function HairAdvisor2ScanScreen({ navigation }: Props) {
           <Ionicons name="chevron-back" size={26} color="#fff" />
         </Pressable>
         <Text style={styles.headerTitle}>Skanerlash</Text>
-        <Pressable hitSlop={12} accessibilityLabel="Tarix">
+        <Pressable
+          hitSlop={12}
+          accessibilityLabel="Tarix"
+          onPress={() => {
+            void fetchHairScanHistory()
+              .then(setHistory)
+              .then(() => setHistoryOpen(true))
+              .catch(() => undefined);
+          }}
+        >
           <Ionicons name="time-outline" size={22} color="#fff" />
         </Pressable>
       </View>
@@ -169,7 +185,7 @@ export function HairAdvisor2ScanScreen({ navigation }: Props) {
               const scan = await createHairScan({ input_method: "gallery", image: dataUrl });
               const resolved = await resolveScanToAnalysis(scan);
               if ("needIngredients" in resolved) {
-                setError("Galereyadan tarkib o'qilmadi");
+                navigation.navigate("HairAdvisorRecover", { scanId: scan.id });
                 return;
               }
               navigation.navigate("HairAdvisorResult", { scanId: resolved.scan.id });
@@ -189,6 +205,33 @@ export function HairAdvisor2ScanScreen({ navigation }: Props) {
           <Ionicons name={torch ? "flash" : "flash-outline"} size={22} color="#fff" />
         </Pressable>
       </View>
+
+      <Modal visible={historyOpen} transparent animationType="slide">
+        <View style={styles.modalBg}>
+          <View style={styles.modalCard}>
+            <Text style={styles.modalTitle}>Skanlar tarixi</Text>
+            <ScrollView style={{ maxHeight: verticalScale(320) }}>
+              {history.map((h) => (
+                <Pressable
+                  key={h.id}
+                  style={styles.histRow}
+                  onPress={() => {
+                    setHistoryOpen(false);
+                    navigation.navigate("HairAdvisorResult", { scanId: h.id });
+                  }}
+                >
+                  <Text style={styles.histTitle}>{h.barcode || h.care_product?.name || h.id.slice(0, 8)}</Text>
+                  <Text style={styles.histMeta}>{h.status}</Text>
+                </Pressable>
+              ))}
+              {history.length === 0 ? <Text style={styles.histMeta}>Tarix bo'sh</Text> : null}
+            </ScrollView>
+            <Pressable onPress={() => setHistoryOpen(false)}>
+              <Text style={styles.link}>Yopish</Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -248,4 +291,11 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   mainInner: { width: scale(18), height: scale(18), borderRadius: 9, borderWidth: 2, borderColor: "#080808" },
+  modalBg: { flex: 1, backgroundColor: "rgba(0,0,0,0.45)", justifyContent: "flex-end" },
+  modalCard: { backgroundColor: "#fff", borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 16, maxHeight: "70%" },
+  modalTitle: { ...morphFont, fontSize: fontSize(18), fontWeight: "800", marginBottom: 12 },
+  histRow: { paddingVertical: 10, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: "#E8E8EB" },
+  histTitle: { ...morphFont, fontWeight: "600", color: "#111" },
+  histMeta: { ...morphFont, color: "#71717A", fontSize: fontSize(12) },
+  link: { ...morphFont, textAlign: "center", marginTop: 12, color: "#71717A", fontWeight: "600" },
 });

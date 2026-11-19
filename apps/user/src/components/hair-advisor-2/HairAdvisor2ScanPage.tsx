@@ -57,19 +57,20 @@ export function HairAdvisor2ScanPage({
           barcode: code,
           idempotency_key: `ha2-${code}`,
         });
-        if (scan.status === "product_not_found" || scan.status === "failed") {
+        if (scan.status === "failed") {
           setPhase("error");
-          setError(scan.message_uz || scan.error_message || "Mahsulot topilmadi");
+          setError(scan.error_message || "Shtrix-kod aniqlanmadi");
           lockRef.current = false;
           setCameraOn(true);
           return;
         }
+        if (scan.status === "product_not_found") {
+          void router.navigate({ to: `/ai-style/care/ingredient/recover/${scan.id}` as never });
+          return;
+        }
         const resolved = await resolveScanToAnalysis(scan);
         if ("needIngredients" in resolved) {
-          setPhase("error");
-          setError("Mahsulotning to'liq tarkibi hali tasdiqlanmagan. Tarkib yorlig'i rasmini yuklang.");
-          lockRef.current = false;
-          setCameraOn(true);
+          void router.navigate({ to: `/ai-style/care/ingredient/recover/${scan.id}` as never });
           return;
         }
         goResult(resolved.scan.id);
@@ -81,7 +82,7 @@ export function HairAdvisor2ScanPage({
         setCameraOn(true);
       }
     },
-    [goResult],
+    [goResult, router],
   );
 
   const onGallery = async (file: File) => {
@@ -94,9 +95,7 @@ export function HairAdvisor2ScanPage({
       const scan = await createHairScan({ input_method: "gallery", image: dataUrl });
       const resolved = await resolveScanToAnalysis(scan);
       if ("needIngredients" in resolved) {
-        toast.message("Tarkibni tasdiqlash kerak — hozircha QR skanerni ishlating.");
-        setPhase("error");
-        lockRef.current = false;
+        void router.navigate({ to: `/ai-style/care/ingredient/recover/${scan.id}` as never });
         return;
       }
       goResult(resolved.scan.id);
