@@ -1,16 +1,24 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { HairAdvisorWebScanPage } from "@/components/ai-style/HairAdvisorWebScanPage";
+import { HairAdvisor2ScanPage } from "@/components/hair-advisor-2/HairAdvisor2ScanPage";
 
 export const Route = createFileRoute("/ai-style_/care_/ingredient")({
   head: () => ({
     meta: [
-      { title: "Morf AI Tarkib skani — mysaloon.uz" },
+      { title: "Skanerlash — MySaloon Hair Advisor" },
       {
         name: "description",
-        content:
-          "Soch mahsuloti tarkibini AI bilan tahlil qiling — sochingizga mosligi, xavfli va foydali moddalar.",
+        content: "Shtrix-kod orqali soch parvarish mahsulotini skanerlang va shaxsiy tahlil oling.",
       },
     ],
   }),
-  component: HairAdvisorWebScanPage,
+  component: RouteComponent,
 });
+
+function RouteComponent() {
+  return (
+    <HairAdvisor2ScanPage
+      scanPath="/ai-style/care/ingredient"
+      resultPath={(id) => `/ai-style/care/ingredient/result/${id}`}
+    />
+  );
+}

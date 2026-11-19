@@ -69,6 +69,7 @@ class CareProductSerializer(serializers.ModelSerializer):
             "category",
             "audience",
             "barcode",
+            "volume_ml",
             "country_of_origin",
             "country_code_prefix",
             "is_verified",

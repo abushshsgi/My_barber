@@ -15,6 +15,10 @@ export type CareProduct = {
   slug: string;
   category: CareProductCategory | string;
   image_url: string | null;
+  volume_ml?: number;
+  country_of_origin?: string;
+  barcode?: string;
+  is_verified?: boolean;
   ingredients_text: string;
   ingredients: string[];
   usage_uz: string;

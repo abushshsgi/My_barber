@@ -82,6 +82,9 @@ import { Route as MorfAiLookStyleIdRouteImport } from './routes/morf-ai.look.$st
 import { Route as MorfAiShareShareIdRouteImport } from './routes/morf-ai.share.$shareId'
 import { Route as SalonIdLocationRouteImport } from './routes/salon.$id.location'
 import { Route as AiStyleCareProductsProductIdRouteImport } from './routes/ai-style_.care_.products_.$productId'
+import { Route as AiStyleCareIngredientInciScanIdRouteImport } from './routes/ai-style_.care_.ingredient_.inci.$scanId'
+import { Route as AiStyleCareIngredientResultScanIdRouteImport } from './routes/ai-style_.care_.ingredient_.result.$scanId'
+import { Route as AiStyleCareIngredientInciScanIdInciSlugRouteImport } from './routes/ai-style_.care_.ingredient_.inci.$scanId_.$inciSlug'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -449,6 +452,24 @@ const AiStyleCareProductsProductIdRoute =
     path: '/ai-style/care/products/$productId',
     getParentRoute: () => rootRouteImport,
   } as any)
+const AiStyleCareIngredientInciScanIdRoute =
+  AiStyleCareIngredientInciScanIdRouteImport.update({
+    id: '/ai-style_/care_/ingredient_/inci/$scanId',
+    path: '/ai-style/care/ingredient/inci/$scanId',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const AiStyleCareIngredientResultScanIdRoute =
+  AiStyleCareIngredientResultScanIdRouteImport.update({
+    id: '/ai-style_/care_/ingredient_/result/$scanId',
+    path: '/ai-style/care/ingredient/result/$scanId',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const AiStyleCareIngredientInciScanIdInciSlugRoute =
+  AiStyleCareIngredientInciScanIdInciSlugRouteImport.update({
+    id: '/ai-style_/care_/ingredient_/inci/$scanId_/$inciSlug',
+    path: '/ai-style/care/ingredient/inci/$scanId/$inciSlug',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -524,6 +545,9 @@ export interface FileRoutesByFullPath {
   '/salon/$id/location': typeof SalonIdLocationRoute
   '/dev/explore-gen/': typeof DevExploreGenIndexRoute
   '/ai-style/care/products/$productId': typeof AiStyleCareProductsProductIdRoute
+  '/ai-style/care/ingredient/inci/$scanId': typeof AiStyleCareIngredientInciScanIdRoute
+  '/ai-style/care/ingredient/result/$scanId': typeof AiStyleCareIngredientResultScanIdRoute
+  '/ai-style/care/ingredient/inci/$scanId/$inciSlug': typeof AiStyleCareIngredientInciScanIdInciSlugRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -598,6 +622,9 @@ export interface FileRoutesByTo {
   '/salon/$id/location': typeof SalonIdLocationRoute
   '/dev/explore-gen': typeof DevExploreGenIndexRoute
   '/ai-style/care/products/$productId': typeof AiStyleCareProductsProductIdRoute
+  '/ai-style/care/ingredient/inci/$scanId': typeof AiStyleCareIngredientInciScanIdRoute
+  '/ai-style/care/ingredient/result/$scanId': typeof AiStyleCareIngredientResultScanIdRoute
+  '/ai-style/care/ingredient/inci/$scanId/$inciSlug': typeof AiStyleCareIngredientInciScanIdInciSlugRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -674,6 +701,9 @@ export interface FileRoutesById {
   '/salon/$id/location': typeof SalonIdLocationRoute
   '/dev/explore-gen/': typeof DevExploreGenIndexRoute
   '/ai-style_/care_/products_/$productId': typeof AiStyleCareProductsProductIdRoute
+  '/ai-style_/care_/ingredient_/inci/$scanId': typeof AiStyleCareIngredientInciScanIdRoute
+  '/ai-style_/care_/ingredient_/result/$scanId': typeof AiStyleCareIngredientResultScanIdRoute
+  '/ai-style_/care_/ingredient_/inci/$scanId_/$inciSlug': typeof AiStyleCareIngredientInciScanIdInciSlugRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -751,6 +781,9 @@ export interface FileRouteTypes {
     | '/salon/$id/location'
     | '/dev/explore-gen/'
     | '/ai-style/care/products/$productId'
+    | '/ai-style/care/ingredient/inci/$scanId'
+    | '/ai-style/care/ingredient/result/$scanId'
+    | '/ai-style/care/ingredient/inci/$scanId/$inciSlug'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -825,6 +858,9 @@ export interface FileRouteTypes {
     | '/salon/$id/location'
     | '/dev/explore-gen'
     | '/ai-style/care/products/$productId'
+    | '/ai-style/care/ingredient/inci/$scanId'
+    | '/ai-style/care/ingredient/result/$scanId'
+    | '/ai-style/care/ingredient/inci/$scanId/$inciSlug'
   id:
     | '__root__'
     | '/'
@@ -900,6 +936,9 @@ export interface FileRouteTypes {
     | '/salon/$id/location'
     | '/dev/explore-gen/'
     | '/ai-style_/care_/products_/$productId'
+    | '/ai-style_/care_/ingredient_/inci/$scanId'
+    | '/ai-style_/care_/ingredient_/result/$scanId'
+    | '/ai-style_/care_/ingredient_/inci/$scanId_/$inciSlug'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -969,6 +1008,9 @@ export interface RootRouteChildren {
   MorfAiLookStyleIdRoute: typeof MorfAiLookStyleIdRoute
   MorfAiShareShareIdRoute: typeof MorfAiShareShareIdRoute
   AiStyleCareProductsProductIdRoute: typeof AiStyleCareProductsProductIdRoute
+  AiStyleCareIngredientInciScanIdRoute: typeof AiStyleCareIngredientInciScanIdRoute
+  AiStyleCareIngredientResultScanIdRoute: typeof AiStyleCareIngredientResultScanIdRoute
+  AiStyleCareIngredientInciScanIdInciSlugRoute: typeof AiStyleCareIngredientInciScanIdInciSlugRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -1484,6 +1526,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AiStyleCareProductsProductIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/ai-style_/care_/ingredient_/inci/$scanId': {
+      id: '/ai-style_/care_/ingredient_/inci/$scanId'
+      path: '/ai-style/care/ingredient/inci/$scanId'
+      fullPath: '/ai-style/care/ingredient/inci/$scanId'
+      preLoaderRoute: typeof AiStyleCareIngredientInciScanIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ai-style_/care_/ingredient_/result/$scanId': {
+      id: '/ai-style_/care_/ingredient_/result/$scanId'
+      path: '/ai-style/care/ingredient/result/$scanId'
+      fullPath: '/ai-style/care/ingredient/result/$scanId'
+      preLoaderRoute: typeof AiStyleCareIngredientResultScanIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ai-style_/care_/ingredient_/inci/$scanId_/$inciSlug': {
+      id: '/ai-style_/care_/ingredient_/inci/$scanId_/$inciSlug'
+      path: '/ai-style/care/ingredient/inci/$scanId/$inciSlug'
+      fullPath: '/ai-style/care/ingredient/inci/$scanId/$inciSlug'
+      preLoaderRoute: typeof AiStyleCareIngredientInciScanIdInciSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -1614,6 +1677,11 @@ const rootRouteChildren: RootRouteChildren = {
   MorfAiLookStyleIdRoute: MorfAiLookStyleIdRoute,
   MorfAiShareShareIdRoute: MorfAiShareShareIdRoute,
   AiStyleCareProductsProductIdRoute: AiStyleCareProductsProductIdRoute,
+  AiStyleCareIngredientInciScanIdRoute: AiStyleCareIngredientInciScanIdRoute,
+  AiStyleCareIngredientResultScanIdRoute:
+    AiStyleCareIngredientResultScanIdRoute,
+  AiStyleCareIngredientInciScanIdInciSlugRoute:
+    AiStyleCareIngredientInciScanIdInciSlugRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

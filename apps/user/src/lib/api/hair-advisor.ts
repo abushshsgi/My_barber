@@ -1,19 +1,49 @@
 import { apiFetch, apiJson } from "@/lib/api/client";
 
+export type HairScanStatus =
+  | "idle"
+  | "requesting_permission"
+  | "scanning"
+  | "product_found"
+  | "product_not_found"
+  | "ingredients_required"
+  | "processing_ocr"
+  | "needs_confirmation"
+  | "analyzing"
+  | "completed"
+  | "failed";
+
 export type HairScan = {
   id: string;
-  status: string;
+  status: HairScanStatus | string;
   barcode: string;
   ingredients_draft: string[];
-  catalog_tier?: string;
+  ingredients_confirmed?: string[];
+  catalog_tier?: "verified" | "unknown" | "provisional" | string;
   message_uz?: string;
   submission_allowed?: boolean;
-  care_product?: { id: number; name: string; brand: string; image_url?: string };
+  care_product?: {
+    id: number;
+    name: string;
+    brand: string;
+    image_url?: string | null;
+    volume_ml?: number | null;
+    country_of_origin?: string | null;
+    barcode?: string | null;
+    is_verified?: boolean;
+    ingredients?: string[];
+    ingredients_text?: string;
+  };
+  search_query?: string;
 };
+
+export type HairScanDetail = HairScan & { analysis?: HairAnalysis };
+
+export type HairAnalysisRecommendation = "POTENTIAL_MATCH" | "CAUTION" | "INSUFFICIENT_DATA";
 
 export type HairAnalysis = {
   id: number;
-  recommendation: string;
+  recommendation: HairAnalysisRecommendation | string;
   explanation_uz: string;
   data_confidence: string;
   result: {
@@ -23,6 +53,18 @@ export type HairAnalysis = {
     key_ingredients?: Array<Record<string, unknown>>;
     explanation?: { summary_bullets_uz?: string[]; cautions_uz?: string[] };
   };
+};
+
+export type HairRoutine = {
+  id: number;
+  name: string;
+  is_current: boolean;
+  notes: string;
+  items: Array<{
+    id: number;
+    slot: string;
+    care_product?: { id: number; name: string; brand: string };
+  }>;
 };
 
 async function postJson<T>(path: string, body: unknown): Promise<T> {
@@ -54,6 +96,36 @@ export async function confirmHairScanIngredients(
   return postJson(`/api/v1/hair-advisor/scans/${scanId}/confirm-ingredients/`, { ingredients });
 }
 
+export async function analyzeHairScan(scanId: string): Promise<HairAnalysis> {
+  return postJson("/api/v1/hair-advisor/analyze/", { scan_id: scanId });
+}
+
+export type HairIngredientDetail = {
+  inci_name: string;
+  common_name: string;
+  aliases: string[];
+  category: string;
+  role_uz: string;
+  what_uz: string;
+  benefits_uz: string;
+  cautions_uz: string[];
+  hair_uz: string;
+  product_context_uz: string;
+  evidence: Array<Record<string, unknown>>;
+  evidence_status: string;
+  known_curated: boolean;
+};
+
+export async function fetchHairIngredientDetail(inci: string, productName?: string): Promise<HairIngredientDetail> {
+  const q = new URLSearchParams({ inci });
+  if (productName) q.set("product_name", productName);
+  return apiJson(`/api/v1/hair-advisor/ingredients/detail/?${q.toString()}`);
+}
+
+export async function fetchHairScan(scanId: string): Promise<HairScanDetail> {
+  return apiJson(`/api/v1/hair-advisor/scans/${scanId}/`);
+}
+
 export async function fetchHairScanHistory(): Promise<HairScan[]> {
   return apiJson("/api/v1/hair-advisor/history/");
 }
@@ -80,8 +152,24 @@ export async function addHairRoutineProduct(body: { care_product_id: number; slo
   return postJson("/api/v1/hair-advisor/routines/", body);
 }
 
-export async function fetchHairRoutineCurrent() {
+export async function fetchHairRoutineCurrent(): Promise<HairRoutine> {
   return apiJson("/api/v1/hair-advisor/routines/current/");
+}
+
+export async function patchHairRoutine(
+  routineId: number,
+  body: { name?: string; notes?: string },
+): Promise<HairRoutine> {
+  const res = await apiFetch(`/api/v1/hair-advisor/routines/${routineId}/`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error((err as { detail?: string }).detail || res.statusText);
+  }
+  return res.json() as Promise<HairRoutine>;
 }
 
 export async function fetchProductSubmissions() {

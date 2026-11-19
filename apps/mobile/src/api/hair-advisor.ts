@@ -123,6 +123,28 @@ export async function analyzeHairScan(scanId: string): Promise<HairAnalysis> {
   return postJson("/api/v1/hair-advisor/analyze/", { scan_id: scanId });
 }
 
+export type HairIngredientDetail = {
+  inci_name: string;
+  common_name: string;
+  aliases: string[];
+  category: string;
+  role_uz: string;
+  what_uz: string;
+  benefits_uz: string;
+  cautions_uz: string[];
+  hair_uz: string;
+  product_context_uz: string;
+  evidence: Array<Record<string, unknown>>;
+  evidence_status: string;
+  known_curated: boolean;
+};
+
+export async function fetchHairIngredientDetail(inci: string, productName?: string): Promise<HairIngredientDetail> {
+  const q = new URLSearchParams({ inci });
+  if (productName) q.set("product_name", productName);
+  return apiJson(`/api/v1/hair-advisor/ingredients/detail/?${q.toString()}`);
+}
+
 export async function compareHairProducts(careProductIds: number[]): Promise<ProductComparisonResult> {
   return postJson("/api/v1/hair-advisor/compare/", { care_product_ids: careProductIds });
 }

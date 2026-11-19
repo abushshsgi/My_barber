@@ -27,9 +27,14 @@ from hair_advisor.serializers import (
 from hair_advisor.services.analysis import run_analysis_for_scan, run_ocr_for_scan
 from hair_advisor.services.barcode import validate_barcode_checksum
 from hair_advisor.services.comparison import compare_care_products
+from hair_advisor.services.ingredient_detail import build_ingredient_detail
 from hair_advisor.services.ingredient_engine import normalize_ingredient_list
 from hair_advisor.services.product_recognition import care_to_hair_product, lookup_by_barcode, search_products
 from hair_advisor.services.routines import add_product_to_routine, get_or_create_current_routine
+
+
+def _serialize_scan(scan: HairScan, request) -> dict:
+    return HairScanSerializer(scan, context={"request": request}).data
 
 
 def _require_profile(user) -> HairCareProfile | Response:
@@ -50,7 +55,7 @@ class HairScanListCreateView(UnthrottledAPIView):
         if blocked:
             return Response(blocked, status=status.HTTP_403_FORBIDDEN)
         qs = HairScan.objects.filter(user=request.user).select_related("care_product", "product")[:50]
-        return Response(HairScanSerializer(qs, many=True).data)
+        return Response(HairScanSerializer(qs, many=True, context={"request": request}).data)
 
     @transaction.atomic
     def post(self, request):
@@ -65,7 +70,7 @@ class HairScanListCreateView(UnthrottledAPIView):
         if idem:
             existing = HairScan.objects.filter(user=request.user, idempotency_key=idem).first()
             if existing:
-                return Response(HairScanSerializer(existing).data, status=200)
+                return Response(_serialize_scan(existing, request), status=200)
 
         scan = HairScan.objects.create(
             user=request.user,
@@ -83,7 +88,7 @@ class HairScanListCreateView(UnthrottledAPIView):
                 scan.error_code = "invalid_barcode"
                 scan.error_message = "Barcode formati yoki nazorat raqami noto'g'ri."
                 scan.save()
-                return Response(HairScanSerializer(scan).data, status=400)
+                return Response(_serialize_scan(scan, request), status=400)
 
             lookup = lookup_by_barcode(code)
             scan.barcode = code
@@ -91,7 +96,7 @@ class HairScanListCreateView(UnthrottledAPIView):
             if not lookup.get("found"):
                 scan.status = HairScan.Status.PRODUCT_NOT_FOUND
                 scan.save()
-                payload = HairScanSerializer(scan).data
+                payload = _serialize_scan(scan, request)
                 payload["catalog_tier"] = lookup.get("tier") or "unknown"
                 payload["message_uz"] = "Mahsulot bazamizda topilmadi. Uni birgalikda aniqlaymiz."
                 payload["submission_allowed"] = True
@@ -113,7 +118,7 @@ class HairScanListCreateView(UnthrottledAPIView):
             if verified and ingredients:
                 scan.status = HairScan.Status.PRODUCT_FOUND
             scan.save()
-            payload = HairScanSerializer(scan).data
+            payload = _serialize_scan(scan, request)
             if verified:
                 payload["catalog_tier"] = "verified"
                 payload["message_uz"] = "Mahsulot ma'lumotlari MySaloon tomonidan tekshirilgan."
@@ -127,7 +132,7 @@ class HairScanListCreateView(UnthrottledAPIView):
             if not results:
                 scan.status = HairScan.Status.PRODUCT_NOT_FOUND
                 scan.save()
-                return Response(HairScanSerializer(scan).data, status=404)
+                return Response(_serialize_scan(scan, request), status=404)
             care = results[0]
             scan.care_product = care
             scan.product = care_to_hair_product(care)
@@ -138,13 +143,13 @@ class HairScanListCreateView(UnthrottledAPIView):
                 else HairScan.Status.INGREDIENTS_REQUIRED
             )
             scan.save()
-            return Response(HairScanSerializer(scan).data, status=201)
+            return Response(_serialize_scan(scan, request), status=201)
 
         if method == HairScan.InputMethod.MANUAL_INGREDIENTS:
             scan.ingredients_draft = normalize_ingredient_list(data.get("ingredients"))
             scan.status = HairScan.Status.NEEDS_CONFIRMATION
             scan.save()
-            return Response(HairScanSerializer(scan).data, status=201)
+            return Response(_serialize_scan(scan, request), status=201)
 
         if method in (HairScan.InputMethod.CAMERA_LABEL, HairScan.InputMethod.GALLERY):
             profile = _require_profile(request.user)
@@ -165,13 +170,13 @@ class HairScanListCreateView(UnthrottledAPIView):
                 scan.error_code = "ocr_failed"
                 scan.error_message = "Tarkib o'qilmadi. Aniqroq rasm yuboring."
                 scan.save()
-                return Response(HairScanSerializer(scan).data, status=422)
-            return Response(HairScanSerializer(scan).data, status=201)
+                return Response(_serialize_scan(scan, request), status=422)
+            return Response(_serialize_scan(scan, request), status=201)
 
         scan.status = HairScan.Status.FAILED
         scan.error_code = "unsupported_method"
         scan.save()
-        return Response(HairScanSerializer(scan).data, status=400)
+        return Response(_serialize_scan(scan, request), status=400)
 
 
 class HairScanDetailView(UnthrottledAPIView):
@@ -184,7 +189,7 @@ class HairScanDetailView(UnthrottledAPIView):
             return Response({"detail": "Topilmadi."}, status=404)
         if scan.user_id != request.user.pk:
             return Response({"detail": "Ruxsat yo'q."}, status=403)
-        payload = HairScanSerializer(scan).data
+        payload = _serialize_scan(scan, request)
         try:
             analysis = scan.analysis
             payload["analysis"] = HairAnalysisSerializer(analysis).data
@@ -220,7 +225,7 @@ class ConfirmIngredientsView(UnthrottledAPIView):
         analysis = run_analysis_for_scan(scan, profile, request.user)
         return Response(
             {
-                "scan": HairScanSerializer(scan).data,
+                "scan": _serialize_scan(scan, request),
                 "analysis": HairAnalysisSerializer(analysis).data,
             }
         )
@@ -234,6 +239,22 @@ class HairProductDetailView(UnthrottledAPIView):
         if care is None:
             return Response({"detail": "Topilmadi."}, status=404)
         return Response(CareProductSerializer(care, context={"request": request}).data)
+
+
+class IngredientDetailView(UnthrottledAPIView):
+    permission_classes = [IsAuthenticated, IsAuthenticatedCustomer]
+
+    def get(self, request):
+        from urllib.parse import unquote
+
+        inci = unquote((request.query_params.get("inci") or "").strip())
+        product_name = (request.query_params.get("product_name") or "").strip()
+        if not inci:
+            return Response({"detail": "inci parametri kerak."}, status=400)
+        payload = build_ingredient_detail(inci, product_name=product_name)
+        if payload is None:
+            return Response({"detail": "Topilmadi."}, status=404)
+        return Response(payload)
 
 
 class AnalyzeView(UnthrottledAPIView):
@@ -294,7 +315,7 @@ class HistoryView(UnthrottledAPIView):
             .select_related("care_product")
             .order_by("-created_at")[:40]
         )
-        return Response(HairScanSerializer(scans, many=True).data)
+        return Response(HairScanSerializer(scans, many=True, context={"request": request}).data)
 
 
 class RoutineCreateView(UnthrottledAPIView):
