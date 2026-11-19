@@ -4,6 +4,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const appDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
+const repoRoot = path.resolve(appDir, "../..");
 
 function resolveBuildId() {
   let raw;
@@ -11,11 +12,17 @@ function resolveBuildId() {
     raw = process.env.VERCEL_GIT_COMMIT_SHA;
   } else if (process.env.GITHUB_SHA) {
     raw = process.env.GITHUB_SHA;
+  } else if (process.env.DEPLOY_COMMIT) {
+    raw = process.env.DEPLOY_COMMIT;
   } else {
     try {
-      raw = execSync("git rev-parse --short HEAD", { cwd: appDir, encoding: "utf8" }).trim();
+      raw = execSync("git rev-parse --short HEAD", { cwd: repoRoot, encoding: "utf8" }).trim();
     } catch {
-      return `local-${Date.now().toString(36)}`;
+      try {
+        raw = execSync("git rev-parse --short HEAD", { cwd: appDir, encoding: "utf8" }).trim();
+      } catch {
+        return `local-${Date.now().toString(36)}`;
+      }
     }
   }
   // Vercel SHA (12) va git short (7) bir xil formatda bo'lsin — reload loop oldini olish.
