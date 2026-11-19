@@ -1,6 +1,6 @@
 import { Link, useNavigate, useRouter, useRouterState } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { Droplet, Home, MessageCircle, Sparkles, User } from "lucide-react";
+import { Droplet, Home, MessageCircle, ScanLine, Sparkles, User } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useAppShell } from "@/hooks/use-app-shell";
 import { isNavTabActive, isNavTabCurrent } from "@/lib/navigation";
@@ -99,7 +99,7 @@ export function MobileDockNav({ unreadCount: _unreadCount = 0 }: Props) {
   const router = useRouter();
   const navigate = useNavigate();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const { shell, switchToMorph, switchToMysaloon } = useAppShell();
+  const { shell, switchToMorph } = useAppShell();
   const [faceCameraOpen, setFaceCameraOpen] = useState(false);
 
   useEffect(() => {
@@ -161,25 +161,25 @@ export function MobileDockNav({ unreadCount: _unreadCount = 0 }: Props) {
         </div>
 
         {shell === "morph" ? (
-          <button
-            type="button"
-            onClick={switchToMysaloon}
-            aria-label={t("nav.mysaloon")}
+          <Link
+            to="/ai-style/care/ingredient"
+            preload="intent"
+            onClick={() => {
+              void hapticLight();
+            }}
+            aria-label={t("nav.scan")}
+            aria-current={pathname.startsWith("/ai-style/care/ingredient") ? "page" : undefined}
             className="relative z-10 mx-[clamp(1px,0.6vw,4px)] flex w-[clamp(44px,13vw,56px)] shrink-0 items-center justify-center self-center active:scale-95"
           >
-            <span className="grid size-[clamp(34px,10vw,42px)] place-items-center overflow-hidden rounded-full bg-white shadow-[0_2px_10px_rgba(0,0,0,0.16)] ring-2 ring-white">
-              <img
-                src="/favicon-32.png"
-                alt=""
-                width={32}
-                height={32}
-                className="size-full object-cover"
-                draggable={false}
-                loading="eager"
-                decoding="async"
-              />
+            <span
+              className={cn(
+                "grid size-[clamp(34px,10vw,42px)] place-items-center rounded-full bg-[#1e1e1e] text-white shadow-[0_2px_10px_rgba(0,0,0,0.22)] ring-2 ring-white",
+                pathname.startsWith("/ai-style/care/ingredient") && "scale-105 shadow-[0_4px_14px_rgba(0,0,0,0.28)]",
+              )}
+            >
+              <ScanLine className="size-[22px]" strokeWidth={2.1} aria-hidden />
             </span>
-          </button>
+          </Link>
         ) : (
           <button
             type="button"

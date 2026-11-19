@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { MorphAiIngredientScanPage } from "@/components/ai-style/MorphAiIngredientScanPage";
+import { HairAdvisorWebScanPage } from "@/components/ai-style/HairAdvisorWebScanPage";
 
 export const Route = createFileRoute("/ai-style_/care_/ingredient")({
   head: () => ({
@@ -12,5 +12,5 @@ export const Route = createFileRoute("/ai-style_/care_/ingredient")({
       },
     ],
   }),
-  component: MorphAiIngredientScanPage,
+  component: HairAdvisorWebScanPage,
 });

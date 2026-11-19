@@ -5532,6 +5532,164 @@ export async function fetchAdminParvarishStats(): Promise<AdminParvarishStats> {
   return apiJson("/api/v1/admin/parvarish/stats/");
 }
 
+export type AdminHairAdvisorStats = {
+  total_scans: number;
+  scans_today: number;
+  successful_analyses: number;
+  failed_analyses: number;
+  ocr_failures: number;
+  unknown_products: number;
+  unique_scanner_users: number;
+  repeat_scanner_users: number;
+  ingredients_in_db: number;
+  feedback_total: number;
+  feedback_helpful: number;
+  unverified_products: number;
+  ai_explain: { calls: number; avg_latency_ms: number; estimated_cost_usd: number };
+  most_scanned_products: Array<{
+    care_product_id: number;
+    name: string;
+    brand: string;
+    count: number;
+  }>;
+};
+
+export async function fetchAdminHairAdvisorStats(): Promise<AdminHairAdvisorStats> {
+  return apiJson("/api/v1/admin/hair-advisor/stats/");
+}
+
+export type AdminProductVerificationDashboard = {
+  pending_candidates: number;
+  conflicts_open: number;
+  verified_candidates: number;
+  rejected_candidates: number;
+  alerts_unread: number;
+  submissions_total: number;
+  submissions_today: number;
+  most_requested_barcodes: Array<{ barcode: string; c: number }>;
+};
+
+export type AdminProductCandidateRow = {
+  id: string;
+  status: string;
+  proposed_brand: string;
+  proposed_product_name: string;
+  proposed_barcode: string;
+  submission_count: number;
+  admin_review_priority: number;
+  conflicting_fields: unknown[];
+  image_url?: string | null;
+};
+
+export async function fetchAdminProductVerificationDashboard(): Promise<AdminProductVerificationDashboard> {
+  return apiJson("/api/v1/admin/product-verification/dashboard/");
+}
+
+export async function fetchAdminProductCandidates(params?: {
+  status?: string;
+  q?: string;
+}): Promise<{ candidates: AdminProductCandidateRow[] }> {
+  const sp = new URLSearchParams();
+  if (params?.status) sp.set("status", params.status);
+  if (params?.q) sp.set("q", params.q);
+  const q = sp.toString();
+  return apiJson(`/api/v1/admin/product-verification/candidates/${q ? `?${q}` : ""}`);
+}
+
+export async function fetchAdminProductCandidateDetail(candidateId: string): Promise<{
+  candidate: AdminProductCandidateRow;
+  submissions: Array<Record<string, unknown>>;
+  conflicts: Array<Record<string, unknown>>;
+  reviews: Array<Record<string, unknown>>;
+}> {
+  return apiJson(`/api/v1/admin/product-verification/candidates/${candidateId}/`);
+}
+
+export async function approveAdminProductCandidate(
+  candidateId: string,
+  body: { corrected_fields?: Record<string, unknown>; review_notes?: string },
+): Promise<{ hair_product_id: number; care_product_id: number | null; status: string }> {
+  return apiJson(`/api/v1/admin/product-verification/candidates/${candidateId}/approve/`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+}
+
+export async function rejectAdminProductCandidate(
+  candidateId: string,
+  body?: { review_notes?: string },
+): Promise<{ status: string }> {
+  return apiJson(`/api/v1/admin/product-verification/candidates/${candidateId}/reject/`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body ?? {}),
+  });
+}
+
+export async function mergeAdminProductCandidates(
+  sourceId: string,
+  targetId: string,
+): Promise<{ status: string; submission_count?: number }> {
+  return apiJson(`/api/v1/admin/product-verification/candidates/${sourceId}/merge/`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ target_candidate_id: targetId }),
+  });
+}
+
+export async function splitAdminProductCandidate(
+  candidateId: string,
+  submissionIds: string[],
+): Promise<{ status: string; new_candidate_id?: string }> {
+  return apiJson(`/api/v1/admin/product-verification/candidates/${candidateId}/split/`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ submission_ids: submissionIds }),
+  });
+}
+
+export async function linkAdminProductCandidateExisting(
+  candidateId: string,
+  body: { care_product_id: number; review_notes?: string },
+): Promise<{ status: string; hair_product_id: number }> {
+  return apiJson(`/api/v1/admin/product-verification/candidates/${candidateId}/link-existing/`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+}
+
+export async function requestInfoAdminProductCandidate(
+  candidateId: string,
+  body?: { review_notes?: string },
+): Promise<{ status: string }> {
+  return apiJson(`/api/v1/admin/product-verification/candidates/${candidateId}/request-info/`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body ?? {}),
+  });
+}
+
+export type AdminAggregationJobRow = {
+  id: number;
+  submission_id: string;
+  status: string;
+  attempts: number;
+  last_error: string;
+  created_at: string | null;
+};
+
+export async function fetchAdminAggregationJobs(params?: { status?: string }): Promise<{
+  jobs: AdminAggregationJobRow[];
+  pending: number;
+}> {
+  const sp = new URLSearchParams();
+  if (params?.status) sp.set("status", params.status);
+  const q = sp.toString();
+  return apiJson(`/api/v1/admin/product-verification/aggregation-jobs/${q ? `?${q}` : ""}`);
+}
+
 export async function fetchAdminCareProductLikes(params?: {
   q?: string;
 }): Promise<AdminCareProductLikesResponse> {

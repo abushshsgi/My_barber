@@ -8,7 +8,8 @@
     "morphCare": "Parvarish",
     "morphTryOn": "Try-on",
     "morphAi": "Morf AI",
-    "mysaloon": "MySaloon"
+    "mysaloon": "MySaloon",
+    "scan": "Skan"
   },
   "comingSoon": {
     "title": "Tez orada salonlar qo'shiladi",
@@ -1519,8 +1520,8 @@
   },
   "ingredient": {
     "badge": "Tarkib",
-    "title": "Mahsulotni skan qiling",
-    "subtitle": "Mahsulotning o‘zini kichik ramka ichiga oling. Natija barcode skani bilan bir xil: tarkib, moslik va mamlakat.",
+    "title": "Mahsulotni skanerlang",
+    "subtitle": "Sochingizga mosligini AI yordamida aniqlang",
     "modeProduct": "Mahsulot",
     "modeBarcode": "Barcode",
     "barcodeTitle": "Shtrix-kodni skan qiling",

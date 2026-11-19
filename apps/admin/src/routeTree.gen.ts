@@ -85,9 +85,11 @@ import { Route as AdminMorphAiStudioRouteImport } from './routes/admin.morph-ai.
 import { Route as AdminMorphAiSupportRouteImport } from './routes/admin.morph-ai.support'
 import { Route as AdminParvarishIndexRouteImport } from './routes/admin.parvarish.index'
 import { Route as AdminParvarishLikesRouteImport } from './routes/admin.parvarish.likes'
+import { Route as AdminParvarishMissingProductsRouteImport } from './routes/admin.parvarish.missing-products'
 import { Route as AdminParvarishObHavoRouteImport } from './routes/admin.parvarish.ob-havo'
 import { Route as AdminParvarishProfilesRouteImport } from './routes/admin.parvarish.profiles'
 import { Route as AdminParvarishTarkibRouteImport } from './routes/admin.parvarish.tarkib'
+import { Route as AdminParvarishVerificationRouteImport } from './routes/admin.parvarish.verification'
 import { Route as AdminPayoutsIndexRouteImport } from './routes/admin.payouts.index'
 import { Route as AdminSalonsSalonIdRouteImport } from './routes/admin.salons.$salonId'
 import { Route as AdminServicesAnalyticsRouteImport } from './routes/admin.services.analytics'
@@ -506,6 +508,12 @@ const AdminParvarishLikesRoute = AdminParvarishLikesRouteImport.update({
   path: '/likes',
   getParentRoute: () => AdminParvarishRoute,
 } as any)
+const AdminParvarishMissingProductsRoute =
+  AdminParvarishMissingProductsRouteImport.update({
+    id: '/missing-products',
+    path: '/missing-products',
+    getParentRoute: () => AdminParvarishRoute,
+  } as any)
 const AdminParvarishObHavoRoute = AdminParvarishObHavoRouteImport.update({
   id: '/ob-havo',
   path: '/ob-havo',
@@ -521,6 +529,12 @@ const AdminParvarishTarkibRoute = AdminParvarishTarkibRouteImport.update({
   path: '/tarkib',
   getParentRoute: () => AdminParvarishRoute,
 } as any)
+const AdminParvarishVerificationRoute =
+  AdminParvarishVerificationRouteImport.update({
+    id: '/verification',
+    path: '/verification',
+    getParentRoute: () => AdminParvarishRoute,
+  } as any)
 const AdminPayoutsIndexRoute = AdminPayoutsIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -775,9 +789,11 @@ export interface FileRoutesByFullPath {
   '/admin/morph-ai/studio': typeof AdminMorphAiStudioRoute
   '/admin/morph-ai/support': typeof AdminMorphAiSupportRoute
   '/admin/parvarish/likes': typeof AdminParvarishLikesRoute
+  '/admin/parvarish/missing-products': typeof AdminParvarishMissingProductsRoute
   '/admin/parvarish/ob-havo': typeof AdminParvarishObHavoRoute
   '/admin/parvarish/profiles': typeof AdminParvarishProfilesRoute
   '/admin/parvarish/tarkib': typeof AdminParvarishTarkibRoute
+  '/admin/parvarish/verification': typeof AdminParvarishVerificationRoute
   '/admin/salons/$salonId': typeof AdminSalonsSalonIdRouteWithChildren
   '/admin/services/analytics': typeof AdminServicesAnalyticsRoute
   '/admin/statistics/agents': typeof AdminStatisticsAgentsRoute
@@ -879,9 +895,11 @@ export interface FileRoutesByTo {
   '/admin/morph-ai/studio': typeof AdminMorphAiStudioRoute
   '/admin/morph-ai/support': typeof AdminMorphAiSupportRoute
   '/admin/parvarish/likes': typeof AdminParvarishLikesRoute
+  '/admin/parvarish/missing-products': typeof AdminParvarishMissingProductsRoute
   '/admin/parvarish/ob-havo': typeof AdminParvarishObHavoRoute
   '/admin/parvarish/profiles': typeof AdminParvarishProfilesRoute
   '/admin/parvarish/tarkib': typeof AdminParvarishTarkibRoute
+  '/admin/parvarish/verification': typeof AdminParvarishVerificationRoute
   '/admin/services/analytics': typeof AdminServicesAnalyticsRoute
   '/admin/statistics/agents': typeof AdminStatisticsAgentsRoute
   '/admin/statistics/barbers': typeof AdminStatisticsBarbersRoute
@@ -992,9 +1010,11 @@ export interface FileRoutesById {
   '/admin/morph-ai/studio': typeof AdminMorphAiStudioRoute
   '/admin/morph-ai/support': typeof AdminMorphAiSupportRoute
   '/admin/parvarish/likes': typeof AdminParvarishLikesRoute
+  '/admin/parvarish/missing-products': typeof AdminParvarishMissingProductsRoute
   '/admin/parvarish/ob-havo': typeof AdminParvarishObHavoRoute
   '/admin/parvarish/profiles': typeof AdminParvarishProfilesRoute
   '/admin/parvarish/tarkib': typeof AdminParvarishTarkibRoute
+  '/admin/parvarish/verification': typeof AdminParvarishVerificationRoute
   '/admin/salons/$salonId': typeof AdminSalonsSalonIdRouteWithChildren
   '/admin/services/analytics': typeof AdminServicesAnalyticsRoute
   '/admin/statistics/agents': typeof AdminStatisticsAgentsRoute
@@ -1109,9 +1129,11 @@ export interface FileRouteTypes {
     | '/admin/morph-ai/studio'
     | '/admin/morph-ai/support'
     | '/admin/parvarish/likes'
+    | '/admin/parvarish/missing-products'
     | '/admin/parvarish/ob-havo'
     | '/admin/parvarish/profiles'
     | '/admin/parvarish/tarkib'
+    | '/admin/parvarish/verification'
     | '/admin/salons/$salonId'
     | '/admin/services/analytics'
     | '/admin/statistics/agents'
@@ -1213,9 +1235,11 @@ export interface FileRouteTypes {
     | '/admin/morph-ai/studio'
     | '/admin/morph-ai/support'
     | '/admin/parvarish/likes'
+    | '/admin/parvarish/missing-products'
     | '/admin/parvarish/ob-havo'
     | '/admin/parvarish/profiles'
     | '/admin/parvarish/tarkib'
+    | '/admin/parvarish/verification'
     | '/admin/services/analytics'
     | '/admin/statistics/agents'
     | '/admin/statistics/barbers'
@@ -1325,9 +1349,11 @@ export interface FileRouteTypes {
     | '/admin/morph-ai/studio'
     | '/admin/morph-ai/support'
     | '/admin/parvarish/likes'
+    | '/admin/parvarish/missing-products'
     | '/admin/parvarish/ob-havo'
     | '/admin/parvarish/profiles'
     | '/admin/parvarish/tarkib'
+    | '/admin/parvarish/verification'
     | '/admin/salons/$salonId'
     | '/admin/services/analytics'
     | '/admin/statistics/agents'
@@ -1911,6 +1937,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminParvarishLikesRouteImport
       parentRoute: typeof AdminParvarishRoute
     }
+    '/admin/parvarish/missing-products': {
+      id: '/admin/parvarish/missing-products'
+      path: '/missing-products'
+      fullPath: '/admin/parvarish/missing-products'
+      preLoaderRoute: typeof AdminParvarishMissingProductsRouteImport
+      parentRoute: typeof AdminParvarishRoute
+    }
     '/admin/parvarish/ob-havo': {
       id: '/admin/parvarish/ob-havo'
       path: '/ob-havo'
@@ -1930,6 +1963,13 @@ declare module '@tanstack/react-router' {
       path: '/tarkib'
       fullPath: '/admin/parvarish/tarkib'
       preLoaderRoute: typeof AdminParvarishTarkibRouteImport
+      parentRoute: typeof AdminParvarishRoute
+    }
+    '/admin/parvarish/verification': {
+      id: '/admin/parvarish/verification'
+      path: '/verification'
+      fullPath: '/admin/parvarish/verification'
+      preLoaderRoute: typeof AdminParvarishVerificationRouteImport
       parentRoute: typeof AdminParvarishRoute
     }
     '/admin/payouts/': {
@@ -2393,17 +2433,21 @@ const AdminMorphAiRouteWithChildren = AdminMorphAiRoute._addFileChildren(
 
 interface AdminParvarishRouteChildren {
   AdminParvarishLikesRoute: typeof AdminParvarishLikesRoute
+  AdminParvarishMissingProductsRoute: typeof AdminParvarishMissingProductsRoute
   AdminParvarishObHavoRoute: typeof AdminParvarishObHavoRoute
   AdminParvarishProfilesRoute: typeof AdminParvarishProfilesRoute
   AdminParvarishTarkibRoute: typeof AdminParvarishTarkibRoute
+  AdminParvarishVerificationRoute: typeof AdminParvarishVerificationRoute
   AdminParvarishIndexRoute: typeof AdminParvarishIndexRoute
 }
 
 const AdminParvarishRouteChildren: AdminParvarishRouteChildren = {
   AdminParvarishLikesRoute: AdminParvarishLikesRoute,
+  AdminParvarishMissingProductsRoute: AdminParvarishMissingProductsRoute,
   AdminParvarishObHavoRoute: AdminParvarishObHavoRoute,
   AdminParvarishProfilesRoute: AdminParvarishProfilesRoute,
   AdminParvarishTarkibRoute: AdminParvarishTarkibRoute,
+  AdminParvarishVerificationRoute: AdminParvarishVerificationRoute,
   AdminParvarishIndexRoute: AdminParvarishIndexRoute,
 }
 

@@ -8,6 +8,8 @@ const TABS = [
   { to: "/admin/parvarish/ob-havo" as const, label: "Ob-havo" },
   { to: "/admin/parvarish/profiles" as const, label: "Soch tahlili" },
   { to: "/admin/parvarish/likes" as const, label: "Likes" },
+  { to: "/admin/parvarish/verification" as const, label: "Tekshiruv" },
+  { to: "/admin/parvarish/missing-products" as const, label: "Yo'q mahsulotlar" },
 ] as const;
 
 export const Route = createFileRoute("/admin/parvarish")({

@@ -273,6 +273,21 @@ from ai.admin_views import (
     AdminMorphAiSettingsView,
     AdminMorphAiStudioView,
 )
+from hair_advisor.admin_views import AdminHairAdvisorStatsView
+from hair_advisor.missing_products_views import AdminMissingProductsDashboardView
+from hair_advisor.verification_admin_views import (
+    AdminAggregationJobsView,
+    AdminProductCandidateApproveView,
+    AdminProductCandidateDetailView,
+    AdminProductCandidateLinkExistingView,
+    AdminProductCandidateListView,
+    AdminProductCandidateMergeView,
+    AdminProductCandidateRejectView,
+    AdminProductCandidateRequestInfoView,
+    AdminProductCandidateSplitView,
+    AdminProductVerificationAlertsView,
+    AdminProductVerificationDashboardView,
+)
 from ai.admin_parvarish_views import (
     AdminParvarishDemoActionView,
     AdminParvarishLikesView,
@@ -476,6 +491,40 @@ api_routes = [
     path("admin/morph-ai/catalog/", AdminMorphAiCatalogListCreateView.as_view()),
     path("admin/morph-ai/catalog/<str:style_id>/", AdminMorphAiCatalogDetailView.as_view()),
     path("admin/parvarish/stats/", AdminParvarishStatsView.as_view()),
+    path("admin/hair-advisor/stats/", AdminHairAdvisorStatsView.as_view()),
+    path("admin/product-verification/dashboard/", AdminProductVerificationDashboardView.as_view()),
+    path("admin/product-verification/candidates/", AdminProductCandidateListView.as_view()),
+    path(
+        "admin/product-verification/candidates/<uuid:candidate_id>/",
+        AdminProductCandidateDetailView.as_view(),
+    ),
+    path(
+        "admin/product-verification/candidates/<uuid:candidate_id>/approve/",
+        AdminProductCandidateApproveView.as_view(),
+    ),
+    path(
+        "admin/product-verification/candidates/<uuid:candidate_id>/reject/",
+        AdminProductCandidateRejectView.as_view(),
+    ),
+    path("admin/product-verification/alerts/", AdminProductVerificationAlertsView.as_view()),
+    path(
+        "admin/product-verification/candidates/<uuid:candidate_id>/merge/",
+        AdminProductCandidateMergeView.as_view(),
+    ),
+    path(
+        "admin/product-verification/candidates/<uuid:candidate_id>/split/",
+        AdminProductCandidateSplitView.as_view(),
+    ),
+    path("admin/missing-products/", AdminMissingProductsDashboardView.as_view()),
+    path(
+        "admin/product-verification/candidates/<uuid:candidate_id>/link-existing/",
+        AdminProductCandidateLinkExistingView.as_view(),
+    ),
+    path(
+        "admin/product-verification/candidates/<uuid:candidate_id>/request-info/",
+        AdminProductCandidateRequestInfoView.as_view(),
+    ),
+    path("admin/product-verification/aggregation-jobs/", AdminAggregationJobsView.as_view()),
     path("admin/parvarish/hair-profiles/", AdminHairCareProfilesView.as_view()),
     path("admin/parvarish/likes/", AdminParvarishLikesView.as_view()),
     path("admin/parvarish/my-products/", AdminParvarishMyProductsView.as_view()),
@@ -615,6 +664,7 @@ api_routes = [
     path("ai/style-studio/", AiStyleStudioEditView.as_view()),
     path("ai/style-studio/catalog/", AiStyleStudioCatalogView.as_view()),
     path("ai/face-check/", AiFaceCheckView.as_view()),
+    path("hair-advisor/", include("hair_advisor.urls")),
     path("ai/ingredient-scan/", AiIngredientScanView.as_view()),
     path("products/barcode/<str:barcode>/", ProductBarcodeLookupView.as_view()),
     path("ai/care/products/", CareProductListView.as_view()),

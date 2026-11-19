@@ -1,7 +1,7 @@
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { FlaskConical, Heart, Package, ScanLine, Sparkles } from "lucide-react";
-import { fetchAdminParvarishStats } from "@/lib/admin-api";
+import { fetchAdminHairAdvisorStats, fetchAdminParvarishStats } from "@/lib/admin-api";
 import { KPICard } from "@/components/admin/KPICard";
 import { CardSkeleton } from "@/components/admin/Skeletons";
 import { EmptyState } from "@/components/admin/EmptyState";
@@ -31,6 +31,10 @@ function ParvarishIndexPage() {
     queryKey: ["admin", "parvarish", "stats"],
     queryFn: fetchAdminParvarishStats,
   });
+  const advisor = useQuery({
+    queryKey: ["admin", "hair-advisor", "stats"],
+    queryFn: fetchAdminHairAdvisorStats,
+  });
 
   if (stats.isLoading) {
     return <CardSkeleton className="h-48" />;
@@ -57,6 +61,23 @@ function ParvarishIndexPage() {
         <KPICard label="Skanlar" value={data.scans_total} icon={ScanLine} />
         <KPICard label="Bugun" value={data.scans_today} icon={FlaskConical} />
       </div>
+
+      {advisor.data ? (
+        <div className="space-y-2">
+          <h2 className="font-heading text-lg font-semibold">Hair Advisor 2.0</h2>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+            <KPICard label="Hair skanlar" value={advisor.data.total_scans} icon={ScanLine} />
+            <KPICard label="Muvaffaqiyatli" value={advisor.data.successful_analyses} icon={Sparkles} />
+            <KPICard label="Xatolik" value={advisor.data.failed_analyses} icon={FlaskConical} />
+            <KPICard label="OCR xato" value={advisor.data.ocr_failures} icon={Package} />
+            <KPICard label="AI chaqiruv" value={advisor.data.ai_explain.calls} icon={Heart} />
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Noma'lum mahsulot: {advisor.data.unknown_products} · Ingredient DB: {advisor.data.ingredients_in_db} · AI
+            o&apos;rtacha: {advisor.data.ai_explain.avg_latency_ms} ms
+          </p>
+        </div>
+      ) : null}
 
       <div className="flex justify-end gap-4">
         <Link

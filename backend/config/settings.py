@@ -111,6 +111,7 @@ INSTALLED_APPS = [
     "geo.apps.GeoConfig",
     "media_store.apps.MediaStoreConfig",
     "agents.apps.AgentsConfig",
+    "hair_advisor.apps.HairAdvisorConfig",
 ]
 
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "").strip()
@@ -838,6 +839,35 @@ BARBER_MOBILE_VERIFY_SCHEME = (
     os.environ.get("BARBER_MOBILE_VERIFY_SCHEME", "mysaloonpartner").strip().rstrip("://")
     or "mysaloonpartner"
 )
+
+# --- Test database (pytest / manage.py test) ---
+# Never run automated tests against production Neon/Railway unless explicitly allowed.
+import sys as _sys
+
+_RUNNING_TESTS = "test" in _sys.argv or os.environ.get("MYSALOON_PYTEST", "").lower() in ("1", "true", "yes")
+if _RUNNING_TESTS:
+    _test_db_url = (os.environ.get("TEST_DATABASE_URL") or "").strip()
+    _allow_remote_tests = os.environ.get("MYSALOON_ALLOW_REMOTE_TEST_DB", "").lower() in ("1", "true", "yes")
+    _force_sqlite_tests = os.environ.get("MYSALOON_FORCE_SQLITE_TESTS", "").lower() in ("1", "true", "yes")
+
+    if _test_db_url:
+        DATABASES = {"default": dj_database_url.config(default=_test_db_url, conn_max_age=0)}
+        DATABASES["default"]["DISABLE_SERVER_SIDE_CURSORS"] = True
+    elif _force_sqlite_tests or (_is_managed_db and not _allow_remote_tests):
+        DATABASES = {
+            "default": {
+                "ENGINE": "django.db.backends.sqlite3",
+                "NAME": BASE_DIR / "test_db.sqlite3",
+            }
+        }
+    # else: keep DATABASE_URL / SQLite dev default — Django creates `test_*` on that server
+    HAIR_ADVISOR_SYNC_AGGREGATION = True
+else:
+    HAIR_ADVISOR_SYNC_AGGREGATION = os.environ.get("HAIR_ADVISOR_SYNC_AGGREGATION", "").lower() in (
+        "1",
+        "true",
+        "yes",
+    )
 
 if not DEBUG:
     SECURE_SSL_REDIRECT = os.environ.get("DJANGO_SECURE_SSL_REDIRECT", "true").lower() in (

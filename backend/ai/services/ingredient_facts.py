@@ -127,6 +127,11 @@ def is_known_fact(canon: str) -> bool:
     return bool(canon) and canon in _FACTS
 
 
+def iter_curated_facts() -> list[tuple[str, dict[str, str]]]:
+    """Read-only curated INCI fact rows for import pipelines."""
+    return list(_FACTS.items())
+
+
 def ingredient_fact(canon: str) -> dict[str, str]:
     row = _FACTS.get(canon or "")
     if row:

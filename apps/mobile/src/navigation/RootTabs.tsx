@@ -429,7 +429,11 @@ function CustomTabBar({ state, navigation, descriptors }: BottomTabBarProps) {
   };
 
   const onCenterPress = () => {
-    runShellSwitch(displayShell === "mysaloon");
+    if (displayShell === "morph") {
+      pressTab("MorphIngredient");
+      return;
+    }
+    runShellSwitch(true);
   };
 
   const visibleLeft = displayShell === "morph" ? MORPH_LEFT : MYSALOON_LEFT;
@@ -469,6 +473,8 @@ function CustomTabBar({ state, navigation, descriptors }: BottomTabBarProps) {
   };
 
   const centerIsMorphEntry = displayShell === "mysaloon";
+  const centerIsScan = displayShell === "morph";
+  const centerActive = centerIsScan && activeName === "MorphIngredient";
 
   return (
     <View
@@ -502,11 +508,22 @@ function CustomTabBar({ state, navigation, descriptors }: BottomTabBarProps) {
             style={styles.centerWrap}
             android_ripple={{ color: "rgba(0,0,0,0.08)", borderless: true, radius: 28 }}
             accessibilityRole="button"
-            accessibilityLabel={centerIsMorphEntry ? t("nav.morphAi") : t("nav.mysaloon")}
+            accessibilityLabel={
+              centerIsScan ? t("nav.scan") : centerIsMorphEntry ? t("nav.morphAi") : t("nav.mysaloon")
+            }
+            accessibilityState={{ selected: centerActive }}
           >
             <Animated.View style={{ transform: [{ scale: centerScale }] }}>
-              <View style={[styles.centerBtn, morphDock && styles.centerBtnOnWhite]}>
-                {centerIsMorphEntry ? (
+              <View
+                style={[
+                  styles.centerBtn,
+                  (morphDock || centerIsScan) && styles.centerBtnOnWhite,
+                  centerActive && styles.centerBtnActive,
+                ]}
+              >
+                {centerIsScan ? (
+                  <Ionicons name="scan-outline" size={scale(20)} color="#FFFFFF" />
+                ) : centerIsMorphEntry ? (
                   <Image
                     source={morfMarkWhite}
                     style={styles.centerLogo}
@@ -757,6 +774,11 @@ const styles = StyleSheet.create({
     backgroundColor: "#1E1E1E",
     borderWidth: 2,
     borderColor: "#FFFFFF",
+  },
+  centerBtnActive: {
+    transform: [{ scale: 1.04 }],
+    shadowOpacity: 0.28,
+    shadowRadius: 8,
   },
   centerLogo: {
     width: scale(18),

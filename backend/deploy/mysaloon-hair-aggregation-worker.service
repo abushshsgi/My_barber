@@ -1,0 +1,21 @@
+# Enable on VPS when using DB-backed submission aggregation (not embedded threads only).
+# Do NOT enable without explicit ops authorization.
+[Unit]
+Description=MySaloon Hair Advisor aggregation worker
+After=network.target postgresql.service
+PartOf=mysaloon.service
+
+[Service]
+Type=simple
+User=mysaloon
+Group=mysaloon
+WorkingDirectory=/var/www/mysaloon/source/backend
+EnvironmentFile=/var/www/mysaloon/source/backend/.env
+Environment=PATH=/var/www/mysaloon/venv/bin:/usr/local/bin:/usr/bin:/bin
+ExecStart=/var/www/mysaloon/venv/bin/python manage.py run_aggregation_worker --poll-seconds 10 --limit 25
+Restart=on-failure
+RestartSec=8
+Nice=10
+
+[Install]
+WantedBy=multi-user.target
