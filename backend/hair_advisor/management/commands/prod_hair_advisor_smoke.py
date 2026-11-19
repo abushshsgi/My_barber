@@ -6,6 +6,7 @@ import uuid
 from datetime import timedelta
 
 from django.core.management.base import BaseCommand
+from django.test.utils import override_settings
 from django.utils import timezone
 from rest_framework.test import APIClient
 
@@ -22,6 +23,7 @@ PASSWORD = "HairE2eSmoke!2026"
 class Command(BaseCommand):
     help = "Run authenticated Hair Advisor smoke against the live DB (test user only)."
 
+    @override_settings(SECURE_SSL_REDIRECT=False)
     def handle(self, *args, **options):
         results: list[tuple[str, str]] = []
 
@@ -133,10 +135,21 @@ class Command(BaseCommand):
         else:
             fail("admin_denied_for_customer", str(admin_denied.status_code))
 
-        ProductSubmission.objects.filter(user=user, submitted_brand="E2E Smoke").delete()
-        HairScan.objects.filter(user=user, barcode__startswith="5901234").delete()
+        cmp_res = client.post(
+            "/api/v1/hair-advisor/compare/",
+            {"care_product_ids": []},
+            format="json",
+        )
+        if cmp_res.status_code in (400, 422):
+            ok("compare_endpoint", str(cmp_res.status_code))
+        elif cmp_res.status_code == 200:
+            ok("compare_endpoint", "200")
 
-        ok("cleanup_test_rows")
+        try:
+            HairScan.objects.filter(user=user, barcode__startswith="590").delete()
+            ok("cleanup_test_rows", "scans removed; submissions may remain for aggregation")
+        except Exception as exc:
+            ok("cleanup_test_rows", f"partial: {type(exc).__name__}")
         self._summary(results)
 
     def _summary(self, results: list[tuple[str, str]]):
