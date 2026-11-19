@@ -15,7 +15,8 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { compareHairProducts, fetchHairScan, type HairAnalysis, type HairScanDetail } from "../../../api/hair-advisor";
+import { addHairRoutineProduct, compareHairProducts, fetchHairScan, type HairAnalysis, type HairScanDetail } from "../../../api/hair-advisor";
+import { addMyCareProductApi, fetchMyCareProducts } from "../../../api/care";
 import { compatibilityLabel } from "../../../lib/hair-advisor-2/scan-flow";
 import type { MorphIngredientStackParamList } from "../../../navigation/MorphIngredientStack";
 import { morphFont } from "../../../theme/morph-font";
@@ -32,12 +33,19 @@ export function HairAdvisor2ResultScreen({ navigation, route }: Props) {
   const [analysis, setAnalysis] = useState<HairAnalysis | null>(null);
   const [compareOpen, setCompareOpen] = useState(false);
   const [compareId, setCompareId] = useState("");
+  const [saved, setSaved] = useState(false);
 
   useEffect(() => {
     void fetchHairScan(scanId)
       .then((d) => {
         setDetail(d);
         setAnalysis(d.analysis ?? null);
+        const pid = d.care_product?.id;
+        if (pid) {
+          void fetchMyCareProducts()
+            .then((rows) => setSaved(rows.some((r) => r.id === pid)))
+            .catch(() => undefined);
+        }
       })
       .finally(() => setLoading(false));
   }, [scanId]);
@@ -71,8 +79,17 @@ export function HairAdvisor2ResultScreen({ navigation, route }: Props) {
           <Pressable onPress={() => navigation.goBack()}>
             <Ionicons name="chevron-back" size={24} color="#111" />
           </Pressable>
-          <Pressable>
-            <Ionicons name="bookmark-outline" size={22} color="#71717A" />
+          <Pressable
+            disabled={!product?.id}
+            onPress={async () => {
+              if (!product?.id) return;
+              await addMyCareProductApi({ product_id: product.id, source: "scan" });
+              await addHairRoutineProduct({ care_product_id: product.id, slot: "shampoo" }).catch(() => undefined);
+              setSaved(true);
+              Alert.alert("Saqlandi", "Mahsulot jadvalingizga qo'shildi.");
+            }}
+          >
+            <Ionicons name={saved ? "bookmark" : "bookmark-outline"} size={22} color="#71717A" />
           </Pressable>
         </View>
 

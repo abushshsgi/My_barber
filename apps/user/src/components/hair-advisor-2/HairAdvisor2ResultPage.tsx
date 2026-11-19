@@ -3,11 +3,15 @@ import { Bookmark, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import {
+  addHairRoutineProduct,
   compareHairProducts,
   fetchHairScan,
   type HairAnalysis,
   type HairScanDetail,
 } from "@/lib/api/hair-advisor";
+import { addMyCareProduct, fetchMyCareProducts } from "@/lib/api/care-products";
+import { useHairCareProfile } from "@/hooks/use-hair-care-profile";
+import { useCareProducts } from "@/hooks/use-care-products";
 import { navigateBack } from "@/lib/mobile-back";
 import { HairAdvisor2ProductHeader } from "./HairAdvisor2ProductHeader";
 import { compatibilityLabel } from "./scan-flow";
@@ -26,6 +30,13 @@ export function HairAdvisor2ResultPage({ scanId, inciListPath, scanPath }: Props
   const [compareOpen, setCompareOpen] = useState(false);
   const [compareId, setCompareId] = useState("");
   const [expandedAi, setExpandedAi] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const profileQ = useHairCareProfile();
+  const currentProductId = payload?.care_product?.id;
+  const catalogQ = useCareProducts({
+    exclude_ids: currentProductId ? [currentProductId] : undefined,
+    enabled: compareOpen,
+  });
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -43,6 +54,13 @@ export function HairAdvisor2ResultPage({ scanId, inciListPath, scanPath }: Props
   useEffect(() => {
     void load();
   }, [load]);
+
+  useEffect(() => {
+    if (!currentProductId) return;
+    void fetchMyCareProducts()
+      .then((rows) => setSaved(rows.some((r) => r.id === currentProductId)))
+      .catch(() => undefined);
+  }, [currentProductId]);
 
   if (loading) {
     return (
@@ -87,8 +105,24 @@ export function HairAdvisor2ResultPage({ scanId, inciListPath, scanPath }: Props
         <button type="button" aria-label="Orqaga" onClick={() => navigateBack(router, scanPath)} className="size-11">
           <ChevronLeft className="size-6" />
         </button>
-        <button type="button" aria-label="Saqlash" className="size-11 text-[#71717A]">
-          <Bookmark className="size-5" />
+        <button
+          type="button"
+          aria-label="Saqlash"
+          disabled={!product?.id}
+          onClick={async () => {
+            if (!product?.id) return;
+            try {
+              await addMyCareProduct({ product_id: product.id, source: "scan" });
+              await addHairRoutineProduct({ care_product_id: product.id, slot: "shampoo" }).catch(() => undefined);
+              setSaved(true);
+              toast.success("Mahsulot saqlandi");
+            } catch (e) {
+              toast.error(e instanceof Error ? e.message : "Saqlanmadi");
+            }
+          }}
+          className="size-11 text-[#71717A]"
+        >
+          <Bookmark className="size-5" fill={saved ? "currentColor" : "none"} />
         </button>
       </header>
 
@@ -102,8 +136,14 @@ export function HairAdvisor2ResultPage({ scanId, inciListPath, scanPath }: Props
         <section className="rounded-[20px] bg-[#F7F7F8] p-4 ring-1 ring-[#E8E8EB]">
           <p className="text-[16px] font-semibold">Sochingizga mosligi</p>
           <p className={`mt-2 inline-flex rounded-full px-3 py-1 text-sm font-semibold ${fitTone}`}>{fitLabel}</p>
-          {!analysis ? (
-            <p className="mt-2 text-sm text-[#71717A]">Aniq tavsiya uchun soch profilingizni to'ldiring</p>
+          {!analysis || !profileQ.data?.complete ? (
+            <button
+              type="button"
+              className="mt-2 text-left text-sm font-medium text-[#111111] underline"
+              onClick={() => void router.navigate({ to: `/ai-style/care/ingredient/recover/${scanId}` as never })}
+            >
+              Aniq tavsiya uchun soch profilingizni to'ldiring
+            </button>
           ) : null}
         </section>
 
@@ -172,10 +212,21 @@ export function HairAdvisor2ResultPage({ scanId, inciListPath, scanPath }: Props
             <p className="text-lg font-bold">Taqqoslash</p>
             <input
               className="mt-3 w-full rounded-xl border border-[#E8E8EB] px-3 py-2 text-sm"
-              placeholder="Boshqa mahsulot ID"
+              placeholder="Mahsulot ID yoki qidiruv"
               value={compareId}
               onChange={(e) => setCompareId(e.target.value)}
+              list="ha2-compare-list"
             />
+            <datalist id="ha2-compare-list">
+              {(catalogQ.data ?? [])
+                .filter((p) => `${p.id}`.includes(compareId) || p.name.toLowerCase().includes(compareId.toLowerCase()))
+                .slice(0, 12)
+                .map((p) => (
+                  <option key={p.id} value={String(p.id)}>
+                    {p.brand} {p.name}
+                  </option>
+                ))}
+            </datalist>
             <button
               type="button"
               className="mt-3 w-full rounded-xl bg-[#111111] py-2.5 text-sm font-semibold text-white"

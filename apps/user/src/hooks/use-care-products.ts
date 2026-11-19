@@ -8,6 +8,7 @@ export function useCareProducts(params?: {
   category?: string;
   recommended?: boolean;
   enabled?: boolean;
+  exclude_ids?: number[];
 }) {
   return useQuery({
     queryKey: [
@@ -15,6 +16,7 @@ export function useCareProducts(params?: {
       params?.category || "",
       params?.q || "",
       params?.recommended ? "rec" : "all",
+      (params?.exclude_ids || []).join(","),
     ],
     queryFn: () => fetchCareProducts(params),
     enabled: params?.enabled !== false,
