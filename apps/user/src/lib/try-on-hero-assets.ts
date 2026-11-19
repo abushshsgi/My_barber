@@ -12,5 +12,4 @@ export const TRY_ON_HERO_PRELOAD = `${TRY_ON_HERO_BASE}-480.webp`;
 
 export const TRY_ON_HERO_DEFAULT_SRC = TRY_ON_HERO_PRELOAD;
 
-/** Inline: mark morph landing paths so static LCP hero can show before React. */
-export const MORPH_LCP_BOOT_SCRIPT = `(function(){var p=location.pathname;if(p==="/"||p==="/ai-style"||p.indexOf("/ai-style/")===0){document.documentElement.setAttribute("data-morph-lcp","");}})();`;
+export { MORPH_LCP_BOOT_SCRIPT, removeMorphLcpStatic } from "./morph-lcp-static";

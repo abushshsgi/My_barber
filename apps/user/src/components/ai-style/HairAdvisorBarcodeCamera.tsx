@@ -2,65 +2,158 @@ import { useEffect, useRef, useState } from "react";
 import { Loader2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
+import {
+  cameraAccessUserMessage,
+  diagnoseCameraAccess,
+  openBarcodeVideoStream,
+  supportsBarcodeDetector,
+} from "@/lib/barcode-camera";
+import { currentLang } from "@/i18n/config";
+import { normalizeRetailBarcode, retailBarcodeHints } from "@/lib/hair-advisor-barcode-decode";
 import { cn } from "@/lib/utils";
 
 type Props = {
   active: boolean;
   onDetected: (barcode: string) => void;
   onClose: () => void;
+  onDecodeFailed?: () => void;
   className?: string;
-  /** To'liq sahifa skaneri — yopish tugmasi yashirin */
   embedded?: boolean;
 };
 
-const BARCODE_FORMATS = ["ean_13", "ean_8", "upc_a", "upc_e", "code_128"] as const;
+const NATIVE_FORMATS = ["ean_13", "ean_8", "upc_a", "upc_e", "code_128"] as const;
 
-export function HairAdvisorBarcodeCamera({ active, onDetected, onClose, className, embedded }: Props) {
+function mapGetUserMediaError(
+  err: unknown,
+): "hairAdvisor.cameraDenied" | "hairAdvisor.cameraBusy" | "hairAdvisor.cameraNotFound" {
+  const name = err instanceof DOMException ? err.name : "";
+  if (name === "NotFoundError" || name === "DevicesNotFoundError") return "hairAdvisor.cameraNotFound";
+  if (name === "NotReadableError" || name === "TrackStartError") return "hairAdvisor.cameraBusy";
+  if (name === "NotAllowedError" || name === "PermissionDeniedError" || name === "SecurityError")
+    return "hairAdvisor.cameraDenied";
+  if (name === "OverconstrainedError") return "hairAdvisor.cameraNotFound";
+  return "hairAdvisor.cameraDenied";
+}
+
+export function HairAdvisorBarcodeCamera({
+  active,
+  onDetected,
+  onClose,
+  onDecodeFailed,
+  className,
+  embedded,
+}: Props) {
   const { t } = useTranslation();
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const lockedRef = useRef(false);
   const [starting, setStarting] = useState(false);
 
   useEffect(() => {
     if (!active) {
       streamRef.current?.getTracks().forEach((track) => track.stop());
       streamRef.current = null;
+      lockedRef.current = false;
       return;
     }
 
-    const Detector = (
-      window as unknown as {
-        BarcodeDetector?: new (o?: { formats?: string[] }) => {
-          detect: (s: CanvasImageSource) => Promise<{ rawValue: string }[]>;
-        };
-      }
-    ).BarcodeDetector;
-
-    if (!Detector) {
-      toast.error(t("hairAdvisor.cameraUnsupported"));
+    const access = diagnoseCameraAccess();
+    if (access !== "ok") {
+      const lang = currentLang();
+      toast.error(
+        t("hairAdvisor.cameraDenied", {
+          defaultValue: cameraAccessUserMessage(access, lang),
+        }),
+      );
       onClose();
       return;
     }
 
     let stopped = false;
-    let locked = false;
     let raf = 0;
-    const detector = new Detector({ formats: [...BARCODE_FORMATS] });
-    setStarting(true);
+    let zxingControls: { stop: () => void } | null = null;
+    let zxingReader: { reset: () => void } | null = null;
+
+    const emitCode = (raw: string) => {
+      const normalized = normalizeRetailBarcode(raw);
+      if (!normalized || lockedRef.current) return;
+      lockedRef.current = true;
+      stopped = true;
+      onDetected(normalized);
+      if (!embedded) onClose();
+    };
+
+    const startNativeLoop = (detector: { detect: (s: CanvasImageSource) => Promise<{ rawValue: string }[]> }) => {
+      const tick = async () => {
+        if (stopped || !videoRef.current || videoRef.current.readyState < 2) {
+          raf = requestAnimationFrame(() => void tick());
+          return;
+        }
+        try {
+          const codes = await detector.detect(videoRef.current);
+          for (const code of codes) {
+            if (code.rawValue) emitCode(code.rawValue);
+          }
+        } catch {
+          /* frame */
+        }
+        if (!stopped) raf = requestAnimationFrame(() => void tick());
+      };
+      raf = requestAnimationFrame(() => void tick());
+    };
+
+    const startZxingLoop = async () => {
+      try {
+        const { BrowserMultiFormatReader } = await import("@zxing/browser");
+        const reader = new BrowserMultiFormatReader(retailBarcodeHints());
+        zxingReader = reader;
+        const video = videoRef.current;
+        if (!video || stopped) {
+          reader.reset();
+          return;
+        }
+
+        const deviceId = streamRef.current?.getVideoTracks()[0]?.getSettings().deviceId;
+
+        const controls = await reader.decodeFromVideoDevice(
+          deviceId ?? null,
+          video,
+          (result, err) => {
+            if (stopped) return;
+            if (result) {
+              emitCode(result.getText());
+              return;
+            }
+            if (err && typeof err === "object" && "name" in err) {
+              const name = (err as { name: string }).name;
+              if (name !== "NotFoundException") return;
+            }
+          },
+        );
+        zxingControls = { stop: () => controls?.stop() };
+      } catch {
+        onDecodeFailed?.();
+        toast.error(
+          t("hairAdvisor.decodeFail", {
+            defaultValue: "Shtrix-kodni o‘qib bo‘lmadi. Galereyadan rasm yuklang.",
+          }),
+        );
+        onClose();
+      }
+    };
 
     const start = async () => {
+      setStarting(true);
       try {
         const { ensureCameraPermission } = await import("@/lib/native-camera");
         const allowed = await ensureCameraPermission();
         if (!allowed) {
-          toast.error(t("hairAdvisor.cameraDenied"));
+          toast.error(t("hairAdvisor.cameraDenied", { defaultValue: "Kameraga ruxsat berilmadi." }));
           onClose();
           return;
         }
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: { ideal: "environment" } },
-          audio: false,
-        });
+
+        const stream = await openBarcodeVideoStream();
         if (stopped) {
           stream.getTracks().forEach((track) => track.stop());
           return;
@@ -72,31 +165,32 @@ export function HairAdvisorBarcodeCamera({ active, onDetected, onClose, classNam
         }
         setStarting(false);
 
-        const tick = async () => {
-          if (stopped || !videoRef.current || videoRef.current.readyState < 2) {
-            raf = requestAnimationFrame(() => void tick());
-            return;
+        const NativeDetector = (
+          window as unknown as {
+            BarcodeDetector?: new (o?: { formats?: string[] }) => {
+              detect: (s: CanvasImageSource) => Promise<{ rawValue: string }[]>;
+            };
           }
-          try {
-            const codes = await detector.detect(videoRef.current);
-            for (const code of codes) {
-              const digits = code.rawValue.replace(/\D/g, "");
-              if (digits.length >= 8 && !locked) {
-                locked = true;
-                stopped = true;
-                onDetected(digits);
-                if (!embedded) onClose();
-                return;
-              }
-            }
-          } catch {
-            /* skip frame */
-          }
-          raf = requestAnimationFrame(() => void tick());
-        };
-        raf = requestAnimationFrame(() => void tick());
-      } catch {
-        toast.error(t("hairAdvisor.cameraDenied"));
+        ).BarcodeDetector;
+
+        if (NativeDetector && supportsBarcodeDetector()) {
+          const detector = new NativeDetector({ formats: [...NATIVE_FORMATS] });
+          startNativeLoop(detector);
+        } else {
+          await startZxingLoop();
+        }
+      } catch (err) {
+        const key = mapGetUserMediaError(err);
+        toast.error(
+          t(key, {
+            defaultValue:
+              key === "hairAdvisor.cameraNotFound"
+                ? "Kamera topilmadi."
+                : key === "hairAdvisor.cameraBusy"
+                  ? "Kamera boshqa ilova tomonidan ishlatilmoqda."
+                  : "Kameraga ruxsat berilmadi.",
+          }),
+        );
         onClose();
       } finally {
         setStarting(false);
@@ -104,13 +198,17 @@ export function HairAdvisorBarcodeCamera({ active, onDetected, onClose, classNam
     };
 
     void start();
+
     return () => {
       stopped = true;
       cancelAnimationFrame(raf);
+      zxingControls?.stop();
+      zxingReader?.reset();
       streamRef.current?.getTracks().forEach((track) => track.stop());
       streamRef.current = null;
+      lockedRef.current = false;
     };
-  }, [active, onClose, onDetected, t]);
+  }, [active, embedded, onClose, onDecodeFailed, onDetected, t]);
 
   if (!active) return null;
 
@@ -125,13 +223,11 @@ export function HairAdvisorBarcodeCamera({ active, onDetected, onClose, classNam
         className,
       )}
       role="region"
-      aria-label={t("hairAdvisor.barcodeCamera")}
+      aria-label={t("hairAdvisor.barcodeCamera", { defaultValue: "Shtrix-kod kamerasi" })}
     >
       <video ref={videoRef} className="h-full w-full object-cover" playsInline muted />
       <div className="pointer-events-none absolute inset-[10%] rounded-2xl border-2 border-white/90" aria-hidden />
-      {!reducedMotion ? (
-        <motionLayer />
-      ) : null}
+      {!reducedMotion ? <motionLayer /> : null}
       {starting ? (
         <div className="absolute inset-0 flex items-center justify-center bg-black/40">
           <Loader2 className="size-8 animate-spin text-white" />
@@ -143,7 +239,7 @@ export function HairAdvisorBarcodeCamera({ active, onDetected, onClose, classNam
           onClick={onClose}
           className="absolute right-2 top-2 rounded-full bg-black/55 px-3 py-1 text-xs font-semibold text-white"
         >
-          {t("hairAdvisor.closeCamera")}
+          {t("hairAdvisor.closeCamera", { defaultValue: "Yopish" })}
         </button>
       ) : null}
     </div>
