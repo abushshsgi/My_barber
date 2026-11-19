@@ -3,6 +3,9 @@ import { ChevronLeft, History, ImageIcon, Loader2, Zap, ZapOff } from "lucide-re
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { HairAdvisorBarcodeCamera } from "@/components/ai-style/HairAdvisorBarcodeCamera";
+import { diagnoseCameraAccess } from "@/lib/barcode-camera";
+import { decodeRetailBarcodeFromImage } from "@/lib/hair-advisor-barcode-decode";
+import { removeMorphLcpStatic } from "@/lib/morph-lcp-static";
 import { createHairScan, fetchHairScanHistory, type HairScan } from "@/lib/api/hair-advisor";
 import { navigateBack } from "@/lib/mobile-back";
 import { prepareSelfieFromFile } from "@/lib/selfie-image";
@@ -22,17 +25,26 @@ export function HairAdvisor2ScanPage({
   const lockRef = useRef(false);
   const mounted = useRef(true);
   const [phase, setPhase] = useState<"idle" | "lookup" | "error">("idle");
-  const [cameraOn, setCameraOn] = useState(true);
+  const [cameraOn, setCameraOn] = useState(() => diagnoseCameraAccess() === "ok");
+  const [cameraBlocked, setCameraBlocked] = useState(() => diagnoseCameraAccess() !== "ok");
   const [torch, setTorch] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [history, setHistory] = useState<HairScan[]>([]);
 
   useEffect(() => {
+    const ok = diagnoseCameraAccess() === "ok";
+    setCameraOn(ok);
+    setCameraBlocked(!ok);
+  }, []);
+
+  useEffect(() => {
     mounted.current = true;
+    removeMorphLcpStatic();
     return () => {
       mounted.current = false;
       lockRef.current = false;
+      setCameraOn(false);
     };
   }, []);
 
@@ -87,9 +99,16 @@ export function HairAdvisor2ScanPage({
 
   const onGallery = async (file: File) => {
     if (lockRef.current) return;
-    lockRef.current = true;
     setPhase("lookup");
     setError(null);
+
+    const fromBarcode = await decodeRetailBarcodeFromImage(file);
+    if (fromBarcode.ok) {
+      await processBarcode(fromBarcode.barcode);
+      return;
+    }
+
+    lockRef.current = true;
     try {
       const dataUrl = await prepareSelfieFromFile(file);
       const scan = await createHairScan({ input_method: "gallery", image: dataUrl });
@@ -146,13 +165,28 @@ export function HairAdvisor2ScanPage({
         <p className="mt-2 text-center text-[15px] text-[#A3A3A3]">Shtrix-kodni ramka ichiga joylashtiring</p>
 
         <div className="relative mx-auto mt-6 w-full max-w-[340px]">
-          <HairAdvisorBarcodeCamera
-            active={cameraOn}
-            embedded
-            className="aspect-[3/4] w-full rounded-[22px] border-[#303030]"
-            onDetected={(code) => void processBarcode(code)}
-            onClose={() => setCameraOn(false)}
-          />
+          {cameraBlocked && !cameraOn ? (
+            <div
+              className="flex aspect-[3/4] w-full flex-col items-center justify-center gap-3 rounded-[22px] border border-[#303030] bg-[#111] px-6 text-center"
+              role="status"
+            >
+              <p className="text-[15px] font-medium text-white">Kamera skaneri mavjud emas</p>
+              <p className="text-sm text-[#A3A3A3]">
+                Kameraga ruxsat bering yoki pastdagi galereyadan shtrix-kod / yorliq rasmini yuklang.
+              </p>
+            </div>
+          ) : (
+            <HairAdvisorBarcodeCamera
+              active={cameraOn}
+              embedded
+              className="aspect-[3/4] w-full rounded-[22px] border-[#303030]"
+              onDetected={(code) => void processBarcode(code)}
+              onClose={() => {
+                setCameraOn(false);
+                setCameraBlocked(true);
+              }}
+            />
+          )}
           {phase === "lookup" ? (
             <span
               className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center gap-2 rounded-[22px] bg-black/55"

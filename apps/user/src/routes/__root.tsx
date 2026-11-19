@@ -29,6 +29,7 @@ import { CurrencyProvider } from "../hooks/use-currency";
 import { AuthSessionGuard } from "../components/AuthSessionGuard";
 import { OnboardingGuard } from "../components/OnboardingGuard";
 import { MaintenanceBanner } from "../components/MaintenanceBanner";
+import { MorphLcpRouteGuard } from "../components/MorphLcpRouteGuard";
 function NotFoundComponent() {
   const { t } = useTranslation();
   return (
@@ -238,6 +239,7 @@ function AppShell() {
             </OnboardingGuard>
           </AuthSessionGuard>
           <ClientOnly>
+            <MorphLcpRouteGuard />
             <DeferredClientWidgets />
             <Suspense fallback={null}>
               <Toaster position="top-center" />

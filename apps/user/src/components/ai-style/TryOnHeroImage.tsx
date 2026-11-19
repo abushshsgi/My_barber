@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { removeMorphLcpStatic } from "@/lib/morph-lcp-static";
 import {
   TRY_ON_HERO_DEFAULT_SRC,
   TRY_ON_HERO_SRCSET,
@@ -7,15 +8,13 @@ import {
 
 /** LCP image on /ai-style mobile — responsive WebP, PNG fallback only when needed. */
 
-const STATIC_LCP_ID = "morph-lcp-static";
-
 type Props = {
   className?: string;
 };
 
 export function TryOnHeroImage({ className }: Props) {
   useEffect(() => {
-    document.getElementById(STATIC_LCP_ID)?.remove();
+    removeMorphLcpStatic();
   }, []);
 
   return (

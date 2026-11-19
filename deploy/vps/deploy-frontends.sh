@@ -67,6 +67,10 @@ fi
 
 if [ "$need_user" = 1 ]; then
   npm run build:user
+  if [ ! -f "$ROOT/apps/user/dist/client/version.json" ]; then
+    echo "FATAL: apps/user/dist/client/version.json missing after build" >&2
+    exit 1
+  fi
 fi
 if [ "$need_admin" = 1 ]; then
   npm run build:admin
