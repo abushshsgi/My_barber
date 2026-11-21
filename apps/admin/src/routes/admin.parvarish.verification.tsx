@@ -16,7 +16,7 @@ import { KPICard } from "@/components/admin/KPICard";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { CardSkeleton } from "@/components/admin/Skeletons";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Package, ScanLine, ShieldAlert, Sparkles } from "lucide-react";
 
 export const Route = createFileRoute("/admin/parvarish/verification")({
@@ -28,6 +28,8 @@ function ProductVerificationPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [mergeTarget, setMergeTarget] = useState("");
   const [linkCareId, setLinkCareId] = useState("");
+  const [inciDraft, setInciDraft] = useState("");
+  const [reviewNotes, setReviewNotes] = useState("");
 
   const dashboard = useQuery({
     queryKey: ["admin", "product-verification", "dashboard"],
@@ -48,7 +50,11 @@ function ProductVerificationPage() {
   });
 
   const approve = useMutation({
-    mutationFn: (id: string) => approveAdminProductCandidate(id, {}),
+    mutationFn: ({ id, ingredients, notes }: { id: string; ingredients: string[]; notes: string }) =>
+      approveAdminProductCandidate(id, {
+        corrected_fields: ingredients.length ? { ingredients } : {},
+        review_notes: notes,
+      }),
     onSuccess: () => void qc.invalidateQueries({ queryKey: ["admin", "product-verification"] }),
   });
   const reject = useMutation({
@@ -75,12 +81,22 @@ function ProductVerificationPage() {
     onSuccess: () => void qc.invalidateQueries({ queryKey: ["admin", "product-verification"] }),
   });
 
-  if (dashboard.isLoading || list.isLoading) return <CardSkeleton className="h-56" />;
-  const d = dashboard.data;
-
   const subs = detail.data?.submissions ?? [];
   const conflicts = detail.data?.conflicts ?? [];
   const reviews = detail.data?.reviews ?? [];
+
+  useEffect(() => {
+    if (!selectedId || !subs.length) {
+      setInciDraft("");
+      return;
+    }
+    const first = subs[0];
+    const list = (first?.ingredients as string[] | undefined) ?? [];
+    setInciDraft(list.join(", "));
+  }, [selectedId, subs]);
+
+  if (dashboard.isLoading || list.isLoading) return <CardSkeleton className="h-56" />;
+  const d = dashboard.data;
 
   return (
     <div className="space-y-6">
@@ -119,7 +135,18 @@ function ProductVerificationPage() {
         reviews={reviews}
         mergeTarget={mergeTarget}
         setMergeTarget={setMergeTarget}
-        onApprove={() => selectedId && approve.mutate(selectedId)}
+        onApprove={() => {
+          if (!selectedId) return;
+          const ingredients = inciDraft
+            .split(/[,;\n]+/)
+            .map((s) => s.trim())
+            .filter(Boolean);
+          approve.mutate({ id: selectedId, ingredients, notes: reviewNotes });
+        }}
+        inciDraft={inciDraft}
+        setInciDraft={setInciDraft}
+        reviewNotes={reviewNotes}
+        setReviewNotes={setReviewNotes}
         onReject={() => selectedId && reject.mutate(selectedId)}
         onMerge={() =>
           selectedId &&
@@ -226,6 +253,10 @@ function motionGrid(props: {
   onLinkExisting: () => void;
   onRequestInfo: () => void;
   busy: boolean;
+  inciDraft: string;
+  setInciDraft: (v: string) => void;
+  reviewNotes: string;
+  setReviewNotes: (v: string) => void;
 }) {
   const c = props.detail?.candidate;
   return (
@@ -275,11 +306,19 @@ function motionGrid(props: {
             <p className="text-sm">Barcode: {c.proposed_barcode || "—"}</p>
             <p className="text-sm">Topshiruvlar: {c.submission_count}</p>
             <Badge>{c.status}</Badge>
-            <div>
-              <p className="text-xs font-semibold text-muted-foreground">INCI (topshiruvlar)</p>
-              <ul className="mt-1 max-h-40 overflow-y-auto text-xs">
+            <div className="space-y-2">
+              <p className="text-xs font-semibold text-muted-foreground">INCI tahrir (tasdiqlash uchun)</p>
+              <textarea
+                className="min-h-28 w-full rounded-lg border border-border px-2 py-2 font-mono text-xs"
+                value={props.inciDraft}
+                onChange={(e) => props.setInciDraft(e.target.value)}
+                placeholder="Aqua, Sodium Laureth Sulfate, …"
+              />
+              <p className="text-[10px] text-muted-foreground">Vergul yoki yangi qator bilan ajrating.</p>
+              <ul className="max-h-24 overflow-y-auto text-xs text-muted-foreground">
                 {props.subs.map((s) => (
                   <li key={String(s.id)} className="border-b border-border py-1">
+                    topshiruv {String(s.id).slice(0, 8)}:{" "}
                     {(s.ingredients as string[] | undefined)?.join(", ") || "—"}
                   </li>
                 ))}
@@ -306,6 +345,15 @@ function motionGrid(props: {
             {String(r.decision)} — {String(r.created_at ?? "")}
           </p>
         ))}
+        <div className="space-y-1">
+          <label className="text-xs">Tekshiruv eslatmalari</label>
+          <textarea
+            className="min-h-16 w-full rounded border border-border px-2 py-1 text-xs"
+            value={props.reviewNotes}
+            onChange={(e) => props.setReviewNotes(e.target.value)}
+            placeholder="Nima uchun tasdiqlandi / rad etildi…"
+          />
+        </div>
         <div className="flex flex-wrap gap-2">
           <Button size="sm" disabled={!props.selectedId || props.busy} onClick={props.onApprove}>
             Tasdiqlash
