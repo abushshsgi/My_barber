@@ -13,6 +13,7 @@ import { addMyCareProduct, fetchMyCareProducts } from "@/lib/api/care-products";
 import { useHairCareProfile } from "@/hooks/use-hair-care-profile";
 import { useCareProducts } from "@/hooks/use-care-products";
 import { navigateBack } from "@/lib/mobile-back";
+import { HAIR_ADVISOR_RESULT_DEMO, isHairAdvisorResultDemoScanId } from "./hair-advisor-result-demo";
 import { HairAdvisor2ProductHeader } from "./HairAdvisor2ProductHeader";
 import { compatibilityLabel } from "./scan-flow";
 
@@ -39,6 +40,13 @@ export function HairAdvisor2ResultPage({ scanId, inciListPath, scanPath }: Props
   });
 
   const load = useCallback(async () => {
+    if (isHairAdvisorResultDemoScanId(scanId)) {
+      setPayload(HAIR_ADVISOR_RESULT_DEMO);
+      setAnalysis(HAIR_ADVISOR_RESULT_DEMO.analysis ?? null);
+      setLoading(false);
+      setSaved(false);
+      return;
+    }
     setLoading(true);
     try {
       const detail = await fetchHairScan(scanId);

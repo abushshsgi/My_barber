@@ -83,6 +83,7 @@ import { Route as MorfAiShareShareIdRouteImport } from './routes/morf-ai.share.$
 import { Route as SalonIdLocationRouteImport } from './routes/salon.$id.location'
 import { Route as AiStyleCareProductsProductIdRouteImport } from './routes/ai-style_.care_.products_.$productId'
 import { Route as AiStyleCareIngredientInciScanIdRouteImport } from './routes/ai-style_.care_.ingredient_.inci.$scanId'
+import { Route as AiStyleCareIngredientPickScanIdRouteImport } from './routes/ai-style_.care_.ingredient_.pick.$scanId'
 import { Route as AiStyleCareIngredientRecoverScanIdRouteImport } from './routes/ai-style_.care_.ingredient_.recover.$scanId'
 import { Route as AiStyleCareIngredientResultScanIdRouteImport } from './routes/ai-style_.care_.ingredient_.result.$scanId'
 import { Route as AiStyleCareIngredientInciScanIdInciSlugRouteImport } from './routes/ai-style_.care_.ingredient_.inci.$scanId_.$inciSlug'
@@ -459,6 +460,12 @@ const AiStyleCareIngredientInciScanIdRoute =
     path: '/ai-style/care/ingredient/inci/$scanId',
     getParentRoute: () => rootRouteImport,
   } as any)
+const AiStyleCareIngredientPickScanIdRoute =
+  AiStyleCareIngredientPickScanIdRouteImport.update({
+    id: '/ai-style_/care_/ingredient_/pick/$scanId',
+    path: '/ai-style/care/ingredient/pick/$scanId',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const AiStyleCareIngredientRecoverScanIdRoute =
   AiStyleCareIngredientRecoverScanIdRouteImport.update({
     id: '/ai-style_/care_/ingredient_/recover/$scanId',
@@ -553,6 +560,7 @@ export interface FileRoutesByFullPath {
   '/dev/explore-gen/': typeof DevExploreGenIndexRoute
   '/ai-style/care/products/$productId': typeof AiStyleCareProductsProductIdRoute
   '/ai-style/care/ingredient/inci/$scanId': typeof AiStyleCareIngredientInciScanIdRoute
+  '/ai-style/care/ingredient/pick/$scanId': typeof AiStyleCareIngredientPickScanIdRoute
   '/ai-style/care/ingredient/recover/$scanId': typeof AiStyleCareIngredientRecoverScanIdRoute
   '/ai-style/care/ingredient/result/$scanId': typeof AiStyleCareIngredientResultScanIdRoute
   '/ai-style/care/ingredient/inci/$scanId/$inciSlug': typeof AiStyleCareIngredientInciScanIdInciSlugRoute
@@ -631,6 +639,7 @@ export interface FileRoutesByTo {
   '/dev/explore-gen': typeof DevExploreGenIndexRoute
   '/ai-style/care/products/$productId': typeof AiStyleCareProductsProductIdRoute
   '/ai-style/care/ingredient/inci/$scanId': typeof AiStyleCareIngredientInciScanIdRoute
+  '/ai-style/care/ingredient/pick/$scanId': typeof AiStyleCareIngredientPickScanIdRoute
   '/ai-style/care/ingredient/recover/$scanId': typeof AiStyleCareIngredientRecoverScanIdRoute
   '/ai-style/care/ingredient/result/$scanId': typeof AiStyleCareIngredientResultScanIdRoute
   '/ai-style/care/ingredient/inci/$scanId/$inciSlug': typeof AiStyleCareIngredientInciScanIdInciSlugRoute
@@ -711,6 +720,7 @@ export interface FileRoutesById {
   '/dev/explore-gen/': typeof DevExploreGenIndexRoute
   '/ai-style_/care_/products_/$productId': typeof AiStyleCareProductsProductIdRoute
   '/ai-style_/care_/ingredient_/inci/$scanId': typeof AiStyleCareIngredientInciScanIdRoute
+  '/ai-style_/care_/ingredient_/pick/$scanId': typeof AiStyleCareIngredientPickScanIdRoute
   '/ai-style_/care_/ingredient_/recover/$scanId': typeof AiStyleCareIngredientRecoverScanIdRoute
   '/ai-style_/care_/ingredient_/result/$scanId': typeof AiStyleCareIngredientResultScanIdRoute
   '/ai-style_/care_/ingredient_/inci/$scanId_/$inciSlug': typeof AiStyleCareIngredientInciScanIdInciSlugRoute
@@ -792,6 +802,7 @@ export interface FileRouteTypes {
     | '/dev/explore-gen/'
     | '/ai-style/care/products/$productId'
     | '/ai-style/care/ingredient/inci/$scanId'
+    | '/ai-style/care/ingredient/pick/$scanId'
     | '/ai-style/care/ingredient/recover/$scanId'
     | '/ai-style/care/ingredient/result/$scanId'
     | '/ai-style/care/ingredient/inci/$scanId/$inciSlug'
@@ -870,6 +881,7 @@ export interface FileRouteTypes {
     | '/dev/explore-gen'
     | '/ai-style/care/products/$productId'
     | '/ai-style/care/ingredient/inci/$scanId'
+    | '/ai-style/care/ingredient/pick/$scanId'
     | '/ai-style/care/ingredient/recover/$scanId'
     | '/ai-style/care/ingredient/result/$scanId'
     | '/ai-style/care/ingredient/inci/$scanId/$inciSlug'
@@ -949,6 +961,7 @@ export interface FileRouteTypes {
     | '/dev/explore-gen/'
     | '/ai-style_/care_/products_/$productId'
     | '/ai-style_/care_/ingredient_/inci/$scanId'
+    | '/ai-style_/care_/ingredient_/pick/$scanId'
     | '/ai-style_/care_/ingredient_/recover/$scanId'
     | '/ai-style_/care_/ingredient_/result/$scanId'
     | '/ai-style_/care_/ingredient_/inci/$scanId_/$inciSlug'
@@ -1022,6 +1035,7 @@ export interface RootRouteChildren {
   MorfAiShareShareIdRoute: typeof MorfAiShareShareIdRoute
   AiStyleCareProductsProductIdRoute: typeof AiStyleCareProductsProductIdRoute
   AiStyleCareIngredientInciScanIdRoute: typeof AiStyleCareIngredientInciScanIdRoute
+  AiStyleCareIngredientPickScanIdRoute: typeof AiStyleCareIngredientPickScanIdRoute
   AiStyleCareIngredientRecoverScanIdRoute: typeof AiStyleCareIngredientRecoverScanIdRoute
   AiStyleCareIngredientResultScanIdRoute: typeof AiStyleCareIngredientResultScanIdRoute
   AiStyleCareIngredientInciScanIdInciSlugRoute: typeof AiStyleCareIngredientInciScanIdInciSlugRoute
@@ -1547,6 +1561,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AiStyleCareIngredientInciScanIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/ai-style_/care_/ingredient_/pick/$scanId': {
+      id: '/ai-style_/care_/ingredient_/pick/$scanId'
+      path: '/ai-style/care/ingredient/pick/$scanId'
+      fullPath: '/ai-style/care/ingredient/pick/$scanId'
+      preLoaderRoute: typeof AiStyleCareIngredientPickScanIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/ai-style_/care_/ingredient_/recover/$scanId': {
       id: '/ai-style_/care_/ingredient_/recover/$scanId'
       path: '/ai-style/care/ingredient/recover/$scanId'
@@ -1699,6 +1720,7 @@ const rootRouteChildren: RootRouteChildren = {
   MorfAiShareShareIdRoute: MorfAiShareShareIdRoute,
   AiStyleCareProductsProductIdRoute: AiStyleCareProductsProductIdRoute,
   AiStyleCareIngredientInciScanIdRoute: AiStyleCareIngredientInciScanIdRoute,
+  AiStyleCareIngredientPickScanIdRoute: AiStyleCareIngredientPickScanIdRoute,
   AiStyleCareIngredientRecoverScanIdRoute:
     AiStyleCareIngredientRecoverScanIdRoute,
   AiStyleCareIngredientResultScanIdRoute:

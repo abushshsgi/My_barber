@@ -1,0 +1,7 @@
+reports/
+*.csv
+!offline_manifest.json
+!labeled_scans.json
+!real_images_manifest.template.json
+images/
+real_images_manifest.json

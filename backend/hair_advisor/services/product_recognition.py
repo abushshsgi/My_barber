@@ -46,6 +46,18 @@ def lookup_by_barcode(barcode: str) -> dict[str, Any]:
     }
 
 
+def rank_ocr_catalog_candidates(
+    gemini_payload: dict[str, Any],
+    *,
+    limit: int = 8,
+) -> tuple[list[CareProduct], dict[str, Any]]:
+    """Deprecated entry — delegates to Hybrid V3 (kept for tests/callers)."""
+    from hair_advisor.services.hybrid_recognition.pipeline import run_hybrid_image_recognition
+
+    products, meta = run_hybrid_image_recognition(gemini_payload)
+    return products[:limit], meta
+
+
 def search_products(query: str, limit: int = 20) -> list[CareProduct]:
     from django.db.models import Q
 

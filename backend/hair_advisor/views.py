@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from django.db import transaction
+from django.db.utils import DatabaseError
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
@@ -16,6 +17,7 @@ from hair_advisor.models import HairAnalysis, HairAnalysisFeedback, HairScan, Pr
 from hair_advisor.serializers import (
     CompareSerializer,
     ConfirmIngredientsSerializer,
+    ConfirmProductSerializer,
     FeedbackSerializer,
     HairAnalysisSerializer,
     HairRoutineSerializer,
@@ -29,7 +31,10 @@ from hair_advisor.services.barcode import validate_barcode_checksum
 from hair_advisor.services.comparison import compare_care_products
 from hair_advisor.services.ingredient_detail import build_ingredient_detail
 from hair_advisor.services.ingredient_engine import normalize_ingredient_list
-from hair_advisor.services.product_recognition import care_to_hair_product, lookup_by_barcode, search_products
+from hair_advisor.services.hybrid_recognition import barcode_recognition_meta
+from hair_advisor.services.hybrid_recognition.constants import EXACT_MATCH
+from hair_advisor.services.hybrid_recognition.pipeline import apply_scan_status_from_meta, run_hybrid_text_search
+from hair_advisor.services.product_recognition import care_to_hair_product, lookup_by_barcode
 from hair_advisor.services.routines import add_product_to_routine, get_or_create_current_routine
 
 
@@ -93,6 +98,7 @@ class HairScanListCreateView(UnthrottledAPIView):
             lookup = lookup_by_barcode(code)
             scan.barcode = code
             scan.lookup_source = lookup.get("source") or lookup.get("tier") or ""
+            scan.recognition_meta = barcode_recognition_meta(lookup, code=code)
             if not lookup.get("found"):
                 scan.status = HairScan.Status.PRODUCT_NOT_FOUND
                 scan.save()
@@ -108,6 +114,10 @@ class HairScanListCreateView(UnthrottledAPIView):
             scan.product = lookup.get("hair_product")
             ingredients = lookup.get("ingredients") or []
             scan.ingredients_draft = normalize_ingredient_list(ingredients)
+            if scan.recognition_meta.get("recognition_status") != EXACT_MATCH:
+                scan.status = HairScan.Status.PRODUCT_NOT_FOUND
+                scan.save()
+                return Response(_serialize_scan(scan, request), status=200)
             verified = lookup.get("tier") == "verified" or lookup.get("source") == "verified"
             if ingredients:
                 scan.status = HairScan.Status.NEEDS_CONFIRMATION
@@ -128,21 +138,18 @@ class HairScanListCreateView(UnthrottledAPIView):
         if method == HairScan.InputMethod.SEARCH:
             q = (data.get("search_query") or "").strip()
             scan.search_query = q
-            results = search_products(q)
-            if not results:
-                scan.status = HairScan.Status.PRODUCT_NOT_FOUND
-                scan.save()
-                return Response(_serialize_scan(scan, request), status=404)
-            care = results[0]
-            scan.care_product = care
-            scan.product = care_to_hair_product(care)
-            scan.ingredients_draft = normalize_ingredient_list(care.ingredients or care.ingredients_text)
-            scan.status = (
-                HairScan.Status.NEEDS_CONFIRMATION
-                if scan.ingredients_draft
-                else HairScan.Status.INGREDIENTS_REQUIRED
-            )
+            candidates, rec_meta = run_hybrid_text_search(q)
+            scan.ingredients_draft = []
+            apply_scan_status_from_meta(scan, candidates, rec_meta)
+            if candidates and scan.care_product_id and not scan.ingredients_draft:
+                care = scan.care_product
+                if care:
+                    scan.ingredients_draft = normalize_ingredient_list(care.ingredients or care.ingredients_text)
+                    if scan.ingredients_draft and scan.status == HairScan.Status.INGREDIENTS_REQUIRED:
+                        scan.status = HairScan.Status.PRODUCT_FOUND
             scan.save()
+            if scan.status == HairScan.Status.PRODUCT_NOT_FOUND:
+                return Response(_serialize_scan(scan, request), status=404)
             return Response(_serialize_scan(scan, request), status=201)
 
         if method == HairScan.InputMethod.MANUAL_INGREDIENTS:
@@ -165,7 +172,16 @@ class HairScanListCreateView(UnthrottledAPIView):
             scan.save()
             try:
                 run_ocr_for_scan(scan, image, profile, request.user)
+            except DatabaseError:
+                scan.status = HairScan.Status.FAILED
+                scan.error_code = "service_unavailable"
+                scan.error_message = "Baza vaqtincha ishlamayapti. Qayta urinib ko'ring."
+                scan.save()
+                return Response(_serialize_scan(scan, request), status=503)
             except Exception:
+                scan.refresh_from_db()
+                if scan.status == HairScan.Status.FAILED and scan.error_code:
+                    return Response(_serialize_scan(scan, request), status=422)
                 scan.status = HairScan.Status.FAILED
                 scan.error_code = "ocr_failed"
                 scan.error_message = "Tarkib o'qilmadi. Aniqroq rasm yuboring."
@@ -196,6 +212,57 @@ class HairScanDetailView(UnthrottledAPIView):
         except HairAnalysis.DoesNotExist:
             pass
         return Response(payload)
+
+
+class ConfirmProductView(UnthrottledAPIView):
+    """User picks one catalog product after ambiguous OCR / image recognition."""
+
+    permission_classes = [IsAuthenticated, IsAuthenticatedCustomer]
+
+    @transaction.atomic
+    def post(self, request, scan_id):
+        blocked = morph_care_block(user=request.user)
+        if blocked:
+            return Response(blocked, status=status.HTTP_403_FORBIDDEN)
+        try:
+            scan = HairScan.objects.get(pk=scan_id, user=request.user)
+        except HairScan.DoesNotExist:
+            return Response({"detail": "Topilmadi."}, status=404)
+
+        ser = ConfirmProductSerializer(data=request.data)
+        ser.is_valid(raise_exception=True)
+        care_id = ser.validated_data["care_product_id"]
+        care = CareProduct.objects.filter(pk=care_id, is_published=True).first()
+        if care is None:
+            return Response({"detail": "Mahsulot topilmadi."}, status=404)
+
+        meta = scan.recognition_meta if isinstance(scan.recognition_meta, dict) else {}
+        allowed = meta.get("candidate_ids") or []
+        if allowed and care_id not in allowed:
+            return Response({"detail": "Bu nomzod ro'yxatda yo'q."}, status=400)
+
+        scan.care_product = care
+        scan.product = care_to_hair_product(care)
+        if care.ingredients or care.ingredients_text:
+            scan.ingredients_draft = normalize_ingredient_list(care.ingredients or care.ingredients_text)
+        analytics = meta.get("analytics") if isinstance(meta.get("analytics"), dict) else {}
+        analytics["user_confirmation_outcome"] = "confirmed"
+        meta = {
+            **meta,
+            "recognition_status": EXACT_MATCH,
+            "v3_status": EXACT_MATCH,
+            "selected_care_product_id": care_id,
+            "analytics": analytics,
+            "ui_message_key": "product_identified",
+        }
+        scan.recognition_meta = meta
+        scan.status = (
+            HairScan.Status.PRODUCT_FOUND
+            if scan.ingredients_draft
+            else HairScan.Status.INGREDIENTS_REQUIRED
+        )
+        scan.save()
+        return Response(_serialize_scan(scan, request), status=200)
 
 
 class ConfirmIngredientsView(UnthrottledAPIView):

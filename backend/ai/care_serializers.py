@@ -47,6 +47,7 @@ def _clean_tags(raw) -> list[str]:
 
 
 class CareProductSerializer(serializers.ModelSerializer):
+    volume_ml = serializers.SerializerMethodField()
     image_url = serializers.SerializerMethodField()
     likes_count = serializers.SerializerMethodField()
     liked_by_me = serializers.SerializerMethodField()
@@ -57,6 +58,10 @@ class CareProductSerializer(serializers.ModelSerializer):
     usage_instructions = serializers.ReadOnlyField(source="usage_uz")
     target_hair_types = serializers.ReadOnlyField(source="suitable_for")
     target_scalp_types = serializers.ReadOnlyField(source="scalp_types")
+
+    def get_volume_ml(self, obj: CareProduct) -> int | None:
+        value = getattr(obj, "volume_ml", None)
+        return value if isinstance(value, int) and value > 0 else None
 
     class Meta:
         model = CareProduct

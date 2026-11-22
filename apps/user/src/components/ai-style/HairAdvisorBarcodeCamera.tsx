@@ -3,6 +3,7 @@ import { Loader2 } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import {
+  applyVideoTorch,
   cameraAccessUserMessage,
   diagnoseCameraAccess,
   openBarcodeVideoStream,
@@ -19,6 +20,14 @@ type Props = {
   onDecodeFailed?: () => void;
   className?: string;
   embedded?: boolean;
+  /** Kamera butun konteyner/orqa fonni qoplaydi (skaner sahifasi). */
+  fullScreen?: boolean;
+  torch?: boolean;
+  /** Barcode bir xil ketma-ket o‘qilgan kadrlar soni. */
+  stableReadCount?: number;
+  /** false = faqat kamera ko‘rinishi (rasm rejimi). */
+  enableDecode?: boolean;
+  onVideoElement?: (video: HTMLVideoElement | null) => void;
 };
 
 const NATIVE_FORMATS = ["ean_13", "ean_8", "upc_a", "upc_e", "code_128"] as const;
@@ -42,18 +51,32 @@ export function HairAdvisorBarcodeCamera({
   onDecodeFailed,
   className,
   embedded,
+  fullScreen = false,
+  torch = false,
+  stableReadCount = 2,
+  enableDecode = true,
+  onVideoElement,
 }: Props) {
   const { t } = useTranslation();
   const videoRef = useRef<HTMLVideoElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const lockedRef = useRef(false);
+  const lastNormalizedRef = useRef<string | null>(null);
+  const stableHitsRef = useRef(0);
   const [starting, setStarting] = useState(false);
+
+  useEffect(() => {
+    onVideoElement?.(videoRef.current);
+    return () => onVideoElement?.(null);
+  }, [onVideoElement, active, starting]);
 
   useEffect(() => {
     if (!active) {
       streamRef.current?.getTracks().forEach((track) => track.stop());
       streamRef.current = null;
       lockedRef.current = false;
+      lastNormalizedRef.current = null;
+      stableHitsRef.current = 0;
       return;
     }
 
@@ -77,6 +100,13 @@ export function HairAdvisorBarcodeCamera({
     const emitCode = (raw: string) => {
       const normalized = normalizeRetailBarcode(raw);
       if (!normalized || lockedRef.current) return;
+      if (lastNormalizedRef.current === normalized) {
+        stableHitsRef.current += 1;
+      } else {
+        lastNormalizedRef.current = normalized;
+        stableHitsRef.current = 1;
+      }
+      if (stableHitsRef.current < Math.max(1, stableReadCount)) return;
       lockedRef.current = true;
       stopped = true;
       onDetected(normalized);
@@ -165,6 +195,8 @@ export function HairAdvisorBarcodeCamera({
         }
         setStarting(false);
 
+        if (!enableDecode) return;
+
         const NativeDetector = (
           window as unknown as {
             BarcodeDetector?: new (o?: { formats?: string[] }) => {
@@ -208,7 +240,12 @@ export function HairAdvisorBarcodeCamera({
       streamRef.current = null;
       lockedRef.current = false;
     };
-  }, [active, embedded, onClose, onDecodeFailed, onDetected, t]);
+  }, [active, embedded, enableDecode, onClose, onDecodeFailed, onDetected, stableReadCount, t]);
+
+  useEffect(() => {
+    if (!active) return;
+    void applyVideoTorch(streamRef.current, torch);
+  }, [active, torch]);
 
   if (!active) return null;
 
@@ -218,16 +255,24 @@ export function HairAdvisorBarcodeCamera({
   return (
     <div
       className={cn(
-        "relative overflow-hidden rounded-2xl border border-[#303030] bg-black",
-        embedded ? "" : "border-[#111]/15",
+        "relative overflow-hidden bg-black",
+        fullScreen ? "absolute inset-0 h-full w-full" : "rounded-2xl border border-[#303030]",
+        !fullScreen && !embedded && "border-[#111]/15",
         className,
       )}
       role="region"
       aria-label={t("hairAdvisor.barcodeCamera", { defaultValue: "Shtrix-kod kamerasi" })}
     >
-      <video ref={videoRef} className="h-full w-full object-cover" playsInline muted />
-      <div className="pointer-events-none absolute inset-[10%] rounded-2xl border-2 border-white/90" aria-hidden />
-      {!reducedMotion ? <motionLayer /> : null}
+      <video
+        ref={videoRef}
+        className={cn("object-cover", fullScreen ? "absolute inset-0 h-full w-full" : "h-full w-full")}
+        playsInline
+        muted
+      />
+      {!fullScreen ? (
+        <div className="pointer-events-none absolute inset-[10%] rounded-2xl border-2 border-white/90" aria-hidden />
+      ) : null}
+      {!fullScreen && !reducedMotion ? <motionLayer /> : null}
       {starting ? (
         <div className="absolute inset-0 flex items-center justify-center bg-black/40">
           <Loader2 className="size-8 animate-spin text-white" />

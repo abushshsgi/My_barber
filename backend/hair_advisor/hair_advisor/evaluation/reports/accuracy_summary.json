@@ -1,0 +1,213 @@
+{
+  "generated_at": "2026-11-21T08:57:41.137691+00:00",
+  "measurement_scope": "offline_ocr_and_barcode_fixtures",
+  "summary": {
+    "dataset_path": "hair_advisor\\evaluation\\fixtures\\offline_manifest.json",
+    "total_samples": 8,
+    "evaluated_samples": 7,
+    "skipped_samples": 1,
+    "real_image_samples": 0,
+    "offline_fixture_samples": 8,
+    "catalog_present_samples": 4,
+    "auto_decision_samples": 0,
+    "false_match_count": 0,
+    "false_match_rate": null,
+    "false_not_found_count": 0,
+    "false_not_found_rate": 0.0,
+    "exact_auto_accuracy": 0.0,
+    "recall_at_1": 1.0,
+    "recall_at_3": 1.0,
+    "recall_at_5": 1.0,
+    "ambiguous_rate": 0.142857,
+    "insufficient_image_rate": 0.142857,
+    "service_failure_rate": 0.142857,
+    "ai_fallback_rate": 0.857143,
+    "ai_requests_total": 6,
+    "latency_median_ms": 2,
+    "latency_p95_ms": 3.7,
+    "latency_max_ms": 4,
+    "barcode_decode_evaluated": 1,
+    "quality_gates_passed": null,
+    "quality_gate_notes": [
+      "Quality gates NOT APPLIED: catalog-present samples=4 (minimum 30 required for gate enforcement)."
+    ],
+    "measurement_scope": "offline_ocr_and_barcode_fixtures",
+    "raw_metrics": {
+      "false_match_denominator_auto_decisions": 0,
+      "false_not_found_denominator_catalog_present": 4,
+      "exact_auto_correct": 0,
+      "recall_at_1_numerator": 4,
+      "recall_at_3_numerator": 4,
+      "recall_at_5_numerator": 4,
+      "skipped_with_dataset_issue": 1
+    }
+  },
+  "outcomes": [
+    {
+      "sample_id": "ocr-clear-repair-exact",
+      "scenario": "E_similar_names",
+      "evaluation_mode": "ocr_fixture",
+      "recognition_status": "exact_match",
+      "predicted_product_id": null,
+      "candidate_ids": [
+        1,
+        2
+      ],
+      "candidate_scores": {
+        "1": 1.0,
+        "2": 0.5371
+      },
+      "latency_ms": 2,
+      "failure_stage": null,
+      "ai_fallback_used": true,
+      "barcode_lookup_found": null,
+      "dataset_issue": null,
+      "ground_truth_product_id": 1,
+      "ground_truth_resolved": true,
+      "auto_attached": false
+    },
+    {
+      "sample_id": "ocr-clear-ambiguous-variant",
+      "scenario": "F_same_brand_variants",
+      "evaluation_mode": "ocr_fixture",
+      "recognition_status": "ambiguous",
+      "predicted_product_id": null,
+      "candidate_ids": [
+        1,
+        2
+      ],
+      "candidate_scores": {
+        "1": 0.7467,
+        "2": 0.58
+      },
+      "latency_ms": 1,
+      "failure_stage": "product_confirmation",
+      "ai_fallback_used": true,
+      "barcode_lookup_found": null,
+      "dataset_issue": null,
+      "ground_truth_product_id": 1,
+      "ground_truth_resolved": true,
+      "auto_attached": false
+    },
+    {
+      "sample_id": "ocr-insufficient-label",
+      "scenario": "J_blurry_image",
+      "evaluation_mode": "ocr_fixture",
+      "recognition_status": "insufficient_image_quality",
+      "predicted_product_id": null,
+      "candidate_ids": [],
+      "candidate_scores": {},
+      "latency_ms": 0,
+      "failure_stage": "image_quality",
+      "ai_fallback_used": true,
+      "barcode_lookup_found": null,
+      "dataset_issue": null,
+      "ground_truth_product_id": null,
+      "ground_truth_resolved": false,
+      "auto_attached": false
+    },
+    {
+      "sample_id": "ocr-invalid-ai-id",
+      "scenario": "R_ai_invalid_product_id",
+      "evaluation_mode": "ocr_fixture",
+      "recognition_status": "exact_match",
+      "predicted_product_id": null,
+      "candidate_ids": [
+        1,
+        2
+      ],
+      "candidate_scores": {
+        "1": 1.0,
+        "2": 0.5371
+      },
+      "latency_ms": 2,
+      "failure_stage": "ai_verification",
+      "ai_fallback_used": true,
+      "barcode_lookup_found": null,
+      "dataset_issue": null,
+      "ground_truth_product_id": 1,
+      "ground_truth_resolved": true,
+      "auto_attached": false
+    },
+    {
+      "sample_id": "ocr-catalog-absent",
+      "scenario": "P_product_absent_from_catalog",
+      "evaluation_mode": "ocr_fixture",
+      "recognition_status": "not_found",
+      "predicted_product_id": null,
+      "candidate_ids": [],
+      "candidate_scores": {},
+      "latency_ms": 4,
+      "failure_stage": "candidate_retrieval",
+      "ai_fallback_used": true,
+      "barcode_lookup_found": null,
+      "dataset_issue": null,
+      "ground_truth_product_id": null,
+      "ground_truth_resolved": false,
+      "auto_attached": false
+    },
+    {
+      "sample_id": "barcode-invalid-checksum",
+      "scenario": "B_barcode_not_in_db",
+      "evaluation_mode": "barcode_string",
+      "recognition_status": "invalid_barcode",
+      "predicted_product_id": null,
+      "candidate_ids": [],
+      "candidate_scores": {},
+      "latency_ms": 0,
+      "failure_stage": "barcode_decode",
+      "ai_fallback_used": false,
+      "barcode_lookup_found": false,
+      "dataset_issue": null,
+      "ground_truth_product_id": null,
+      "ground_truth_resolved": false,
+      "auto_attached": false
+    },
+    {
+      "sample_id": "barcode-unknown-ean13",
+      "scenario": "B_barcode_not_in_db",
+      "evaluation_mode": "barcode_string",
+      "recognition_status": "service_unavailable",
+      "predicted_product_id": null,
+      "candidate_ids": [],
+      "candidate_scores": {},
+      "latency_ms": 0,
+      "failure_stage": "backend_failure",
+      "ai_fallback_used": false,
+      "barcode_lookup_found": null,
+      "dataset_issue": "No module named 'redis'",
+      "ground_truth_product_id": null,
+      "ground_truth_resolved": false,
+      "auto_attached": false
+    },
+    {
+      "sample_id": "ocr-ru-brand-normalization",
+      "scenario": "M_russian_label",
+      "evaluation_mode": "ocr_fixture",
+      "recognition_status": "exact_match",
+      "predicted_product_id": null,
+      "candidate_ids": [
+        1,
+        2
+      ],
+      "candidate_scores": {
+        "1": 1.0,
+        "2": 0.5371
+      },
+      "latency_ms": 3,
+      "failure_stage": null,
+      "ai_fallback_used": true,
+      "barcode_lookup_found": null,
+      "dataset_issue": null,
+      "ground_truth_product_id": 1,
+      "ground_truth_resolved": true,
+      "auto_attached": false
+    }
+  ],
+  "confusion": {
+    "false_match_pairs": [],
+    "false_match_details": [],
+    "catalog_present_not_found": [],
+    "failure_stage_counts": {}
+  }
+}

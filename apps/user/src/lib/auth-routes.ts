@@ -19,6 +19,11 @@ function isGuestTryOnPath(path: string): boolean {
   return /^\/explore\/[^/]+\/try$/.test(path);
 }
 
+/** Hair Advisor natija UI demo (statik, APIsiz). */
+function isHairAdvisorResultDemoPath(path: string): boolean {
+  return path === "/ai-style/care/ingredient/result/demo" || path === "/ai-style/care/ingredient/result/preview";
+}
+
 function normalizePath(pathname: string): string {
   const raw = (pathname.split("?")[0] ?? pathname).split("#")[0] || "/";
   const withSlash = raw.startsWith("/") ? raw : `/${raw}`;
@@ -30,6 +35,7 @@ export function pathRequiresAuth(pathname: string): boolean {
   const path = normalizePath(pathname);
   if (path === "/auth" || path.startsWith("/auth/")) return false;
   if (isGuestTryOnPath(path)) return false;
+  if (isHairAdvisorResultDemoPath(path)) return false;
   return !PUBLIC_PATHS.has(path);
 }
 

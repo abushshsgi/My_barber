@@ -1,0 +1,40 @@
+[
+  {
+    "label": "clear_repair_exact",
+    "gemini_payload": {
+      "product_analysis": { "brand": "Clear", "product_name": "Repair Shampoo" },
+      "matched_product_id": null,
+      "ingredients": ["Aqua", "Glycerin"]
+    },
+    "expected_product_slug": "clear-repair",
+    "expect_status": "exact_match"
+  },
+  {
+    "label": "clear_ambiguous_volume",
+    "gemini_payload": {
+      "product_analysis": { "brand": "Clear", "product_name": "Shampoo 400 ml" },
+      "matched_product_id": null,
+      "ingredients": ["Aqua"]
+    },
+    "expect_status": "ambiguous"
+  },
+  {
+    "label": "unknown_brand",
+    "gemini_payload": {
+      "product_analysis": { "brand": "NoBrandXYZ", "product_name": "Foo" },
+      "matched_product_id": null,
+      "ingredients": []
+    },
+    "expect_status": "insufficient_image_quality"
+  },
+  {
+    "label": "invalid_ai_id",
+    "gemini_payload": {
+      "product_analysis": { "brand": "Clear", "product_name": "Repair Shampoo" },
+      "matched_product_id": 999999,
+      "ingredients": ["Aqua"]
+    },
+    "expected_product_slug": "clear-repair",
+    "expect_status": "exact_match"
+  }
+]

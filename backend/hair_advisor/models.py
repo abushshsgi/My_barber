@@ -199,6 +199,7 @@ class HairScan(models.Model):
     error_message = models.CharField(max_length=280, blank=True, default="")
     lookup_source = models.CharField(max_length=32, blank=True, default="")
     idempotency_key = models.CharField(max_length=64, blank=True, default="", db_index=True)
+    recognition_meta = models.JSONField(default=dict, blank=True)
     created_at = models.DateTimeField(auto_now_add=True, db_index=True)
     updated_at = models.DateTimeField(auto_now=True)
 

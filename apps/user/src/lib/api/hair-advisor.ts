@@ -35,6 +35,22 @@ export type HairScan = {
     ingredients_text?: string;
   };
   search_query?: string;
+  message_uz?: string;
+  recognition_meta?: {
+    recognition_status?: "none" | "exact" | "ambiguous";
+    candidate_ids?: number[];
+    ocr_brand?: string;
+    ocr_product_name?: string;
+  };
+  product_candidates?: Array<{
+    id: number;
+    name: string;
+    brand: string;
+    image_url?: string | null;
+    volume_ml?: number | null;
+    is_verified?: boolean;
+    barcode?: string | null;
+  }>;
 };
 
 export type HairScanDetail = HairScan & { analysis?: HairAnalysis };
@@ -94,6 +110,12 @@ export async function confirmHairScanIngredients(
   ingredients: string[],
 ): Promise<{ scan: HairScan; analysis: HairAnalysis }> {
   return postJson(`/api/v1/hair-advisor/scans/${scanId}/confirm-ingredients/`, { ingredients });
+}
+
+export async function confirmHairScanProduct(scanId: string, careProductId: number): Promise<HairScan> {
+  return postJson(`/api/v1/hair-advisor/scans/${scanId}/confirm-product/`, {
+    care_product_id: careProductId,
+  });
 }
 
 export async function analyzeHairScan(scanId: string): Promise<HairAnalysis> {

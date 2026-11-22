@@ -18,7 +18,8 @@ from hair_advisor.services.ingredient_engine import (
     build_deterministic_analysis,
     normalize_ingredient_list,
 )
-from hair_advisor.services.product_recognition import care_to_hair_product
+from hair_advisor.services.hybrid_recognition import apply_scan_status_from_meta, run_hybrid_image_recognition
+from hair_advisor.services.hybrid_recognition.constants import SERVICE_UNAVAILABLE
 
 
 def _product_like(care: CareProduct | None, scan: HairScan) -> Any:
@@ -41,31 +42,56 @@ def _product_like(care: CareProduct | None, scan: HairScan) -> Any:
 
 
 def run_ocr_for_scan(scan: HairScan, image_data_url: str, profile: HairCareProfile, user) -> None:
+    import time
+
+    from ai.services.errors import AiStyleError
+
     catalog_block = build_care_catalog_context()
     gender = (getattr(user, "gender", None) or "").strip().lower()
-    result = analyze_ingredient_from_data_url(
-        image_data_url,
-        profile,
-        catalog_block=catalog_block,
-        gender=gender,
-    )
+    t0 = time.perf_counter()
+    try:
+        result = analyze_ingredient_from_data_url(
+            image_data_url,
+            profile,
+            catalog_block=catalog_block,
+            gender=gender,
+        )
+    except AiStyleError as exc:
+        scan.status = HairScan.Status.FAILED
+        code = str(getattr(exc, "code", "") or "ocr_failed")
+        scan.error_code = "service_unavailable" if code in ("timeout", "rate_limit", "unavailable") else "ocr_failed"
+        scan.error_message = "Xizmat vaqtincha band. Qayta urinib ko'ring." if scan.error_code == "service_unavailable" else "Tarkib o'qilmadi."
+        scan.recognition_meta = {
+            "recognition_status": SERVICE_UNAVAILABLE if scan.error_code == "service_unavailable" else "ocr_failed",
+            "v3_status": SERVICE_UNAVAILABLE if scan.error_code == "service_unavailable" else "ocr_failed",
+            "ui_message_key": "service_unavailable",
+        }
+        scan.save(update_fields=["status", "error_code", "error_message", "recognition_meta", "updated_at"])
+        raise
     ingredients = result.get("ingredients") if isinstance(result.get("ingredients"), list) else []
     scan.ingredients_draft = normalize_ingredient_list(ingredients)
     analysis = result.get("product_analysis") if isinstance(result.get("product_analysis"), dict) else {}
     scan.search_query = str(analysis.get("product_name") or scan.search_query or "")[:160]
-    if scan.product is None and isinstance(result.get("matched_product_id"), int):
-        care = CareProduct.objects.filter(pk=result["matched_product_id"], is_published=True).first()
-        if care:
-            scan.care_product = care
-            scan.product = care_to_hair_product(care)
-    scan.status = HairScan.Status.NEEDS_CONFIRMATION
+    candidates, rec_meta = run_hybrid_image_recognition(
+        result,
+        scan_method=str(scan.input_method or "camera_label"),
+        started_at=t0,
+    )
+    if not scan.ingredients_draft and candidates and len(candidates) == 1:
+        care = candidates[0]
+        if care.ingredients or care.ingredients_text:
+            scan.ingredients_draft = normalize_ingredient_list(care.ingredients or care.ingredients_text)
+    apply_scan_status_from_meta(scan, candidates, rec_meta)
     scan.save(
         update_fields=[
             "ingredients_draft",
             "search_query",
             "care_product",
             "product",
+            "recognition_meta",
             "status",
+            "error_code",
+            "error_message",
             "updated_at",
         ]
     )

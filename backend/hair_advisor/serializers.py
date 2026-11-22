@@ -15,6 +15,8 @@ from hair_advisor.models import (
 class HairScanSerializer(serializers.ModelSerializer):
     analysis_id = serializers.SerializerMethodField()
     care_product = CareProductSerializer(read_only=True)
+    product_candidates = serializers.SerializerMethodField()
+    recognition_meta = serializers.JSONField(read_only=True)
 
     class Meta:
         model = HairScan
@@ -32,11 +34,30 @@ class HairScanSerializer(serializers.ModelSerializer):
             "error_message",
             "care_product",
             "product_id",
+            "recognition_meta",
+            "product_candidates",
             "created_at",
             "updated_at",
             "analysis_id",
         ]
         read_only_fields = fields
+
+    def get_product_candidates(self, obj: HairScan) -> list[dict]:
+        from ai.models import CareProduct
+
+        meta = obj.recognition_meta if isinstance(obj.recognition_meta, dict) else {}
+        from hair_advisor.services.hybrid_recognition.constants import PICK_STATUSES
+
+        status = meta.get("recognition_status")
+        if status not in PICK_STATUSES:
+            return []
+        ids = meta.get("candidate_ids") or []
+        if not ids:
+            return []
+        order = {pk: idx for idx, pk in enumerate(ids)}
+        rows = CareProduct.objects.filter(pk__in=ids, is_published=True)
+        sorted_rows = sorted(rows, key=lambda c: order.get(c.pk, 999))
+        return CareProductSerializer(sorted_rows, many=True, context=self.context).data
 
     def get_analysis_id(self, obj: HairScan) -> int | None:
         analysis = getattr(obj, "analysis", None)
@@ -63,6 +84,10 @@ class HairScanCreateSerializer(serializers.Serializer):
 
 class ConfirmIngredientsSerializer(serializers.Serializer):
     ingredients = serializers.ListField(child=serializers.CharField(max_length=200), min_length=1)
+
+
+class ConfirmProductSerializer(serializers.Serializer):
+    care_product_id = serializers.IntegerField(min_value=1)
 
 
 class HairAnalysisSerializer(serializers.ModelSerializer):

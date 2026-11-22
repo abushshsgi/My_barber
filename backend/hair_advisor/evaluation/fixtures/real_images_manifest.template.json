@@ -1,0 +1,23 @@
+[
+  {
+    "sample_id": "REPLACE-WITH-UUID",
+    "evaluation_mode": "image_file",
+    "scenario": "A_exact_barcode",
+    "expected_catalog_presence": true,
+    "annotation_source": "human_qa_verified",
+    "annotation_verified": false,
+    "ground_truth_product_id": null,
+    "ground_truth_product_slug": "REPLACE-WITH-CATALOG-SLUG",
+    "brand": "",
+    "product_name": "",
+    "variant": "",
+    "volume_ml": null,
+    "barcode": null,
+    "image_path": "hair_advisor/evaluation/images/REPLACE/sample.jpg",
+    "capture_device": "e.g. Pixel 8 / iPhone 15",
+    "lighting_condition": "daylight | indoor | low_light",
+    "capture_angle": "front | side | ingredients_panel",
+    "image_quality_label": "sharp | blurry | partial",
+    "notes": "Do not commit user photos. Store under evaluation/images/ with .gitignore."
+  }
+]

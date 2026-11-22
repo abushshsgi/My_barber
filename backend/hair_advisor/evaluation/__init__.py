@@ -1,0 +1,1 @@
+"""Hair Advisor scanner accuracy evaluation (offline-first)."""

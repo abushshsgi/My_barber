@@ -1,0 +1,113 @@
+[
+  {
+    "sample_id": "ocr-clear-repair-exact",
+    "evaluation_mode": "ocr_fixture",
+    "scenario": "E_similar_names",
+    "expected_catalog_presence": true,
+    "annotation_source": "qa_synthetic_fixture",
+    "annotation_verified": false,
+    "ground_truth_product_slug": "eval-clear-repair",
+    "brand": "Clear",
+    "product_name": "Repair Shampoo",
+    "gemini_payload": {
+      "product_analysis": { "brand": "Clear", "product_name": "Repair Shampoo" },
+      "matched_product_id": null,
+      "ingredients": ["Aqua", "Glycerin"]
+    },
+    "expect_status": "exact_match"
+  },
+  {
+    "sample_id": "ocr-clear-ambiguous-variant",
+    "evaluation_mode": "ocr_fixture",
+    "scenario": "F_same_brand_variants",
+    "expected_catalog_presence": true,
+    "annotation_source": "qa_synthetic_fixture",
+    "annotation_verified": false,
+    "ground_truth_product_slug": "eval-clear-repair",
+    "brand": "Clear",
+    "product_name": "Shampoo",
+    "gemini_payload": {
+      "product_analysis": { "brand": "Clear", "product_name": "Shampoo" },
+      "matched_product_id": null,
+      "ingredients": ["Aqua"]
+    },
+    "expect_status": "ambiguous"
+  },
+  {
+    "sample_id": "ocr-insufficient-label",
+    "evaluation_mode": "ocr_fixture",
+    "scenario": "J_blurry_image",
+    "expected_catalog_presence": false,
+    "annotation_source": "qa_synthetic_fixture",
+    "annotation_verified": false,
+    "gemini_payload": {
+      "product_analysis": { "brand": "", "product_name": "" },
+      "matched_product_id": null,
+      "ingredients": []
+    },
+    "expect_status": "insufficient_image_quality"
+  },
+  {
+    "sample_id": "ocr-invalid-ai-id",
+    "evaluation_mode": "ocr_fixture",
+    "scenario": "R_ai_invalid_product_id",
+    "expected_catalog_presence": true,
+    "annotation_source": "qa_synthetic_fixture",
+    "annotation_verified": false,
+    "ground_truth_product_slug": "eval-clear-repair",
+    "gemini_payload": {
+      "product_analysis": { "brand": "Clear", "product_name": "Repair Shampoo" },
+      "matched_product_id": 999999,
+      "ingredients": ["Aqua"]
+    }
+  },
+  {
+    "sample_id": "ocr-catalog-absent",
+    "evaluation_mode": "ocr_fixture",
+    "scenario": "P_product_absent_from_catalog",
+    "expected_catalog_presence": false,
+    "annotation_source": "qa_synthetic_fixture",
+    "annotation_verified": false,
+    "brand": "NoBrandXYZ",
+    "product_name": "Imaginary Wash",
+    "gemini_payload": {
+      "product_analysis": { "brand": "NoBrandXYZ", "product_name": "Imaginary Wash" },
+      "matched_product_id": null,
+      "ingredients": ["Aqua"]
+    }
+  },
+  {
+    "sample_id": "barcode-invalid-checksum",
+    "evaluation_mode": "barcode_string",
+    "scenario": "B_barcode_not_in_db",
+    "expected_catalog_presence": false,
+    "annotation_source": "qa_synthetic_fixture",
+    "annotation_verified": true,
+    "barcode": "5901234123450",
+    "notes": "Invalid check digit — decode stage only"
+  },
+  {
+    "sample_id": "barcode-unknown-ean13",
+    "evaluation_mode": "barcode_string",
+    "scenario": "B_barcode_not_in_db",
+    "expected_catalog_presence": false,
+    "annotation_source": "qa_synthetic_fixture",
+    "annotation_verified": true,
+    "barcode": "5901234123457",
+    "notes": "Valid EAN-13 unlikely present in empty/small catalogs"
+  },
+  {
+    "sample_id": "ocr-ru-brand-normalization",
+    "evaluation_mode": "ocr_fixture",
+    "scenario": "M_russian_label",
+    "expected_catalog_presence": true,
+    "annotation_source": "qa_synthetic_fixture",
+    "annotation_verified": false,
+    "ground_truth_product_slug": "eval-clear-repair",
+    "gemini_payload": {
+      "product_analysis": { "brand": "Clear", "product_name": "Repair Shampoo" },
+      "matched_product_id": null,
+      "ingredients": ["Aqua", "Glycerin"]
+    }
+  }
+]

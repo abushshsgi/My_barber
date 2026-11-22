@@ -23,7 +23,7 @@ import { shouldShowScrollToTop } from "@/lib/scroll-to-top";
 import { cn } from "@/lib/utils";
 
 const MOBILE_VIEWPORT_LOCK_EXACT = new Set(["/map", "/ai-style"]);
-const MOBILE_VIEWPORT_LOCK_PREFIXES = ["/stories/"];
+const MOBILE_VIEWPORT_LOCK_PREFIXES = ["/stories/", "/ai-style/care/ingredient"];
 
 function shouldLockMobileViewport(pathname: string): boolean {
   if (MOBILE_VIEWPORT_LOCK_EXACT.has(pathname)) return true;
@@ -117,13 +117,15 @@ export function UserLayout({ children }: { children: React.ReactNode }) {
         <DemoEnvironmentBanner />
         <PaymeReturnCatcher />
       </ClientOnly>
-      <div className="hidden lg:block">
-        <DesktopAppHeader
-          chatUnread={chatUnread}
-          notificationsUnread={notificationsUnread}
-          headerInsetClassName={DESKTOP_SHELL_INSET}
-        />
-      </div>
+      {!flags.isHairAdvisorFlow ? (
+        <div className="hidden lg:block">
+          <DesktopAppHeader
+            chatUnread={chatUnread}
+            notificationsUnread={notificationsUnread}
+            headerInsetClassName={DESKTOP_SHELL_INSET}
+          />
+        </div>
+      ) : null}
 
       <main
         className={cn(
@@ -134,25 +136,31 @@ export function UserLayout({ children }: { children: React.ReactNode }) {
         <div
           className={cn(
             "mobile-neo neo-page texture-grid mx-auto flex w-full min-w-0 flex-1 flex-col overflow-x-clip",
-            showMobileDock || pathname === "/onboarding" ? "max-w-none" : "max-w-md",
+            showMobileDock || pathname === "/onboarding" || flags.isHairAdvisorFlow ? "max-w-none" : "max-w-md",
             pathname === "/onboarding" && "lg:pt-3",
             flags.isMap &&
               "shell-below-banner fixed inset-x-0 top-0 bottom-[calc(3.5rem+env(safe-area-inset-bottom,0px))] z-10 max-w-none flex-none overflow-hidden overscroll-none lg:static lg:inset-auto lg:z-auto lg:h-[calc(100dvh-5.25rem)] lg:max-w-none lg:overflow-hidden",
-            flags.isAiStyle &&
+            (flags.isAiStyle || flags.isHairAdvisorFlow) &&
               cn(
-                "shell-below-banner fixed inset-x-0 top-0 z-10 overflow-hidden overscroll-none lg:static lg:z-auto lg:h-[calc(100dvh-5.25rem)] lg:max-h-[calc(100dvh-5.25rem)] lg:overflow-hidden",
-                showMobileDock
-                  ? "bottom-[calc(3.5rem+env(safe-area-inset-bottom,0px))] h-auto max-h-none"
-                  : "h-[100dvh] max-h-[100dvh]",
+                "shell-below-banner fixed inset-x-0 top-0 z-10 overflow-hidden overscroll-none lg:static lg:z-auto lg:overflow-hidden",
+                flags.isHairAdvisorFlow
+                  ? "bottom-0 h-[100dvh] max-h-[100dvh] lg:h-[100dvh] lg:max-h-[100dvh]"
+                  : cn(
+                      "lg:h-[calc(100dvh-5.25rem)] lg:max-h-[calc(100dvh-5.25rem)]",
+                      showMobileDock
+                        ? "bottom-[calc(3.5rem+env(safe-area-inset-bottom,0px))] h-auto max-h-none"
+                        : "h-[100dvh] max-h-[100dvh]",
+                    ),
               ),
             flags.isFullBleed &&
               !flags.isViewportLocked &&
               (flags.isAiStyleSection && showMobileDock ? MOBILE_CONTENT_PADDING_CLASS : "pb-0"),
             !flags.isFullBleed && getMobileContentPaddingClass(pathname),
             !flags.isFullBleed && "lg:pb-12",
-            flags.isHome ? "lg:pt-3" : flags.isAiStyle ? "lg:pt-2" : "lg:pt-6",
+            flags.isHome ? "lg:pt-3" : flags.isAiStyle ? "lg:pt-2" : flags.isHairAdvisorFlow ? "lg:pt-0" : "lg:pt-6",
             !flags.isFullBleed && !flags.bazaarInset && !flags.isMobileFlush && DESKTOP_SHELL_INSET,
-            flags.isMobileFlush && "px-0 lg:px-10",
+            flags.isMobileFlush && !flags.isHairAdvisorFlow && "px-0 lg:px-10",
+            flags.isHairAdvisorFlow && "p-0",
             flags.bazaarInset && "lg:px-0",
             flags.isFullBleed && "lg:mx-0 lg:max-w-none",
           )}
@@ -160,7 +168,8 @@ export function UserLayout({ children }: { children: React.ReactNode }) {
           {flags.isFullBleed ? (
             <div
               className={cn(
-                (flags.isMap || flags.isAiStyle) && "flex min-h-0 flex-1 flex-col overflow-hidden",
+                (flags.isMap || flags.isAiStyle || flags.isHairAdvisorFlow) &&
+                  "flex min-h-0 flex-1 flex-col overflow-hidden",
               )}
             >
               {children}

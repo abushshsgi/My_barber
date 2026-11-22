@@ -845,7 +845,8 @@ BARBER_MOBILE_VERIFY_SCHEME = (
 import sys as _sys
 
 _RUNNING_TESTS = "test" in _sys.argv or os.environ.get("MYSALOON_PYTEST", "").lower() in ("1", "true", "yes")
-if _RUNNING_TESTS:
+_RUNNING_EVAL = "evaluate_scanner" in _sys.argv
+if _RUNNING_TESTS or _RUNNING_EVAL:
     _test_db_url = (os.environ.get("TEST_DATABASE_URL") or "").strip()
     _allow_remote_tests = os.environ.get("MYSALOON_ALLOW_REMOTE_TEST_DB", "").lower() in ("1", "true", "yes")
     _force_sqlite_tests = os.environ.get("MYSALOON_FORCE_SQLITE_TESTS", "").lower() in ("1", "true", "yes")

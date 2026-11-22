@@ -44,6 +44,26 @@ export async function pickPreferredVideoDeviceId(): Promise<string | undefined> 
   return rear?.deviceId ?? videos.at(-1)?.deviceId ?? videos[0]?.deviceId;
 }
 
+/** Mobil brauzerlarda orqa kamera chirog'i (mavjud bo'lsa). */
+export async function applyVideoTorch(stream: MediaStream | null, enabled: boolean): Promise<void> {
+  if (!stream) return;
+  const track = stream.getVideoTracks()[0];
+  if (!track) return;
+  try {
+    const caps = track.getCapabilities?.() as { torch?: boolean } | undefined;
+    if (caps?.torch === false) return;
+    await track.applyConstraints({
+      advanced: [{ torch: enabled } as MediaTrackConstraintSet],
+    } as MediaTrackConstraints);
+  } catch {
+    try {
+      await track.applyConstraints({ torch: enabled } as MediaTrackConstraints);
+    } catch {
+      /* device does not support torch */
+    }
+  }
+}
+
 export async function openBarcodeVideoStream(): Promise<MediaStream> {
   const deviceId = await pickPreferredVideoDeviceId();
   const constraints: MediaStreamConstraints = {

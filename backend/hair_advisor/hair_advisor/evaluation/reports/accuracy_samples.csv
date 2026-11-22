@@ -1,0 +1,9 @@
+sample_id,scenario,evaluation_mode,recognition_status,predicted_product_id,ground_truth_product_id,candidate_ids,latency_ms,failure_stage,auto_attached,dataset_issue
+ocr-clear-repair-exact,E_similar_names,ocr_fixture,exact_match,,1,1|2,2,,False,
+ocr-clear-ambiguous-variant,F_same_brand_variants,ocr_fixture,ambiguous,,1,1|2,1,product_confirmation,False,
+ocr-insufficient-label,J_blurry_image,ocr_fixture,insufficient_image_quality,,,,0,image_quality,False,
+ocr-invalid-ai-id,R_ai_invalid_product_id,ocr_fixture,exact_match,,1,1|2,2,ai_verification,False,
+ocr-catalog-absent,P_product_absent_from_catalog,ocr_fixture,not_found,,,,4,candidate_retrieval,False,
+barcode-invalid-checksum,B_barcode_not_in_db,barcode_string,invalid_barcode,,,,0,barcode_decode,False,
+barcode-unknown-ean13,B_barcode_not_in_db,barcode_string,service_unavailable,,,,0,backend_failure,False,No module named 'redis'
+ocr-ru-brand-normalization,M_russian_label,ocr_fixture,exact_match,,1,1|2,3,,False,
