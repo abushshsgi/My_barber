@@ -51,7 +51,9 @@ export function SeoLandingPage({ pageId, locale }: Props) {
         </p>
 
         <h1 className="mt-4 text-3xl font-bold tracking-tight sm:text-4xl">{copy.h1}</h1>
-        <p className="mt-3 text-base leading-relaxed text-muted-foreground">{copy.intro || copy.description}</p>
+        <p className="mt-3 text-base leading-relaxed text-muted-foreground">
+          {copy.intro || copy.description}
+        </p>
 
         {copy.bullets?.length ? (
           <ul className="mt-6 space-y-2 text-sm text-foreground">

@@ -28,20 +28,132 @@ export type LandingPageDef = {
 };
 
 export const LANDING_PAGES: LandingPageDef[] = [
-  { id: "home", uzPath: "/", trilingual: true, indexable: true, sitemap: true, priority: 1, changefreq: "daily" },
-  { id: "morf-ai-hub", uzPath: "/morf-ai", trilingual: true, indexable: true, sitemap: true, priority: 0.9, changefreq: "weekly" },
-  { id: "morf-ai-try-on", uzPath: "/morf-ai/try-on", trilingual: true, indexable: true, sitemap: true, priority: 0.85, changefreq: "weekly" },
-  { id: "morf-ai-hairstyles", uzPath: "/morf-ai/hairstyles", trilingual: true, indexable: true, sitemap: true, priority: 0.85, changefreq: "weekly" },
-  { id: "morf-ai-hair-care", uzPath: "/morf-ai/hair-care", trilingual: true, indexable: true, sitemap: true, priority: 0.8, changefreq: "weekly" },
-  { id: "morf-ai-ingredient-scanner", uzPath: "/morf-ai/ingredient-scanner", trilingual: true, indexable: true, sitemap: true, priority: 0.8, changefreq: "weekly" },
-  { id: "morf-ai-chat", uzPath: "/morf-ai/chat", trilingual: true, indexable: true, sitemap: true, priority: 0.8, changefreq: "weekly" },
-  { id: "morf-ai-weather-care", uzPath: "/morf-ai/weather-care", trilingual: true, indexable: true, sitemap: true, priority: 0.75, changefreq: "weekly" },
-  { id: "booking-landing", uzPath: "/booking", trilingual: true, indexable: true, sitemap: true, priority: 0.85, changefreq: "weekly" },
-  { id: "for-salons", uzPath: "/for-salons", trilingual: false, indexable: true, sitemap: true, priority: 0.7, changefreq: "monthly" },
-  { id: "map", uzPath: "/map", trilingual: false, indexable: true, sitemap: true, priority: 0.8, changefreq: "daily" },
-  { id: "explore", uzPath: "/explore", trilingual: false, indexable: true, sitemap: true, priority: 0.85, changefreq: "daily" },
-  { id: "privacy-policy", uzPath: "/privacy-policy", trilingual: false, indexable: true, sitemap: true, priority: 0.3, changefreq: "monthly" },
-  { id: "terms-of-use", uzPath: "/terms-of-use", trilingual: false, indexable: true, sitemap: true, priority: 0.3, changefreq: "monthly" },
+  {
+    id: "home",
+    uzPath: "/",
+    trilingual: true,
+    indexable: true,
+    sitemap: true,
+    priority: 1,
+    changefreq: "daily",
+  },
+  {
+    id: "morf-ai-hub",
+    uzPath: "/morf-ai",
+    trilingual: true,
+    indexable: true,
+    sitemap: true,
+    priority: 0.9,
+    changefreq: "weekly",
+  },
+  {
+    id: "morf-ai-try-on",
+    uzPath: "/morf-ai/try-on",
+    trilingual: true,
+    indexable: true,
+    sitemap: true,
+    priority: 0.85,
+    changefreq: "weekly",
+  },
+  {
+    id: "morf-ai-hairstyles",
+    uzPath: "/morf-ai/hairstyles",
+    trilingual: true,
+    indexable: true,
+    sitemap: true,
+    priority: 0.85,
+    changefreq: "weekly",
+  },
+  {
+    id: "morf-ai-hair-care",
+    uzPath: "/morf-ai/hair-care",
+    trilingual: true,
+    indexable: true,
+    sitemap: true,
+    priority: 0.8,
+    changefreq: "weekly",
+  },
+  {
+    id: "morf-ai-ingredient-scanner",
+    uzPath: "/morf-ai/ingredient-scanner",
+    trilingual: true,
+    indexable: true,
+    sitemap: true,
+    priority: 0.8,
+    changefreq: "weekly",
+  },
+  {
+    id: "morf-ai-chat",
+    uzPath: "/morf-ai/chat",
+    trilingual: true,
+    indexable: true,
+    sitemap: true,
+    priority: 0.8,
+    changefreq: "weekly",
+  },
+  {
+    id: "morf-ai-weather-care",
+    uzPath: "/morf-ai/weather-care",
+    trilingual: true,
+    indexable: true,
+    sitemap: true,
+    priority: 0.75,
+    changefreq: "weekly",
+  },
+  {
+    id: "booking-landing",
+    uzPath: "/booking",
+    trilingual: true,
+    indexable: true,
+    sitemap: true,
+    priority: 0.85,
+    changefreq: "weekly",
+  },
+  {
+    id: "for-salons",
+    uzPath: "/for-salons",
+    trilingual: false,
+    indexable: true,
+    sitemap: true,
+    priority: 0.7,
+    changefreq: "monthly",
+  },
+  {
+    id: "map",
+    uzPath: "/map",
+    trilingual: false,
+    indexable: true,
+    sitemap: true,
+    priority: 0.8,
+    changefreq: "daily",
+  },
+  {
+    id: "explore",
+    uzPath: "/explore",
+    trilingual: false,
+    indexable: true,
+    sitemap: true,
+    priority: 0.85,
+    changefreq: "daily",
+  },
+  {
+    id: "privacy-policy",
+    uzPath: "/privacy-policy",
+    trilingual: false,
+    indexable: true,
+    sitemap: true,
+    priority: 0.3,
+    changefreq: "monthly",
+  },
+  {
+    id: "terms-of-use",
+    uzPath: "/terms-of-use",
+    trilingual: false,
+    indexable: true,
+    sitemap: true,
+    priority: 0.3,
+    changefreq: "monthly",
+  },
 ];
 
 type CopyMap = Record<LandingPageId, Record<SeoLocale, SeoPageCopy>>;
@@ -67,7 +179,8 @@ export const LANDING_COPY: CopyMap = {
         "Найдите барбершопы и салоны красоты в Узбекистане на карте, выберите свободное время и забронируйте за пару кликов.",
       h1: "Онлайн-запись в салоны и барбершопы",
       keywords: "запись салон, барбершоп, узбекистан",
-      intro: "MySaloon — карта салонов, реальные свободные слоты и надёжное бронирование. Примерьте причёску заранее с Morf AI.",
+      intro:
+        "MySaloon — карта салонов, реальные свободные слоты и надёжное бронирование. Примерьте причёску заранее с Morf AI.",
       bullets: ["Карта и фильтры", "Онлайн-оплата и напоминания", "Виртуальный try-on Morf AI"],
       ctaLabel: "Смотреть салоны",
       ctaHref: "/map",
@@ -93,7 +206,8 @@ export const LANDING_COPY: CopyMap = {
       description:
         "Morf AI ekotizimi: virtual try-on, AI chat, parvarish markazi, ingredient skaneri va haqiqiy salon bron.",
       h1: "Morf AI — sochingiz uchun aqlli yordamchi",
-      intro: "MySaloon ichidagi Morf AI yangi uslubni selfieda ko'rish, parvarish rejasini tuzish va ustadan maslahat olish imkonini beradi.",
+      intro:
+        "MySaloon ichidagi Morf AI yangi uslubni selfieda ko'rish, parvarish rejasini tuzish va ustadan maslahat olish imkonini beradi.",
       bullets: ["Virtual try-on", "AI maslahatchi", "Parvarish va ingredient tahlili"],
       ctaLabel: "Try-on boshlash",
       ctaHref: "/ai-style",
@@ -101,7 +215,8 @@ export const LANDING_COPY: CopyMap = {
       faq: [
         {
           question: "Morf AI bepulmi?",
-          answer: "Asosiy try-on va chat mehmon sifatida ochiq; ba'zi limitlar obuna bilan kengayadi.",
+          answer:
+            "Asosiy try-on va chat mehmon sifatida ochiq; ba'zi limitlar obuna bilan kengayadi.",
         },
         {
           question: "Natija qanchalik aniq?",
@@ -114,7 +229,8 @@ export const LANDING_COPY: CopyMap = {
       description:
         "Экосистема Morf AI: виртуальный try-on, AI-чат, уход, сканер состава и запись в салон.",
       h1: "Morf AI — умный помощник для волос",
-      intro: "Morf AI в MySaloon помогает примерить стиль, собрать уход и получить совет перед визитом в салон.",
+      intro:
+        "Morf AI в MySaloon помогает примерить стиль, собрать уход и получить совет перед визитом в салон.",
       bullets: ["Виртуальный try-on", "AI-консультант", "Уход и анализ состава"],
       ctaLabel: "Начать try-on",
       ctaHref: "/ai-style",
@@ -125,7 +241,8 @@ export const LANDING_COPY: CopyMap = {
       description:
         "The Morf AI ecosystem: virtual try-on, AI chat, hair care hub, ingredient scanner, and salon booking.",
       h1: "Morf AI — smart guidance for your hair",
-      intro: "Morf AI inside MySaloon lets you preview styles, plan care, and get advice before visiting a stylist.",
+      intro:
+        "Morf AI inside MySaloon lets you preview styles, plan care, and get advice before visiting a stylist.",
       bullets: ["Virtual try-on", "AI advisor", "Care and ingredient scan"],
       ctaLabel: "Start try-on",
       ctaHref: "/ai-style",
@@ -135,9 +252,11 @@ export const LANDING_COPY: CopyMap = {
   "morf-ai-try-on": {
     uz: {
       title: "Virtual try-on — selfie bilan soch uslubi | Morf AI",
-      description: "Bir selfie yuklang, minglab tayyor uslublardan tanlang va natijani soniyalarda ko'ring.",
+      description:
+        "Bir selfie yuklang, minglab tayyor uslublardan tanlang va natijani soniyalarda ko'ring.",
       h1: "Selfie bilan soch uslubini sinab ko'ring",
-      intro: "Morf AI try-on realistik vizual natija beradi — keyin yaqin salonni topib bron qiling.",
+      intro:
+        "Morf AI try-on realistik vizual natija beradi — keyin yaqin salonni topib bron qiling.",
       ctaLabel: "Try-on ochish",
       ctaHref: "/ai-style",
     },
@@ -151,7 +270,8 @@ export const LANDING_COPY: CopyMap = {
     },
     en: {
       title: "Virtual try-on on your selfie | Morf AI",
-      description: "Upload a selfie, pick a style from the catalog, and preview the result in seconds.",
+      description:
+        "Upload a selfie, pick a style from the catalog, and preview the result in seconds.",
       h1: "Try a hairstyle on your selfie",
       intro: "Morf AI try-on gives a visual preview — then book a nearby salon.",
       ctaLabel: "Open try-on",
@@ -213,7 +333,8 @@ export const LANDING_COPY: CopyMap = {
   "morf-ai-ingredient-scanner": {
     uz: {
       title: "Shampun tarkibi skaneri — Hair Advisor | Morf AI",
-      description: "Mahsulot yorlig'ini skaner qiling, ingredientlarni tushuning va mosligini tekshiring.",
+      description:
+        "Mahsulot yorlig'ini skaner qiling, ingredientlarni tushuning va mosligini tekshiring.",
       h1: "Ingredient skaneri",
       intro: "Hair Advisor 2 yorliq va shtrix-kod orqali tarkibni tahlil qiladi.",
       ctaLabel: "Skaner ochish",
@@ -265,7 +386,8 @@ export const LANDING_COPY: CopyMap = {
   "morf-ai-weather-care": {
     uz: {
       title: "Ob-havo bo'yicha soch parvarishi | Morf AI",
-      description: "Bugungi ob-havoga mos parvarish tavsiyalari — namlik, shamol va quyosh hisobga olinadi.",
+      description:
+        "Bugungi ob-havoga mos parvarish tavsiyalari — namlik, shamol va quyosh hisobga olinadi.",
       h1: "Ob-havo parvarishi",
       intro: "CareWeatherPanel real ob-havo ma'lumotiga asoslangan kunlik maslahatlar beradi.",
       ctaLabel: "Parvarish markaziga",
@@ -358,8 +480,22 @@ export const LANDING_COPY: CopyMap = {
       ctaLabel: "Xaritada qidirish",
       ctaHref: "/map",
     },
-    ru: { title: "Карта салонов", description: "Салоны рядом с вами.", h1: "Карта салонов", intro: "", ctaLabel: "Карта", ctaHref: "/map" },
-    en: { title: "Salon map", description: "Salons near you.", h1: "Salon map", intro: "", ctaLabel: "Map", ctaHref: "/map" },
+    ru: {
+      title: "Карта салонов",
+      description: "Салоны рядом с вами.",
+      h1: "Карта салонов",
+      intro: "",
+      ctaLabel: "Карта",
+      ctaHref: "/map",
+    },
+    en: {
+      title: "Salon map",
+      description: "Salons near you.",
+      h1: "Salon map",
+      intro: "",
+      ctaLabel: "Map",
+      ctaHref: "/map",
+    },
   },
   explore: {
     uz: {
@@ -370,8 +506,22 @@ export const LANDING_COPY: CopyMap = {
       ctaLabel: "Katalogni ochish",
       ctaHref: "/explore",
     },
-    ru: { title: "Каталог стилей", description: "Мужские и женские причёски.", h1: "Каталог стилей", intro: "", ctaLabel: "Каталог", ctaHref: "/explore" },
-    en: { title: "Hairstyle catalog", description: "Men's and women's styles.", h1: "Style catalog", intro: "", ctaLabel: "Explore", ctaHref: "/explore" },
+    ru: {
+      title: "Каталог стилей",
+      description: "Мужские и женские причёски.",
+      h1: "Каталог стилей",
+      intro: "",
+      ctaLabel: "Каталог",
+      ctaHref: "/explore",
+    },
+    en: {
+      title: "Hairstyle catalog",
+      description: "Men's and women's styles.",
+      h1: "Style catalog",
+      intro: "",
+      ctaLabel: "Explore",
+      ctaHref: "/explore",
+    },
   },
   "privacy-policy": {
     uz: {

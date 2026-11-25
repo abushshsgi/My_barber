@@ -37,8 +37,7 @@ export function jsonLdScripts(blocks: unknown[]): string {
   return blocks
     .filter(Boolean)
     .map(
-      (block) =>
-        `<script type="application/ld+json">${escapeHtml(JSON.stringify(block))}</script>`,
+      (block) => `<script type="application/ld+json">${escapeHtml(JSON.stringify(block))}</script>`,
     )
     .join("\n    ");
 }
@@ -52,7 +51,7 @@ export function stripReplaceableSeoTags(html: string): string {
     .replace(/<meta\s+property="og:[^"]+"[^>]*>/gi, "")
     .replace(/<meta\s+name="twitter:[^"]+"[^>]*>/gi, "")
     .replace(/<link\s+rel="canonical"[^>]*>/gi, "")
-  .replace(/<link\s+rel="alternate"[^>]*>/gi, "");
+    .replace(/<link\s+rel="alternate"[^>]*>/gi, "");
 }
 
 export function injectBeforeHeadClose(html: string, tags: string): string {
@@ -69,7 +68,11 @@ export function injectSeoPrerenderMain(html: string, innerHtml: string): string 
   return html.replace(/<body([^>]*)>/i, `<body$1>${block}`);
 }
 
-export function buildPrerenderInner(h1: string, intro: string, links: Array<{ href: string; text: string }>): string {
+export function buildPrerenderInner(
+  h1: string,
+  intro: string,
+  links: Array<{ href: string; text: string }>,
+): string {
   const nav = links
     .map((l) => `<a href="${escapeHtml(l.href)}">${escapeHtml(l.text)}</a>`)
     .join(" · ");

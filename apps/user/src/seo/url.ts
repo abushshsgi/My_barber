@@ -7,7 +7,10 @@ export function normalizePathname(pathname: string): string {
   return withSlash;
 }
 
-export function parseLocaleFromPath(pathname: string): { locale: SeoLocale; pathWithoutLocale: string } {
+export function parseLocaleFromPath(pathname: string): {
+  locale: SeoLocale;
+  pathWithoutLocale: string;
+} {
   const path = normalizePathname(pathname);
   const m = path.match(/^\/(ru|en)(\/.*)?$/);
   if (!m) return { locale: DEFAULT_LOCALE, pathWithoutLocale: path };

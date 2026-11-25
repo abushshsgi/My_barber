@@ -124,5 +124,11 @@ export async function estimateSitemapUrlCount(): Promise<number> {
     fetchHairstyleSitemapUrls().catch(() => [] as SitemapUrl[]),
     fetchBarberSitemapUrls().catch(() => [] as SitemapUrl[]),
   ]);
-  return staticSitemapUrls().length + morfMarketingSitemapUrls().length + salons.length + styles.length + barbers.length;
+  return (
+    staticSitemapUrls().length +
+    morfMarketingSitemapUrls().length +
+    salons.length +
+    styles.length +
+    barbers.length
+  );
 }

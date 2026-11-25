@@ -18,7 +18,9 @@ describe("buildRegistryHead", () => {
   it("emits canonical and hreflang for trilingual morf hub", () => {
     const head = buildRegistryHead("morf-ai-hub", "uz");
     expect(head.meta.some((m) => m.title?.includes("Morf AI"))).toBe(true);
-    expect(head.links.some((l) => l.rel === "canonical" && l.href.includes("mysaloon.uz/morf-ai"))).toBe(true);
+    expect(
+      head.links.some((l) => l.rel === "canonical" && l.href.includes("mysaloon.uz/morf-ai")),
+    ).toBe(true);
     const alts = buildHreflangAlternates("morf-ai-hub");
     expect(alts.length).toBe(4);
     expect(alts.some((l) => l.hrefLang === "x-default")).toBe(true);

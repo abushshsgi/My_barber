@@ -54,7 +54,11 @@ export function serviceJsonLd(opts: { name: string; description: string; url: st
   };
 }
 
-export function softwareApplicationJsonLd(opts: { name: string; description: string; url: string }) {
+export function softwareApplicationJsonLd(opts: {
+  name: string;
+  description: string;
+  url: string;
+}) {
   return {
     "@context": "https://schema.org",
     "@type": "SoftwareApplication",

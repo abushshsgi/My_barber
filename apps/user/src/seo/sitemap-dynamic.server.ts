@@ -64,7 +64,9 @@ export async function fetchSalonSitemapUrls(limit = 2000): Promise<SitemapUrl[]>
 }
 
 export async function fetchHairstyleSitemapUrls(limit = 3000): Promise<SitemapUrl[]> {
-  const res = await fetch(`${apiBase()}/api/v1/hairstyles/`, { headers: { Accept: "application/json" } });
+  const res = await fetch(`${apiBase()}/api/v1/hairstyles/`, {
+    headers: { Accept: "application/json" },
+  });
   if (!res.ok) return [];
   const list = (await res.json()) as Array<{
     id?: string;

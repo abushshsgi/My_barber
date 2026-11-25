@@ -25,14 +25,19 @@ import {
 import { isNoindexPath } from "@/seo/noindex";
 import { getCanonicalUrl } from "@/seo/url";
 
-function toBuiltHead(raw: { meta: Array<Record<string, string>>; links?: Array<{ rel: string; href: string }> }): BuiltHead {
+function toBuiltHead(raw: {
+  meta: Array<Record<string, string>>;
+  links?: Array<{ rel: string; href: string }>;
+}): BuiltHead {
   return {
     meta: raw.meta as BuiltHead["meta"],
     links: (raw.links ?? []).map((l) => ({ ...l })),
   };
 }
 
-async function headForPath(pathname: string): Promise<{ head: BuiltHead; jsonLd: unknown[]; prerender?: string } | null> {
+async function headForPath(
+  pathname: string,
+): Promise<{ head: BuiltHead; jsonLd: unknown[]; prerender?: string } | null> {
   const registryHead = buildHeadForPathname(pathname);
   if (registryHead) {
     const resolved = resolveRegistryPage(pathname);
@@ -56,12 +61,16 @@ async function headForPath(pathname: string): Promise<{ head: BuiltHead; jsonLd:
           ]
         : landingJsonLdBlocks(resolved.copy, canonical, serviceName);
 
-    const prerender = buildPrerenderInner(resolved.copy.h1, resolved.copy.intro || resolved.copy.description, [
-      { href: resolved.copy.ctaHref, text: resolved.copy.ctaLabel },
-      ...(resolved.copy.secondaryCta
-        ? [{ href: resolved.copy.secondaryCta.href, text: resolved.copy.secondaryCta.label }]
-        : []),
-    ]);
+    const prerender = buildPrerenderInner(
+      resolved.copy.h1,
+      resolved.copy.intro || resolved.copy.description,
+      [
+        { href: resolved.copy.ctaHref, text: resolved.copy.ctaLabel },
+        ...(resolved.copy.secondaryCta
+          ? [{ href: resolved.copy.secondaryCta.href, text: resolved.copy.secondaryCta.label }]
+          : []),
+      ],
+    );
     return { head: registryHead, jsonLd, prerender };
   }
 
@@ -96,11 +105,9 @@ async function headForPath(pathname: string): Promise<{ head: BuiltHead; jsonLd:
     const shareId = decodeURIComponent(shareMatch[1]!);
     const seo = await fetchMorphShareSeo(shareId);
     const built = toBuiltHead(buildMorphShareHeadMeta(shareId, seo));
-    const prerender = buildPrerenderInner(
-      seo?.title ?? "Morf AI natija",
-      seo?.description ?? "",
-      [{ href: "/ai-style", text: "O'zimda sinab ko'rish" }],
-    );
+    const prerender = buildPrerenderInner(seo?.title ?? "Morf AI natija", seo?.description ?? "", [
+      { href: "/ai-style", text: "O'zimda sinab ko'rish" },
+    ]);
     return { head: built, jsonLd: [], prerender };
   }
 
@@ -152,7 +159,9 @@ export async function injectSeoIntoHtml(response: Response, pathname: string): P
   if (!pack) return response;
 
   let html = stripReplaceableSeoTags(await response.text());
-  const tags = [headToHtmlTags(pack.head), jsonLdScripts(pack.jsonLd)].filter(Boolean).join("\n    ");
+  const tags = [headToHtmlTags(pack.head), jsonLdScripts(pack.jsonLd)]
+    .filter(Boolean)
+    .join("\n    ");
   html = injectBeforeHeadClose(html, tags);
   if (pack.prerender) html = injectSeoPrerenderMain(html, pack.prerender);
 
