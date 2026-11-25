@@ -99,15 +99,64 @@ Local: `npm run build`, `npm run test` — passed.
 
 ---
 
-## 10. Deploy / smoke (manual VPS)
+## 10. Production deploy & smoke (verified 2026-11-25)
 
-1. Pull, `npm run build` in `apps/user`
-2. Restart `mysaloon-user` service
-3. `nginx -t && systemctl reload nginx`
-4. `curl -I https://mysaloon.uz/sitemap.xml`
-5. `curl https://www.mysaloon.uz/` → `301` → apex
+### Deploy
 
-No destructive VPS deploy run from this agent session.
+| Field | Value |
+|--------|--------|
+| **VPS host** | `mysaloon` (`89.45.45.32`) |
+| **Tree** | `/opt/mysaloon/Mybarber` |
+| **Command** | `sudo bash deploy/vps/deploy-frontends.sh user` |
+| **Previous SHA** (`/var/lib/mysaloon/deployed-sha`) | `2ed51de2` (buildId `2ed51de`) |
+| **Deployed SHA** | `0ac3646cae5f7cc4f857ad8cfb8f5009d8def9a8` |
+| **buildId** | `0ac3646` (`apps/user/dist/client/version.json`, built `2026-11-25T08:07:31.399Z`) |
+| **Services** | `mysaloon-user` **active** after restart; `nginx -t` OK, reload OK |
+| **Scope** | user frontend + nginx configs (admin/barber not rebuilt) |
+
+**Pre-deploy backups**
+
+| Artifact | Path |
+|----------|------|
+| User `dist/` tarball | `/var/backups/mysaloon/user-dist__pre-seo.tar.gz` (~36 MB, pre-`0ac3646` dist) |
+| Nginx site file | `/var/backups/mysaloon/mysaloon-user.conf__pre-seo.bak` |
+
+Note: backup filenames were created from a Windows SSH one-liner where `$STAMP` did not expand on the client; paths above are as on disk. For future deploys, run backup commands **on the VPS shell** so timestamps are preserved.
+
+**Rollback (user dist only)**
+
+```bash
+systemctl stop mysaloon-user
+rm -rf /opt/mysaloon/Mybarber/apps/user/dist
+tar -xzf /var/backups/mysaloon/user-dist__pre-seo.tar.gz -C /opt/mysaloon/Mybarber/apps/user
+chown -R www-data:www-data /opt/mysaloon/Mybarber/apps/user/dist
+systemctl start mysaloon-user
+```
+
+**Rollback (nginx www→apex only)**
+
+```bash
+cp /var/backups/mysaloon/mysaloon-user.conf__pre-seo.bak /etc/nginx/sites-available/mysaloon-user.conf
+nginx -t && systemctl reload nginx
+```
+
+### Production smoke (`curl`, raw HTML — 2026-11-25 ~08:11 UTC)
+
+| URL | HTTP | Content-Type | Title (sample) | Canonical | Crawler H1 |
+|-----|------|--------------|----------------|-----------|------------|
+| `https://mysaloon.uz/` | 200 | `text/html; charset=utf-8` | mysaloon.uz — Sartaroshxona va salonlarni onlayn band qiling | `https://mysaloon.uz/` | Salon va sartaroshxonalarni onlayn band qiling |
+| `https://mysaloon.uz/sitemap.xml` | 200 | `application/xml; charset=utf-8` | — | — | — (valid sitemap index XML) |
+| `https://mysaloon.uz/robots.txt` | 200 | `text/plain; charset=utf-8` | — | — | — (`Sitemap: https://mysaloon.uz/sitemap.xml`) |
+| `https://mysaloon.uz/morf-ai` | 200 | `text/html; charset=utf-8` | Morf AI — Soch uslubini selfie bilan sinab ko'ring \| mysaloon.uz | `https://mysaloon.uz/morf-ai` | Morf AI — sochingiz uchun aqlli yordamchi |
+| `https://mysaloon.uz/morf-ai/try-on` | 200 | `text/html; charset=utf-8` | Virtual try-on — selfie bilan soch uslubi \| Morf AI | `https://mysaloon.uz/morf-ai/try-on` | Selfie bilan soch uslubini sinab ko'ring |
+| `https://mysaloon.uz/booking` | 200 | `text/html; charset=utf-8` | Salon bron qilish — bo'sh vaqtlar va onlayn to'lov | `https://mysaloon.uz/booking` | Salonni onlayn band qiling |
+| `https://mysaloon.uz/ru/morf-ai` | 200 | `text/html; charset=utf-8` | Morf AI — Примерьте причёску по селфи \| mysaloon.uz | `https://mysaloon.uz/ru/morf-ai` | Morf AI — умный помощник для волос |
+| `https://mysaloon.uz/en/morf-ai` | 200 | `text/html; charset=utf-8` | Morf AI — Try hairstyles on your selfie \| mysaloon.uz | `https://mysaloon.uz/en/morf-ai` | Morf AI — smart guidance for your hair |
+| `https://www.mysaloon.uz/` | **301** | — | — | — | `Location: https://mysaloon.uz/` |
+
+**Nginx warnings (non-fatal):** duplicate MIME `text/html` in `mysaloon-user.conf:44`; protocol options redefined in `mysaloon-barber.conf:17` (pre-existing).
+
+**Local lint:** `npm run lint -w user-web` was started pre-deploy; eslint on Windows exceeded 6+ minutes without completing (deploy not blocked). Re-run in CI or Linux for a definitive lint pass.
 
 ---
 
@@ -170,3 +219,5 @@ Submit in [Google Search Console](https://search.google.com/search-console) prop
 - Dynamic sitemap counts depend on Django API availability at build/runtime.
 - Playwright SEO e2e requires dev/preview server (`npm run test:e2e` in `apps/user`).
 - GSC verification token unchanged (not stored in repo).
+- **Resolved:** SEO commit `0ac3646` is live on VPS (see §10). No deploy blockers observed in smoke tests.
+- **Follow-up (optional):** clean up nginx duplicate MIME warning on line 44 of `mysaloon-user.conf`; confirm `sitemap-salons.xml` URL counts in GSC after first crawl.
