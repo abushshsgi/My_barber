@@ -1,6 +1,5 @@
 import { resolveApiUpstream, resolveFetchBase } from "@/lib/api/base-url";
-
-const SITE_ORIGIN = "https://www.mysaloon.uz";
+import { SITE_ORIGIN } from "@/seo/constants";
 const SEO_CACHE_MS = 20_000;
 
 type MorphShareSeo = {

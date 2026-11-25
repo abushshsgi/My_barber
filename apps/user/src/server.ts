@@ -3,9 +3,9 @@ import "./lib/error-capture";
 import { maybeProxyApi } from "./lib/api-proxy.server";
 import { consumeLastCapturedError } from "./lib/error-capture";
 import { renderErrorPage } from "./lib/error-page";
-import { injectMorphOgIntoHtml } from "./lib/morph-og-inject.server";
-import { injectSalonOgIntoHtml } from "./lib/salon-og-inject.server";
+import { injectSeoIntoHtml } from "./lib/seo-html-inject.server";
 import { applyStaticCacheHeaders } from "./lib/static-cache.server";
+import { maybeServeSeoAsset } from "./lib/sitemap-handlers.server";
 
 type ServerEntry = {
   fetch: (request: Request, env: unknown, ctx: unknown) => Promise<Response> | Response;
@@ -22,8 +22,6 @@ async function getServerEntry(): Promise<ServerEntry> {
   return serverEntryPromise;
 }
 
-// h3 swallows in-handler throws into a normal 500 Response with body
-// {"unhandled":true,"message":"HTTPError"} — try/catch alone never fires for those.
 async function normalizeCatastrophicSsrResponse(response: Response): Promise<Response> {
   if (response.status < 500) return response;
   const contentType = response.headers.get("content-type") ?? "";
@@ -44,6 +42,9 @@ async function normalizeCatastrophicSsrResponse(response: Response): Promise<Res
 export default {
   async fetch(request: Request, env: unknown, ctx: unknown) {
     try {
+      const seoAsset = await maybeServeSeoAsset(request);
+      if (seoAsset) return applyStaticCacheHeaders(request, seoAsset);
+
       const proxied = await maybeProxyApi(request);
       if (proxied) return applyStaticCacheHeaders(request, proxied);
 
@@ -52,10 +53,8 @@ export default {
       response = await normalizeCatastrophicSsrResponse(response);
 
       const { pathname } = new URL(request.url);
-      if (request.method === "GET" && /^\/salon\/[^/]+\/?$/.test(pathname)) {
-        response = await injectSalonOgIntoHtml(response, pathname);
-      } else if (request.method === "GET" && /^\/morf-ai\/(share|look)\/[^/]+\/?$/.test(pathname)) {
-        response = await injectMorphOgIntoHtml(response, pathname);
+      if (request.method === "GET" && response.headers.get("content-type")?.includes("text/html")) {
+        response = await injectSeoIntoHtml(response, pathname);
       }
 
       return applyStaticCacheHeaders(request, response);

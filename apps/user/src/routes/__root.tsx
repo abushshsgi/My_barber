@@ -173,7 +173,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { property: "og:title", content: "mysaloon.uz" },
       { property: "og:description", content: "Online salon va sartaroshxona bron platforma." },
       { property: "og:type", content: "website" },
-      { property: "og:image", content: "https://www.mysaloon.uz/brand-logo.png" },
+      { property: "og:image", content: "https://mysaloon.uz/brand-logo.png" },
     ],
   }),
   shellComponent: RootShell,

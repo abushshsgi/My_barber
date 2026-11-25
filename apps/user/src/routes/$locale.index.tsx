@@ -1,0 +1,18 @@
+import { createFileRoute, notFound } from "@tanstack/react-router";
+import { SeoLandingPage } from "@/components/seo/SeoLandingPage";
+import { buildRegistryHead } from "@/seo/build-head";
+import type { SeoLocale } from "@/seo/constants";
+
+export const Route = createFileRoute("/$locale/")({
+  ssr: false,
+  beforeLoad: ({ params }) => {
+    if (params.locale !== "ru" && params.locale !== "en") throw notFound();
+  },
+  head: ({ params }) => buildRegistryHead("home", params.locale as SeoLocale),
+  component: LocaleHomePage,
+});
+
+function LocaleHomePage() {
+  const { locale } = Route.useParams();
+  return <SeoLandingPage pageId="home" locale={locale as SeoLocale} />;
+}

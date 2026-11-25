@@ -1,5 +1,5 @@
 /** Brauzer/PWA: joriy origin. Ulashish uchun fallback. */
-export const PUBLIC_SITE_ORIGIN = "https://www.mysaloon.uz";
+export const PUBLIC_SITE_ORIGIN = "https://mysaloon.uz";
 
 /** Ulashish, to‘lov return_url, deep link uchun public sayt origin. */
 export function getPublicSiteOrigin(): string {

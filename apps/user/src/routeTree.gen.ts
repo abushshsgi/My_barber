@@ -46,6 +46,7 @@ import { Route as TodayRouteImport } from './routes/today'
 import { Route as TopRouteImport } from './routes/top'
 import { Route as VerifyEmailRouteImport } from './routes/verify-email'
 import { Route as WalletRouteImport } from './routes/wallet'
+import { Route as LocaleIndexRouteImport } from './routes/$locale.index'
 import { Route as AccountActivityRouteImport } from './routes/account.activity'
 import { Route as AccountHouseholdRouteImport } from './routes/account.household'
 import { Route as AccountPaymentsRouteImport } from './routes/account.payments'
@@ -58,12 +59,20 @@ import { Route as AiStyleHistoryRouteImport } from './routes/ai-style_.history'
 import { Route as AiStyleReportRouteImport } from './routes/ai-style_.report'
 import { Route as AiStyleStudioRouteImport } from './routes/ai-style_.studio'
 import { Route as BarberBarberIdRouteImport } from './routes/barber.$barberId'
+import { Route as BookingIndexRouteImport } from './routes/booking.index'
 import { Route as BookingSalonIdRouteImport } from './routes/booking.$salonId'
 import { Route as BookingsBookingIdRouteImport } from './routes/bookings.$bookingId'
 import { Route as CategoryCategoryRouteImport } from './routes/category.$category'
 import { Route as ChatIdRouteImport } from './routes/chat.$id'
 import { Route as DevExploreGenRouteImport } from './routes/dev.explore-gen'
 import { Route as ExploreStyleIdRouteImport } from './routes/explore_.$styleId'
+import { Route as MorfAiIndexRouteImport } from './routes/morf-ai.index'
+import { Route as MorfAiChatRouteImport } from './routes/morf-ai.chat'
+import { Route as MorfAiHairCareRouteImport } from './routes/morf-ai.hair-care'
+import { Route as MorfAiHairstylesRouteImport } from './routes/morf-ai.hairstyles'
+import { Route as MorfAiIngredientScannerRouteImport } from './routes/morf-ai.ingredient-scanner'
+import { Route as MorfAiTryOnRouteImport } from './routes/morf-ai.try-on'
+import { Route as MorfAiWeatherCareRouteImport } from './routes/morf-ai.weather-care'
 import { Route as SalonIdRouteImport } from './routes/salon.$id'
 import { Route as StoriesSalonIdRouteImport } from './routes/stories.$salonId'
 import { Route as SubscriptionsPaymeRouteImport } from './routes/subscriptions_.payme'
@@ -71,6 +80,14 @@ import { Route as WalletGiftsRouteImport } from './routes/wallet_.gifts'
 import { Route as WalletHistoryRouteImport } from './routes/wallet_.history'
 import { Route as WalletQrPayRouteImport } from './routes/wallet_.qr-pay'
 import { Route as WalletTopUpRouteImport } from './routes/wallet_.top-up'
+import { Route as LocaleBookingIndexRouteImport } from './routes/$locale.booking.index'
+import { Route as LocaleMorfAiIndexRouteImport } from './routes/$locale.morf-ai.index'
+import { Route as LocaleMorfAiChatRouteImport } from './routes/$locale.morf-ai.chat'
+import { Route as LocaleMorfAiHairCareRouteImport } from './routes/$locale.morf-ai.hair-care'
+import { Route as LocaleMorfAiHairstylesRouteImport } from './routes/$locale.morf-ai.hairstyles'
+import { Route as LocaleMorfAiIngredientScannerRouteImport } from './routes/$locale.morf-ai.ingredient-scanner'
+import { Route as LocaleMorfAiTryOnRouteImport } from './routes/$locale.morf-ai.try-on'
+import { Route as LocaleMorfAiWeatherCareRouteImport } from './routes/$locale.morf-ai.weather-care'
 import { Route as AiStyleCareIngredientRouteImport } from './routes/ai-style_.care_.ingredient'
 import { Route as AiStyleCareProductsRouteImport } from './routes/ai-style_.care_.products'
 import { Route as BookingBarberBarberIdRouteImport } from './routes/booking.barber.$barberId'
@@ -273,6 +290,11 @@ const WalletRoute = WalletRouteImport.update({
   path: '/wallet',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LocaleIndexRoute = LocaleIndexRouteImport.update({
+  id: '/$locale/',
+  path: '/$locale/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AccountActivityRoute = AccountActivityRouteImport.update({
   id: '/account/activity',
   path: '/account/activity',
@@ -333,6 +355,11 @@ const BarberBarberIdRoute = BarberBarberIdRouteImport.update({
   path: '/barber/$barberId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const BookingIndexRoute = BookingIndexRouteImport.update({
+  id: '/booking/',
+  path: '/booking/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const BookingSalonIdRoute = BookingSalonIdRouteImport.update({
   id: '/booking/$salonId',
   path: '/booking/$salonId',
@@ -361,6 +388,41 @@ const DevExploreGenRoute = DevExploreGenRouteImport.update({
 const ExploreStyleIdRoute = ExploreStyleIdRouteImport.update({
   id: '/explore_/$styleId',
   path: '/explore/$styleId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MorfAiIndexRoute = MorfAiIndexRouteImport.update({
+  id: '/morf-ai/',
+  path: '/morf-ai/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MorfAiChatRoute = MorfAiChatRouteImport.update({
+  id: '/morf-ai/chat',
+  path: '/morf-ai/chat',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MorfAiHairCareRoute = MorfAiHairCareRouteImport.update({
+  id: '/morf-ai/hair-care',
+  path: '/morf-ai/hair-care',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MorfAiHairstylesRoute = MorfAiHairstylesRouteImport.update({
+  id: '/morf-ai/hairstyles',
+  path: '/morf-ai/hairstyles',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MorfAiIngredientScannerRoute = MorfAiIngredientScannerRouteImport.update({
+  id: '/morf-ai/ingredient-scanner',
+  path: '/morf-ai/ingredient-scanner',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MorfAiTryOnRoute = MorfAiTryOnRouteImport.update({
+  id: '/morf-ai/try-on',
+  path: '/morf-ai/try-on',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MorfAiWeatherCareRoute = MorfAiWeatherCareRouteImport.update({
+  id: '/morf-ai/weather-care',
+  path: '/morf-ai/weather-care',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SalonIdRoute = SalonIdRouteImport.update({
@@ -396,6 +458,47 @@ const WalletQrPayRoute = WalletQrPayRouteImport.update({
 const WalletTopUpRoute = WalletTopUpRouteImport.update({
   id: '/wallet_/top-up',
   path: '/wallet/top-up',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LocaleBookingIndexRoute = LocaleBookingIndexRouteImport.update({
+  id: '/$locale/booking/',
+  path: '/$locale/booking/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LocaleMorfAiIndexRoute = LocaleMorfAiIndexRouteImport.update({
+  id: '/$locale/morf-ai/',
+  path: '/$locale/morf-ai/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LocaleMorfAiChatRoute = LocaleMorfAiChatRouteImport.update({
+  id: '/$locale/morf-ai/chat',
+  path: '/$locale/morf-ai/chat',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LocaleMorfAiHairCareRoute = LocaleMorfAiHairCareRouteImport.update({
+  id: '/$locale/morf-ai/hair-care',
+  path: '/$locale/morf-ai/hair-care',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LocaleMorfAiHairstylesRoute = LocaleMorfAiHairstylesRouteImport.update({
+  id: '/$locale/morf-ai/hairstyles',
+  path: '/$locale/morf-ai/hairstyles',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LocaleMorfAiIngredientScannerRoute =
+  LocaleMorfAiIngredientScannerRouteImport.update({
+    id: '/$locale/morf-ai/ingredient-scanner',
+    path: '/$locale/morf-ai/ingredient-scanner',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const LocaleMorfAiTryOnRoute = LocaleMorfAiTryOnRouteImport.update({
+  id: '/$locale/morf-ai/try-on',
+  path: '/$locale/morf-ai/try-on',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LocaleMorfAiWeatherCareRoute = LocaleMorfAiWeatherCareRouteImport.update({
+  id: '/$locale/morf-ai/weather-care',
+  path: '/$locale/morf-ai/weather-care',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AiStyleCareIngredientRoute = AiStyleCareIngredientRouteImport.update({
@@ -541,6 +644,12 @@ export interface FileRoutesByFullPath {
   '/chat/$id': typeof ChatIdRoute
   '/dev/explore-gen': typeof DevExploreGenRouteWithChildren
   '/explore/$styleId': typeof ExploreStyleIdRoute
+  '/morf-ai/chat': typeof MorfAiChatRoute
+  '/morf-ai/hair-care': typeof MorfAiHairCareRoute
+  '/morf-ai/hairstyles': typeof MorfAiHairstylesRoute
+  '/morf-ai/ingredient-scanner': typeof MorfAiIngredientScannerRoute
+  '/morf-ai/try-on': typeof MorfAiTryOnRoute
+  '/morf-ai/weather-care': typeof MorfAiWeatherCareRoute
   '/salon/$id': typeof SalonIdRouteWithChildren
   '/stories/$salonId': typeof StoriesSalonIdRoute
   '/subscriptions/payme': typeof SubscriptionsPaymeRoute
@@ -548,6 +657,15 @@ export interface FileRoutesByFullPath {
   '/wallet/history': typeof WalletHistoryRoute
   '/wallet/qr-pay': typeof WalletQrPayRoute
   '/wallet/top-up': typeof WalletTopUpRoute
+  '/$locale/': typeof LocaleIndexRoute
+  '/booking/': typeof BookingIndexRoute
+  '/morf-ai/': typeof MorfAiIndexRoute
+  '/$locale/morf-ai/chat': typeof LocaleMorfAiChatRoute
+  '/$locale/morf-ai/hair-care': typeof LocaleMorfAiHairCareRoute
+  '/$locale/morf-ai/hairstyles': typeof LocaleMorfAiHairstylesRoute
+  '/$locale/morf-ai/ingredient-scanner': typeof LocaleMorfAiIngredientScannerRoute
+  '/$locale/morf-ai/try-on': typeof LocaleMorfAiTryOnRoute
+  '/$locale/morf-ai/weather-care': typeof LocaleMorfAiWeatherCareRoute
   '/ai-style/care/ingredient': typeof AiStyleCareIngredientRoute
   '/ai-style/care/products': typeof AiStyleCareProductsRoute
   '/booking/barber/$barberId': typeof BookingBarberBarberIdRoute
@@ -557,6 +675,8 @@ export interface FileRoutesByFullPath {
   '/morf-ai/look/$styleId': typeof MorfAiLookStyleIdRoute
   '/morf-ai/share/$shareId': typeof MorfAiShareShareIdRoute
   '/salon/$id/location': typeof SalonIdLocationRoute
+  '/$locale/booking/': typeof LocaleBookingIndexRoute
+  '/$locale/morf-ai/': typeof LocaleMorfAiIndexRoute
   '/dev/explore-gen/': typeof DevExploreGenIndexRoute
   '/ai-style/care/products/$productId': typeof AiStyleCareProductsProductIdRoute
   '/ai-style/care/ingredient/inci/$scanId': typeof AiStyleCareIngredientInciScanIdRoute
@@ -620,6 +740,12 @@ export interface FileRoutesByTo {
   '/category/$category': typeof CategoryCategoryRoute
   '/chat/$id': typeof ChatIdRoute
   '/explore/$styleId': typeof ExploreStyleIdRoute
+  '/morf-ai/chat': typeof MorfAiChatRoute
+  '/morf-ai/hair-care': typeof MorfAiHairCareRoute
+  '/morf-ai/hairstyles': typeof MorfAiHairstylesRoute
+  '/morf-ai/ingredient-scanner': typeof MorfAiIngredientScannerRoute
+  '/morf-ai/try-on': typeof MorfAiTryOnRoute
+  '/morf-ai/weather-care': typeof MorfAiWeatherCareRoute
   '/salon/$id': typeof SalonIdRouteWithChildren
   '/stories/$salonId': typeof StoriesSalonIdRoute
   '/subscriptions/payme': typeof SubscriptionsPaymeRoute
@@ -627,6 +753,15 @@ export interface FileRoutesByTo {
   '/wallet/history': typeof WalletHistoryRoute
   '/wallet/qr-pay': typeof WalletQrPayRoute
   '/wallet/top-up': typeof WalletTopUpRoute
+  '/$locale': typeof LocaleIndexRoute
+  '/booking': typeof BookingIndexRoute
+  '/morf-ai': typeof MorfAiIndexRoute
+  '/$locale/morf-ai/chat': typeof LocaleMorfAiChatRoute
+  '/$locale/morf-ai/hair-care': typeof LocaleMorfAiHairCareRoute
+  '/$locale/morf-ai/hairstyles': typeof LocaleMorfAiHairstylesRoute
+  '/$locale/morf-ai/ingredient-scanner': typeof LocaleMorfAiIngredientScannerRoute
+  '/$locale/morf-ai/try-on': typeof LocaleMorfAiTryOnRoute
+  '/$locale/morf-ai/weather-care': typeof LocaleMorfAiWeatherCareRoute
   '/ai-style/care/ingredient': typeof AiStyleCareIngredientRoute
   '/ai-style/care/products': typeof AiStyleCareProductsRoute
   '/booking/barber/$barberId': typeof BookingBarberBarberIdRoute
@@ -636,6 +771,8 @@ export interface FileRoutesByTo {
   '/morf-ai/look/$styleId': typeof MorfAiLookStyleIdRoute
   '/morf-ai/share/$shareId': typeof MorfAiShareShareIdRoute
   '/salon/$id/location': typeof SalonIdLocationRoute
+  '/$locale/booking': typeof LocaleBookingIndexRoute
+  '/$locale/morf-ai': typeof LocaleMorfAiIndexRoute
   '/dev/explore-gen': typeof DevExploreGenIndexRoute
   '/ai-style/care/products/$productId': typeof AiStyleCareProductsProductIdRoute
   '/ai-style/care/ingredient/inci/$scanId': typeof AiStyleCareIngredientInciScanIdRoute
@@ -701,6 +838,12 @@ export interface FileRoutesById {
   '/chat/$id': typeof ChatIdRoute
   '/dev/explore-gen': typeof DevExploreGenRouteWithChildren
   '/explore_/$styleId': typeof ExploreStyleIdRoute
+  '/morf-ai/chat': typeof MorfAiChatRoute
+  '/morf-ai/hair-care': typeof MorfAiHairCareRoute
+  '/morf-ai/hairstyles': typeof MorfAiHairstylesRoute
+  '/morf-ai/ingredient-scanner': typeof MorfAiIngredientScannerRoute
+  '/morf-ai/try-on': typeof MorfAiTryOnRoute
+  '/morf-ai/weather-care': typeof MorfAiWeatherCareRoute
   '/salon/$id': typeof SalonIdRouteWithChildren
   '/stories/$salonId': typeof StoriesSalonIdRoute
   '/subscriptions_/payme': typeof SubscriptionsPaymeRoute
@@ -708,6 +851,15 @@ export interface FileRoutesById {
   '/wallet_/history': typeof WalletHistoryRoute
   '/wallet_/qr-pay': typeof WalletQrPayRoute
   '/wallet_/top-up': typeof WalletTopUpRoute
+  '/$locale/': typeof LocaleIndexRoute
+  '/booking/': typeof BookingIndexRoute
+  '/morf-ai/': typeof MorfAiIndexRoute
+  '/$locale/morf-ai/chat': typeof LocaleMorfAiChatRoute
+  '/$locale/morf-ai/hair-care': typeof LocaleMorfAiHairCareRoute
+  '/$locale/morf-ai/hairstyles': typeof LocaleMorfAiHairstylesRoute
+  '/$locale/morf-ai/ingredient-scanner': typeof LocaleMorfAiIngredientScannerRoute
+  '/$locale/morf-ai/try-on': typeof LocaleMorfAiTryOnRoute
+  '/$locale/morf-ai/weather-care': typeof LocaleMorfAiWeatherCareRoute
   '/ai-style_/care_/ingredient': typeof AiStyleCareIngredientRoute
   '/ai-style_/care_/products': typeof AiStyleCareProductsRoute
   '/booking/barber/$barberId': typeof BookingBarberBarberIdRoute
@@ -717,6 +869,8 @@ export interface FileRoutesById {
   '/morf-ai/look/$styleId': typeof MorfAiLookStyleIdRoute
   '/morf-ai/share/$shareId': typeof MorfAiShareShareIdRoute
   '/salon/$id/location': typeof SalonIdLocationRoute
+  '/$locale/booking/': typeof LocaleBookingIndexRoute
+  '/$locale/morf-ai/': typeof LocaleMorfAiIndexRoute
   '/dev/explore-gen/': typeof DevExploreGenIndexRoute
   '/ai-style_/care_/products_/$productId': typeof AiStyleCareProductsProductIdRoute
   '/ai-style_/care_/ingredient_/inci/$scanId': typeof AiStyleCareIngredientInciScanIdRoute
@@ -783,6 +937,12 @@ export interface FileRouteTypes {
     | '/chat/$id'
     | '/dev/explore-gen'
     | '/explore/$styleId'
+    | '/morf-ai/chat'
+    | '/morf-ai/hair-care'
+    | '/morf-ai/hairstyles'
+    | '/morf-ai/ingredient-scanner'
+    | '/morf-ai/try-on'
+    | '/morf-ai/weather-care'
     | '/salon/$id'
     | '/stories/$salonId'
     | '/subscriptions/payme'
@@ -790,6 +950,15 @@ export interface FileRouteTypes {
     | '/wallet/history'
     | '/wallet/qr-pay'
     | '/wallet/top-up'
+    | '/$locale/'
+    | '/booking/'
+    | '/morf-ai/'
+    | '/$locale/morf-ai/chat'
+    | '/$locale/morf-ai/hair-care'
+    | '/$locale/morf-ai/hairstyles'
+    | '/$locale/morf-ai/ingredient-scanner'
+    | '/$locale/morf-ai/try-on'
+    | '/$locale/morf-ai/weather-care'
     | '/ai-style/care/ingredient'
     | '/ai-style/care/products'
     | '/booking/barber/$barberId'
@@ -799,6 +968,8 @@ export interface FileRouteTypes {
     | '/morf-ai/look/$styleId'
     | '/morf-ai/share/$shareId'
     | '/salon/$id/location'
+    | '/$locale/booking/'
+    | '/$locale/morf-ai/'
     | '/dev/explore-gen/'
     | '/ai-style/care/products/$productId'
     | '/ai-style/care/ingredient/inci/$scanId'
@@ -862,6 +1033,12 @@ export interface FileRouteTypes {
     | '/category/$category'
     | '/chat/$id'
     | '/explore/$styleId'
+    | '/morf-ai/chat'
+    | '/morf-ai/hair-care'
+    | '/morf-ai/hairstyles'
+    | '/morf-ai/ingredient-scanner'
+    | '/morf-ai/try-on'
+    | '/morf-ai/weather-care'
     | '/salon/$id'
     | '/stories/$salonId'
     | '/subscriptions/payme'
@@ -869,6 +1046,15 @@ export interface FileRouteTypes {
     | '/wallet/history'
     | '/wallet/qr-pay'
     | '/wallet/top-up'
+    | '/$locale'
+    | '/booking'
+    | '/morf-ai'
+    | '/$locale/morf-ai/chat'
+    | '/$locale/morf-ai/hair-care'
+    | '/$locale/morf-ai/hairstyles'
+    | '/$locale/morf-ai/ingredient-scanner'
+    | '/$locale/morf-ai/try-on'
+    | '/$locale/morf-ai/weather-care'
     | '/ai-style/care/ingredient'
     | '/ai-style/care/products'
     | '/booking/barber/$barberId'
@@ -878,6 +1064,8 @@ export interface FileRouteTypes {
     | '/morf-ai/look/$styleId'
     | '/morf-ai/share/$shareId'
     | '/salon/$id/location'
+    | '/$locale/booking'
+    | '/$locale/morf-ai'
     | '/dev/explore-gen'
     | '/ai-style/care/products/$productId'
     | '/ai-style/care/ingredient/inci/$scanId'
@@ -942,6 +1130,12 @@ export interface FileRouteTypes {
     | '/chat/$id'
     | '/dev/explore-gen'
     | '/explore_/$styleId'
+    | '/morf-ai/chat'
+    | '/morf-ai/hair-care'
+    | '/morf-ai/hairstyles'
+    | '/morf-ai/ingredient-scanner'
+    | '/morf-ai/try-on'
+    | '/morf-ai/weather-care'
     | '/salon/$id'
     | '/stories/$salonId'
     | '/subscriptions_/payme'
@@ -949,6 +1143,15 @@ export interface FileRouteTypes {
     | '/wallet_/history'
     | '/wallet_/qr-pay'
     | '/wallet_/top-up'
+    | '/$locale/'
+    | '/booking/'
+    | '/morf-ai/'
+    | '/$locale/morf-ai/chat'
+    | '/$locale/morf-ai/hair-care'
+    | '/$locale/morf-ai/hairstyles'
+    | '/$locale/morf-ai/ingredient-scanner'
+    | '/$locale/morf-ai/try-on'
+    | '/$locale/morf-ai/weather-care'
     | '/ai-style_/care_/ingredient'
     | '/ai-style_/care_/products'
     | '/booking/barber/$barberId'
@@ -958,6 +1161,8 @@ export interface FileRouteTypes {
     | '/morf-ai/look/$styleId'
     | '/morf-ai/share/$shareId'
     | '/salon/$id/location'
+    | '/$locale/booking/'
+    | '/$locale/morf-ai/'
     | '/dev/explore-gen/'
     | '/ai-style_/care_/products_/$productId'
     | '/ai-style_/care_/ingredient_/inci/$scanId'
@@ -1021,18 +1226,35 @@ export interface RootRouteChildren {
   CategoryCategoryRoute: typeof CategoryCategoryRoute
   DevExploreGenRoute: typeof DevExploreGenRouteWithChildren
   ExploreStyleIdRoute: typeof ExploreStyleIdRoute
+  MorfAiChatRoute: typeof MorfAiChatRoute
+  MorfAiHairCareRoute: typeof MorfAiHairCareRoute
+  MorfAiHairstylesRoute: typeof MorfAiHairstylesRoute
+  MorfAiIngredientScannerRoute: typeof MorfAiIngredientScannerRoute
+  MorfAiTryOnRoute: typeof MorfAiTryOnRoute
+  MorfAiWeatherCareRoute: typeof MorfAiWeatherCareRoute
   SalonIdRoute: typeof SalonIdRouteWithChildren
   SubscriptionsPaymeRoute: typeof SubscriptionsPaymeRoute
   WalletGiftsRoute: typeof WalletGiftsRoute
   WalletHistoryRoute: typeof WalletHistoryRoute
   WalletQrPayRoute: typeof WalletQrPayRoute
   WalletTopUpRoute: typeof WalletTopUpRoute
+  LocaleIndexRoute: typeof LocaleIndexRoute
+  BookingIndexRoute: typeof BookingIndexRoute
+  MorfAiIndexRoute: typeof MorfAiIndexRoute
+  LocaleMorfAiChatRoute: typeof LocaleMorfAiChatRoute
+  LocaleMorfAiHairCareRoute: typeof LocaleMorfAiHairCareRoute
+  LocaleMorfAiHairstylesRoute: typeof LocaleMorfAiHairstylesRoute
+  LocaleMorfAiIngredientScannerRoute: typeof LocaleMorfAiIngredientScannerRoute
+  LocaleMorfAiTryOnRoute: typeof LocaleMorfAiTryOnRoute
+  LocaleMorfAiWeatherCareRoute: typeof LocaleMorfAiWeatherCareRoute
   AiStyleCareIngredientRoute: typeof AiStyleCareIngredientRoute
   AiStyleCareProductsRoute: typeof AiStyleCareProductsRoute
   BookingBarberBarberIdRoute: typeof BookingBarberBarberIdRoute
   ExploreStyleIdTryRoute: typeof ExploreStyleIdTryRoute
   MorfAiLookStyleIdRoute: typeof MorfAiLookStyleIdRoute
   MorfAiShareShareIdRoute: typeof MorfAiShareShareIdRoute
+  LocaleBookingIndexRoute: typeof LocaleBookingIndexRoute
+  LocaleMorfAiIndexRoute: typeof LocaleMorfAiIndexRoute
   AiStyleCareProductsProductIdRoute: typeof AiStyleCareProductsProductIdRoute
   AiStyleCareIngredientInciScanIdRoute: typeof AiStyleCareIngredientInciScanIdRoute
   AiStyleCareIngredientPickScanIdRoute: typeof AiStyleCareIngredientPickScanIdRoute
@@ -1302,6 +1524,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof WalletRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/$locale/': {
+      id: '/$locale/'
+      path: '/$locale'
+      fullPath: '/$locale/'
+      preLoaderRoute: typeof LocaleIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/account/activity': {
       id: '/account/activity'
       path: '/account/activity'
@@ -1386,6 +1615,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BarberBarberIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/booking/': {
+      id: '/booking/'
+      path: '/booking'
+      fullPath: '/booking/'
+      preLoaderRoute: typeof BookingIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/booking/$salonId': {
       id: '/booking/$salonId'
       path: '/booking/$salonId'
@@ -1426,6 +1662,55 @@ declare module '@tanstack/react-router' {
       path: '/explore/$styleId'
       fullPath: '/explore/$styleId'
       preLoaderRoute: typeof ExploreStyleIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/morf-ai/': {
+      id: '/morf-ai/'
+      path: '/morf-ai'
+      fullPath: '/morf-ai/'
+      preLoaderRoute: typeof MorfAiIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/morf-ai/chat': {
+      id: '/morf-ai/chat'
+      path: '/morf-ai/chat'
+      fullPath: '/morf-ai/chat'
+      preLoaderRoute: typeof MorfAiChatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/morf-ai/hair-care': {
+      id: '/morf-ai/hair-care'
+      path: '/morf-ai/hair-care'
+      fullPath: '/morf-ai/hair-care'
+      preLoaderRoute: typeof MorfAiHairCareRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/morf-ai/hairstyles': {
+      id: '/morf-ai/hairstyles'
+      path: '/morf-ai/hairstyles'
+      fullPath: '/morf-ai/hairstyles'
+      preLoaderRoute: typeof MorfAiHairstylesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/morf-ai/ingredient-scanner': {
+      id: '/morf-ai/ingredient-scanner'
+      path: '/morf-ai/ingredient-scanner'
+      fullPath: '/morf-ai/ingredient-scanner'
+      preLoaderRoute: typeof MorfAiIngredientScannerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/morf-ai/try-on': {
+      id: '/morf-ai/try-on'
+      path: '/morf-ai/try-on'
+      fullPath: '/morf-ai/try-on'
+      preLoaderRoute: typeof MorfAiTryOnRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/morf-ai/weather-care': {
+      id: '/morf-ai/weather-care'
+      path: '/morf-ai/weather-care'
+      fullPath: '/morf-ai/weather-care'
+      preLoaderRoute: typeof MorfAiWeatherCareRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/salon/$id': {
@@ -1475,6 +1760,62 @@ declare module '@tanstack/react-router' {
       path: '/wallet/top-up'
       fullPath: '/wallet/top-up'
       preLoaderRoute: typeof WalletTopUpRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/$locale/booking/': {
+      id: '/$locale/booking/'
+      path: '/$locale/booking'
+      fullPath: '/$locale/booking/'
+      preLoaderRoute: typeof LocaleBookingIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/$locale/morf-ai/': {
+      id: '/$locale/morf-ai/'
+      path: '/$locale/morf-ai'
+      fullPath: '/$locale/morf-ai/'
+      preLoaderRoute: typeof LocaleMorfAiIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/$locale/morf-ai/chat': {
+      id: '/$locale/morf-ai/chat'
+      path: '/$locale/morf-ai/chat'
+      fullPath: '/$locale/morf-ai/chat'
+      preLoaderRoute: typeof LocaleMorfAiChatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/$locale/morf-ai/hair-care': {
+      id: '/$locale/morf-ai/hair-care'
+      path: '/$locale/morf-ai/hair-care'
+      fullPath: '/$locale/morf-ai/hair-care'
+      preLoaderRoute: typeof LocaleMorfAiHairCareRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/$locale/morf-ai/hairstyles': {
+      id: '/$locale/morf-ai/hairstyles'
+      path: '/$locale/morf-ai/hairstyles'
+      fullPath: '/$locale/morf-ai/hairstyles'
+      preLoaderRoute: typeof LocaleMorfAiHairstylesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/$locale/morf-ai/ingredient-scanner': {
+      id: '/$locale/morf-ai/ingredient-scanner'
+      path: '/$locale/morf-ai/ingredient-scanner'
+      fullPath: '/$locale/morf-ai/ingredient-scanner'
+      preLoaderRoute: typeof LocaleMorfAiIngredientScannerRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/$locale/morf-ai/try-on': {
+      id: '/$locale/morf-ai/try-on'
+      path: '/$locale/morf-ai/try-on'
+      fullPath: '/$locale/morf-ai/try-on'
+      preLoaderRoute: typeof LocaleMorfAiTryOnRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/$locale/morf-ai/weather-care': {
+      id: '/$locale/morf-ai/weather-care'
+      path: '/$locale/morf-ai/weather-care'
+      fullPath: '/$locale/morf-ai/weather-care'
+      preLoaderRoute: typeof LocaleMorfAiWeatherCareRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/ai-style_/care_/ingredient': {
@@ -1706,18 +2047,35 @@ const rootRouteChildren: RootRouteChildren = {
   CategoryCategoryRoute: CategoryCategoryRoute,
   DevExploreGenRoute: DevExploreGenRouteWithChildren,
   ExploreStyleIdRoute: ExploreStyleIdRoute,
+  MorfAiChatRoute: MorfAiChatRoute,
+  MorfAiHairCareRoute: MorfAiHairCareRoute,
+  MorfAiHairstylesRoute: MorfAiHairstylesRoute,
+  MorfAiIngredientScannerRoute: MorfAiIngredientScannerRoute,
+  MorfAiTryOnRoute: MorfAiTryOnRoute,
+  MorfAiWeatherCareRoute: MorfAiWeatherCareRoute,
   SalonIdRoute: SalonIdRouteWithChildren,
   SubscriptionsPaymeRoute: SubscriptionsPaymeRoute,
   WalletGiftsRoute: WalletGiftsRoute,
   WalletHistoryRoute: WalletHistoryRoute,
   WalletQrPayRoute: WalletQrPayRoute,
   WalletTopUpRoute: WalletTopUpRoute,
+  LocaleIndexRoute: LocaleIndexRoute,
+  BookingIndexRoute: BookingIndexRoute,
+  MorfAiIndexRoute: MorfAiIndexRoute,
+  LocaleMorfAiChatRoute: LocaleMorfAiChatRoute,
+  LocaleMorfAiHairCareRoute: LocaleMorfAiHairCareRoute,
+  LocaleMorfAiHairstylesRoute: LocaleMorfAiHairstylesRoute,
+  LocaleMorfAiIngredientScannerRoute: LocaleMorfAiIngredientScannerRoute,
+  LocaleMorfAiTryOnRoute: LocaleMorfAiTryOnRoute,
+  LocaleMorfAiWeatherCareRoute: LocaleMorfAiWeatherCareRoute,
   AiStyleCareIngredientRoute: AiStyleCareIngredientRoute,
   AiStyleCareProductsRoute: AiStyleCareProductsRoute,
   BookingBarberBarberIdRoute: BookingBarberBarberIdRoute,
   ExploreStyleIdTryRoute: ExploreStyleIdTryRoute,
   MorfAiLookStyleIdRoute: MorfAiLookStyleIdRoute,
   MorfAiShareShareIdRoute: MorfAiShareShareIdRoute,
+  LocaleBookingIndexRoute: LocaleBookingIndexRoute,
+  LocaleMorfAiIndexRoute: LocaleMorfAiIndexRoute,
   AiStyleCareProductsProductIdRoute: AiStyleCareProductsProductIdRoute,
   AiStyleCareIngredientInciScanIdRoute: AiStyleCareIngredientInciScanIdRoute,
   AiStyleCareIngredientPickScanIdRoute: AiStyleCareIngredientPickScanIdRoute,

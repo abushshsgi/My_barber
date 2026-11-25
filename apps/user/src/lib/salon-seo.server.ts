@@ -1,4 +1,5 @@
 import { resolveApiUpstream, resolveFetchBase } from "@/lib/api/base-url";
+import { SITE_ORIGIN } from "@/seo/constants";
 
 type SalonSeoMeta = {
   name: string;
@@ -8,7 +9,6 @@ type SalonSeoMeta = {
   rating: number;
 };
 
-const SITE_ORIGIN = "https://www.mysaloon.uz";
 const SEO_CACHE_MS = 15_000;
 const seoCache = new Map<string, { at: number; data: SalonSeoMeta | null }>();
 
