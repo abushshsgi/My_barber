@@ -382,4 +382,155 @@ All Morf marketing landings are wired in `LANDING_PAGES`, HTML injection, and `s
 | Cloaking | **Not detected** |
 | Local junk / undeployed trees | **Documented** — left untouched |
 
-**Recommended follow-ups (non-blocking):** VPS nginx reload; when salon/barber API populates, re-verify dynamic sitemaps; optional trim UZ Morf hub title by 4 chars for SERP; submit `sitemap.xml` in GSC (§11).
+**Recommended follow-ups (non-blocking):** when salon/barber API populates, re-verify dynamic sitemaps; optional trim UZ Morf hub title by 4 chars for SERP; submit `sitemap.xml` in GSC (§11).
+
+---
+
+## 18. Production closure audit (2026-11-25 ~14:15 UTC+5)
+
+### 18.1 Deploy
+
+| Field | Value |
+|--------|--------|
+| **Git commit (production)** | `a4eb7e453e6ba3d06256a830a31232df1bf1d848` |
+| **buildId** | `a4eb7e4` (`builtAt`: `2026-11-25T09:09:32.090Z`) |
+| **VPS command** | `git pull --ff-only` + `sudo bash deploy/vps/deploy-frontends.sh auto` |
+| **Rebuild scope** | `user=1` (eslint/lint script + nginx in repo), `admin=0`, `barber=0` |
+| **Services** | `mysaloon-user` **active**, `nginx` **active** |
+| **Nginx post-pass** | www vhost: `listen 443 ssl` only (301 to apex); apex keeps `http2`; `gzip_types` without duplicate `text/html`; **`nginx -t` OK**, reload OK |
+| **Nginx warnings remaining** | Non-fatal `protocol options redefined` on apex block when multiple vhosts share `:443` (nginx \< 1.25, `http2 on;` unsupported on this host) |
+
+Backups before deploy: `mysaloon-user.conf` / `mysaloon-barber.conf` under `/var/backups/mysaloon/` (pre-a4eb7e45).
+
+### 18.2 Salon & barber sitemap — root cause (read-only DB, no data changes)
+
+**Production DB snapshot** (`manage.py shell` on VPS, 2026-11-25):
+
+| Metric | Count | Meaning |
+|--------|-------|---------|
+| `salon_total` | **3** | Rows exist in DB |
+| `salon_is_published` | **3** | `is_published=True` |
+| `salon_customer_visible` | **0** | Fails `filter_customer_visible_salons()` |
+| `salon_subscription_active` | **0** | No active paid subscription |
+| `salon_subscription_trial` | **3** | All marked trial |
+| `salon_passing_sitemap_gate` | **0** | Empty public list → nothing to evaluate |
+
+**Per-salon (customer catalog / API list):**
+
+| id | name | published | sub | trial_ends | customer_visible |
+|----|------|-----------|-----|------------|------------------|
+| 361 | Make me Beautiful | yes | trial | **2026-08-16** (expired) | **no** |
+| 362 | Maxtob Go'zallik saloni | yes | trial | **2026-08-16** (expired) | **no** |
+| 380 | Jalolbek Barber | yes | trial | **2026-08-16** (expired) | **no** |
+
+**Code path:** `SalonViewSet._salon_public_list_qs()` → `filter_customer_visible_salons()` requires `is_published` **and** (`subscription_status=ACTIVE` **or** unexpired trial **or** owner shop subscription). See `backend/salons/visibility.py`.
+
+**Sitemap second gate** (`fetchSalonSitemapUrls`): same API list; each row needs `name` + (`cover_image` **or** `description`). Even visible salons would still skip without cover/description.
+
+**Barbers (`barber_total` 10, `barber_publicly_visible` 0):**
+
+| Layer | Rule |
+|-------|------|
+| API list | `BarberPublicViewSet` → `barber_id__in publicly_visible_barber_ids()` |
+| Visibility | `barber_is_publicly_visible` = `fully_ready` **and** `barber_has_customer_entitlement` |
+| Sample | Barbers **442, 443, 445**: `fully_ready=True`, **`entitlement=False`** (no active shop/customer subscription) |
+
+**Sitemap gate:** `display_name` + `avatar` required (`fetchBarberSitemapUrls`).
+
+**Conclusion:** `sitemap-salons.xml` / `sitemap-barbers.xml` are empty because **no row passes production business rules**, not because of a Nitro bug. **No auto-publish or moderation bypass was applied.**
+
+### 18.3 Sitemap URL verification (n=99)
+
+Automated fetch of every `<loc>` in child sitemaps (2026-11-25):
+
+| Result | Count |
+|--------|-------|
+| HTTP **200** | **99 / 99** |
+| Registry landings (canonical + title + description + H1 + hreflang where trilingual) | **37 / 37** pass |
+| `/explore/{slug}` dynamic styles | **62 / 62** pass (canonical + dynamic title/description/H1 via injection) |
+| **Issues (5 URLs)** | `/ai-style`, `/ai-style/chat`, `/today`, `/top`, `/compare` — **200** but **no server-side canonical** (not in SEO registry; default app shell title). Still indexable; follow-up: optional registry entries. |
+
+### 18.4 ESLint — Prettier vs functional
+
+`eslint src e2e` (Windows, 2026-11-25):
+
+| Rule | Count | Category |
+|------|-------|----------|
+| `prettier/prettier` | **937** | Formatting debt (CRLF/line wraps) |
+| `react-refresh/only-export-components` | 43 | Warning-level |
+| `react-hooks/exhaustive-deps` | 14 | Hooks hygiene |
+| `no-empty` | 3 | Minor |
+| `prefer-const` | 2 | Minor |
+
+**`npm run lint:seo`** → **exit 0**. **`npm run build`** (user) → **exit 0**, buildId `a4eb7e4`.
+
+### 18.5 Public SEO copy — UZ / RU / EN (title + description)
+
+**Tri-lingual pages**
+
+| Page | UZ title | UZ description |
+|------|----------|----------------|
+| home | mysaloon.uz — Sartaroshxona va salonlarni onlayn band qiling | O'zbekistondagi sartaroshlar va go'zallik salonlarini xaritada toping, bo'sh vaqtlarni ko'ring va bir necha bosishda bron qiling. |
+| home | **RU:** mysaloon.uz — Онлайн-запись в барбершопы и салоны | Найдите барбершопы и салоны красоты в Узбекистане на карте, выберите свободное время и забронируйте за пару кликов. |
+| home | **EN:** mysaloon.uz — Book barbershops and salons online | Discover barbers and beauty salons in Uzbekistan on the map, check real availability, and book in a few taps. |
+| morf-ai hub | Morf AI — Soch uslubini selfie bilan sinab ko'ring \| mysaloon.uz | Morf AI ekotizimi: virtual try-on, AI chat, parvarish markazi, ingredient skaneri va haqiqiy salon bron. |
+| morf-ai hub | **RU:** Morf AI — Примерьте причёску по селфи \| mysaloon.uz | Экосистема Morf AI: виртуальный try-on, AI-чат, уход, сканер состава и запись в салон. |
+| morf-ai hub | **EN:** Morf AI — Try hairstyles on your selfie \| mysaloon.uz | The Morf AI ecosystem: virtual try-on, AI chat, hair care hub, ingredient scanner, and salon booking. |
+| try-on | Virtual try-on — selfie bilan soch uslubi \| Morf AI | Bir selfie yuklang, minglab tayyor uslublardan tanlang va natijani soniyalarda ko'ring. |
+| try-on | **RU:** Виртуальный try-on по селфи \| Morf AI | Загрузите селфи, выберите стиль из каталога и увидите результат за секунды. |
+| try-on | **EN:** Virtual try-on on your selfie \| Morf AI | Upload a selfie, pick a style from the catalog, and preview the result in seconds. |
+| hairstyles | Soch uslublari katalogi — erkak va ayol \| Morf AI | Trend uslublar, persona suratlari va har bir uslub uchun try-on havolasi. |
+| hairstyles | **RU:** Каталог причёсок — мужские и женские \| Morf AI | Трендовые стили с примерами и ссылкой на try-on. |
+| hairstyles | **EN:** Hairstyle catalog — men's and women's \| Morf AI | Trending cuts with previews and a link to try each style on. |
+| hair-care | Soch parvarishi markazi — reja va maslahat \| Morf AI | Shaxsiy parvarish rejasi, mahsulotlar va AI maslahatlari. |
+| hair-care | **RU:** Центр ухода за волосами \| Morf AI | Персональный план ухода, продукты и AI-советы. |
+| hair-care | **EN:** Hair care hub — routines and advice \| Morf AI | Personal care plan, products, and AI guidance. |
+| ingredient | Shampun tarkibi skaneri — Hair Advisor \| Morf AI | Mahsulot yorlig'ini skaner qiling, ingredientlarni tushuning va mosligini tekshiring. |
+| ingredient | **RU:** Сканер состава шампуня \| Morf AI | Сканируйте этикетку и проверьте совместимость ингредиентов. |
+| ingredient | **EN:** Shampoo ingredient scanner \| Morf AI | Scan the label, understand ingredients, and check fit for your hair. |
+| chat | Morf AI chat — soch bo'yicha maslahat | AI bilan suhbat: uslub, parvarish va salonga tayyorgarlik. |
+| chat | **RU:** Чат Morf AI — советы по волосам | Диалог с AI о стиле, уходе и подготовке к визиту. |
+| chat | **EN:** Morf AI chat — hair advice | Talk with AI about style, care, and your salon visit. |
+| weather | Ob-havo bo'yicha soch parvarishi \| Morf AI | Bugungi ob-havoga mos parvarish tavsiyalari — namlik, shamol va quyosh hisobga olinadi. |
+| weather | **RU:** Уход с учётом погоды \| Morf AI | Советы по уходу под сегодняшнюю погоду. |
+| weather | **EN:** Weather-aware hair care \| Morf AI | Daily care tips aligned with today's weather. |
+| booking | Salon bron qilish — bo'sh vaqtlar va onlayn to'lov | Yaqin salonni tanlang, xizmat va ustani belgilang, tasdiqlang. |
+| booking | **RU:** Запись в салон — свободное время и оплата | Выберите салон, услугу и мастера, подтвердите запись. |
+| booking | **EN:** Book a salon — live availability | Pick a salon, service, and stylist, then confirm online. |
+
+**UZ-primary (registry copy; RU/EN strings exist for UI but no separate index URLs)**
+
+| Page | UZ title | UZ description |
+|------|----------|----------------|
+| for-salons | Salon egalari uchun — MySaloon Partner | Onlayn bron, mijozlar va TOP ko'rinish. Bepul boshlash. |
+| map | Salon xaritasi — yaqin sartaroshxonalarni toping | Joylashuv bo'yicha salonlar, reyting va bo'sh vaqtlar. |
+| explore | Soch uslublari — katalog va try-on | Erkak va ayol uslublari, persona suratlari. |
+| privacy | Maxfiylik siyosati — mysaloon.uz | MySaloon va Morf AI ma'lumotlaringizni qanday himoya qiladi. |
+| terms | Foydalanish shartlari — mysaloon.uz | Platformadan foydalanish qoidalari. |
+
+Full UZ/RU/EN matrix: `apps/user/src/seo/content/landings.ts` (also §17.5).
+
+### 18.6 Post-deploy smoke (HTTP only, no payments / no paid AI)
+
+| Check | Result |
+|-------|--------|
+| `/`, `/booking`, Morf landings, `/ai-style`, `/ai-style/chat`, `/ai-style/care`, `/ai-style/care/ingredient` | **200** |
+| `/auth` (login entry) | **200** |
+| `/map` | **307** → `/map?q=&category=all` (app redirect, expected) |
+| `/explore` | **200** |
+| `api.mysaloon.uz/health/` | **200** |
+| `/api/v1/site/config/` | **200** (OAuth client id present) |
+| `/wallet` | **200** + `noindex` (unchanged) |
+
+No checkout, Payme, or try-on **generate** endpoints were called.
+
+### 18.7 Final status
+
+| Item | Status |
+|------|--------|
+| Commit `a4eb7e45` on VPS | **Live** |
+| Sitemap URLs (production) | **99** |
+| Nginx | **syntax OK**, reloaded; gzip MIME + barber http2 warnings addressed; minor apex `http2` redefine warning may remain |
+| Salon/barber sitemaps | **0** — expired trials + missing barber entitlement (documented) |
+| SEO lint / build | **Pass** |
+| User data | **Unchanged** |
