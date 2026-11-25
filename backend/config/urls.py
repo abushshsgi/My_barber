@@ -711,6 +711,7 @@ api_routes = [
     path("explore/personas/", ExplorePersonaListView.as_view()),
     path("hairstyles/", HairstyleListView.as_view()),
     path("hairstyles/<str:style_id>/", HairstyleDetailView.as_view()),
+    path("content/", include("content_seo.urls")),
     path("auth/barber-register/", BarberRegisterView.as_view()),
     path("auth/barber-register-join-salon/", BarberRegisterJoinSalonView.as_view()),
     path("auth/barber-check-availability/", BarberCheckAvailabilityView.as_view()),

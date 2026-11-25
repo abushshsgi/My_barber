@@ -28,6 +28,12 @@ CLIENT_EVENTS = frozenset(
         "shampoo_product_viewed",
         "barcode_scan_started",
         "barcode_scan_completed",
+        "organic_landing_view",
+        "hairstyle_model_view",
+        "tryon_cta_click",
+        "blog_article_view",
+        "scan_cta_click",
+        "generation_completed",
     }
 )
 
@@ -111,5 +117,11 @@ ENGAGEMENT_EVENTS = frozenset(
         "registration_started",
         "registration_completed",
         "login_completed",
+        "organic_landing_view",
+        "hairstyle_model_view",
+        "tryon_cta_click",
+        "blog_article_view",
+        "scan_cta_click",
+        "generation_completed",
     }
 )

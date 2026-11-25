@@ -112,6 +112,7 @@ INSTALLED_APPS = [
     "media_store.apps.MediaStoreConfig",
     "agents.apps.AgentsConfig",
     "hair_advisor.apps.HairAdvisorConfig",
+    "content_seo.apps.ContentSeoConfig",
 ]
 
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "").strip()
