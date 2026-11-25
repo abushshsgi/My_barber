@@ -1,5 +1,6 @@
 import type { Salon } from "@/lib/mock-data";
 import type { RegionOption } from "@/lib/api/user";
+import { USER_ONBOARDING_ENABLED } from "@/lib/feature-flags";
 
 export type RecommendContext = {
   lat?: number | null;
@@ -189,6 +190,7 @@ export function needsOnboarding(
     require_profile_location?: boolean;
   } | null,
 ): boolean {
+  if (!USER_ONBOARDING_ENABLED) return false;
   if (!user) return true;
 
   const hasBirth = user.birth_year != null && Number(user.birth_year) > 1900;

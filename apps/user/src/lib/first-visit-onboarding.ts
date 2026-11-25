@@ -1,3 +1,5 @@
+import { USER_ONBOARDING_ENABLED } from "@/lib/feature-flags";
+
 export const FIRST_VISIT_ONBOARDING_KEY = "mysaloon_onboarding_v1";
 export const FIRST_VISIT_VISIBILITY_EVENT = "mysaloon:first-visit-visibility";
 
@@ -85,6 +87,7 @@ export function shouldShowFirstVisitOnboarding(input: {
   hasSession: boolean;
   location: FirstVisitLocation;
 }): boolean {
+  if (!USER_ONBOARDING_ENABLED) return false;
   const { readable, status } = readFirstVisitStatus(input.storage);
   if (!readable || status) return false;
   if (input.hasSession) return false;

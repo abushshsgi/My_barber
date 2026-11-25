@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it } from "vitest";
+import { USER_ONBOARDING_ENABLED } from "./feature-flags";
 import {
   FIRST_VISIT_ONBOARDING_KEY,
   dismissFirstVisitForThisLoad,
@@ -47,10 +48,16 @@ describe("first-visit onboarding visibility", () => {
     window.history.replaceState(null, "", "/");
   });
 
-  it("shows slide 1 for a new guest on the home page", () => {
+  it.skipIf(!USER_ONBOARDING_ENABLED)("shows slide 1 for a new guest on the home page", () => {
     expect(show({ pathname: "/", search: "?utm_source=ig&utm_campaign=spring&ref=ABCD2345" })).toBe(
       true,
     );
+  });
+
+  it("hides all slides when USER_ONBOARDING_ENABLED is false", () => {
+    if (USER_ONBOARDING_ENABLED) return;
+    expect(show({ pathname: "/" })).toBe(false);
+    expect(shouldShowFirstVisitFromBrowser(false)).toBe(false);
   });
 
   it("stays hidden after completion or skip", () => {
@@ -62,7 +69,7 @@ describe("first-visit onboarding visibility", () => {
     expect(show({ pathname: "/" }, { hasSession: true })).toBe(false);
   });
 
-  it("shows before the login page and hides only during an auth callback", () => {
+  it.skipIf(!USER_ONBOARDING_ENABLED)("shows before the login page and hides only during an auth callback", () => {
     expect(isAuthCallbackLocation({ pathname: "/auth" })).toBe(false);
     expect(isAuthCallbackLocation({ pathname: "/auth/" })).toBe(false);
     expect(show({ pathname: "/auth", search: "?redirect=/&utm_source=ig" })).toBe(true);
@@ -88,7 +95,7 @@ describe("first-visit onboarding visibility", () => {
     expect(readFirstVisitStatus(broken).status).toBe(null);
   });
 
-  it("closes for the rest of this page load even before a refresh", () => {
+  it.skipIf(!USER_ONBOARDING_ENABLED)("closes for the rest of this page load even before a refresh", () => {
     window.localStorage.removeItem(FIRST_VISIT_ONBOARDING_KEY);
     window.history.replaceState(null, "", "/?utm_source=ig");
     expect(shouldShowFirstVisitFromBrowser(false)).toBe(true);
