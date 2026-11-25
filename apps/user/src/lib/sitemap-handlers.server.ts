@@ -11,7 +11,8 @@ const ROBOTS_HEADERS = {
   "cache-control": "public, max-age=3600",
 } as const;
 
-type SitemapSection = "static" | "morf" | "salons" | "styles" | "barbers";
+type SitemapSection =
+  "static" | "morf" | "salons" | "styles" | "barbers" | "images" | "categories" | "blog";
 
 export async function maybeServeSeoAsset(request: Request): Promise<Response | null> {
   if (request.method !== "GET") return null;
@@ -25,7 +26,9 @@ export async function maybeServeSeoAsset(request: Request): Promise<Response | n
     return new Response(sitemapIndexXml(), { status: 200, headers: XML_HEADERS });
   }
 
-  const sectionMatch = pathname.match(/^\/sitemap-(static|morf|salons|styles|barbers)\.xml$/);
+  const sectionMatch = pathname.match(
+    /^\/sitemap-(static|morf|salons|styles|barbers|images|categories|blog)\.xml$/,
+  );
   if (sectionMatch) {
     const section = sectionMatch[1] as SitemapSection;
     const body = await buildSitemapSection(section);

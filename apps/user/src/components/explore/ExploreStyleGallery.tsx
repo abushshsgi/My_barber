@@ -15,6 +15,8 @@ type Props = {
   variant?: "default" | "mobileHero" | "gridCard";
   /** First viewport cards — eager + high priority */
   priority?: boolean;
+  /** SEO/accessibility ALT for primary catalog image */
+  primaryAlt?: string;
 };
 
 export function ExploreStyleGallery({
@@ -27,6 +29,7 @@ export function ExploreStyleGallery({
   description,
   variant = "default",
   priority = false,
+  primaryAlt,
 }: Props) {
   const isMobileHero = variant === "mobileHero";
   const isGridCard = variant === "gridCard";
@@ -111,7 +114,13 @@ export function ExploreStyleGallery({
           <img
             key={active?.url}
             src={active?.url}
-            alt={`${title} — ${active?.label ?? ""}`}
+            alt={
+              primaryAlt && activeIndex === 0
+                ? primaryAlt
+                : `${title} — ${active?.label ?? ""}`
+            }
+            width={768}
+            height={1024}
             loading={priority ? "eager" : "lazy"}
             decoding="async"
             fetchPriority={priority ? "high" : "auto"}

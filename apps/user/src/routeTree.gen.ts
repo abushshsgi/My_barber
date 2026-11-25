@@ -24,6 +24,7 @@ import { Route as FavoriteStylistsRouteImport } from './routes/favorite-stylists
 import { Route as FavoritesRouteImport } from './routes/favorites'
 import { Route as ForSalonsRouteImport } from './routes/for-salons'
 import { Route as GiftcardRouteImport } from './routes/giftcard'
+import { Route as GuidesRouteImport } from './routes/guides'
 import { Route as LoyaltyRouteImport } from './routes/loyalty'
 import { Route as MapRouteImport } from './routes/map'
 import { Route as NotificationsRouteImport } from './routes/notifications'
@@ -66,6 +67,7 @@ import { Route as CategoryCategoryRouteImport } from './routes/category.$categor
 import { Route as ChatIdRouteImport } from './routes/chat.$id'
 import { Route as DevExploreGenRouteImport } from './routes/dev.explore-gen'
 import { Route as ExploreStyleIdRouteImport } from './routes/explore_.$styleId'
+import { Route as GuidesSlugRouteImport } from './routes/guides_.$slug'
 import { Route as MorfAiIndexRouteImport } from './routes/morf-ai.index'
 import { Route as MorfAiChatRouteImport } from './routes/morf-ai.chat'
 import { Route as MorfAiHairCareRouteImport } from './routes/morf-ai.hair-care'
@@ -95,6 +97,7 @@ import { Route as DevExploreGenIndexRouteImport } from './routes/dev.explore-gen
 import { Route as DevExploreGenAssetsRouteImport } from './routes/dev.explore-gen.assets'
 import { Route as DevExploreGenGirlsRouteImport } from './routes/dev.explore-gen.girls'
 import { Route as ExploreStyleIdTryRouteImport } from './routes/explore_.$styleId_.try'
+import { Route as ExploreCategoryCategoryIdRouteImport } from './routes/explore_.category.$categoryId'
 import { Route as MorfAiLookStyleIdRouteImport } from './routes/morf-ai.look.$styleId'
 import { Route as MorfAiShareShareIdRouteImport } from './routes/morf-ai.share.$shareId'
 import { Route as SalonIdLocationRouteImport } from './routes/salon.$id.location'
@@ -178,6 +181,11 @@ const ForSalonsRoute = ForSalonsRouteImport.update({
 const GiftcardRoute = GiftcardRouteImport.update({
   id: '/giftcard',
   path: '/giftcard',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GuidesRoute = GuidesRouteImport.update({
+  id: '/guides',
+  path: '/guides',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoyaltyRoute = LoyaltyRouteImport.update({
@@ -390,6 +398,11 @@ const ExploreStyleIdRoute = ExploreStyleIdRouteImport.update({
   path: '/explore/$styleId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const GuidesSlugRoute = GuidesSlugRouteImport.update({
+  id: '/guides_/$slug',
+  path: '/guides/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const MorfAiIndexRoute = MorfAiIndexRouteImport.update({
   id: '/morf-ai/',
   path: '/morf-ai/',
@@ -536,6 +549,12 @@ const ExploreStyleIdTryRoute = ExploreStyleIdTryRouteImport.update({
   path: '/explore/$styleId/try',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ExploreCategoryCategoryIdRoute =
+  ExploreCategoryCategoryIdRouteImport.update({
+    id: '/explore_/category/$categoryId',
+    path: '/explore/category/$categoryId',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const MorfAiLookStyleIdRoute = MorfAiLookStyleIdRouteImport.update({
   id: '/morf-ai/look/$styleId',
   path: '/morf-ai/look/$styleId',
@@ -604,6 +623,7 @@ export interface FileRoutesByFullPath {
   '/favorites': typeof FavoritesRoute
   '/for-salons': typeof ForSalonsRoute
   '/giftcard': typeof GiftcardRoute
+  '/guides': typeof GuidesRoute
   '/loyalty': typeof LoyaltyRoute
   '/map': typeof MapRoute
   '/notifications': typeof NotificationsRoute
@@ -644,6 +664,7 @@ export interface FileRoutesByFullPath {
   '/chat/$id': typeof ChatIdRoute
   '/dev/explore-gen': typeof DevExploreGenRouteWithChildren
   '/explore/$styleId': typeof ExploreStyleIdRoute
+  '/guides/$slug': typeof GuidesSlugRoute
   '/morf-ai/chat': typeof MorfAiChatRoute
   '/morf-ai/hair-care': typeof MorfAiHairCareRoute
   '/morf-ai/hairstyles': typeof MorfAiHairstylesRoute
@@ -672,6 +693,7 @@ export interface FileRoutesByFullPath {
   '/dev/explore-gen/assets': typeof DevExploreGenAssetsRoute
   '/dev/explore-gen/girls': typeof DevExploreGenGirlsRoute
   '/explore/$styleId/try': typeof ExploreStyleIdTryRoute
+  '/explore/category/$categoryId': typeof ExploreCategoryCategoryIdRoute
   '/morf-ai/look/$styleId': typeof MorfAiLookStyleIdRoute
   '/morf-ai/share/$shareId': typeof MorfAiShareShareIdRoute
   '/salon/$id/location': typeof SalonIdLocationRoute
@@ -701,6 +723,7 @@ export interface FileRoutesByTo {
   '/favorites': typeof FavoritesRoute
   '/for-salons': typeof ForSalonsRoute
   '/giftcard': typeof GiftcardRoute
+  '/guides': typeof GuidesRoute
   '/loyalty': typeof LoyaltyRoute
   '/map': typeof MapRoute
   '/notifications': typeof NotificationsRoute
@@ -740,6 +763,7 @@ export interface FileRoutesByTo {
   '/category/$category': typeof CategoryCategoryRoute
   '/chat/$id': typeof ChatIdRoute
   '/explore/$styleId': typeof ExploreStyleIdRoute
+  '/guides/$slug': typeof GuidesSlugRoute
   '/morf-ai/chat': typeof MorfAiChatRoute
   '/morf-ai/hair-care': typeof MorfAiHairCareRoute
   '/morf-ai/hairstyles': typeof MorfAiHairstylesRoute
@@ -768,6 +792,7 @@ export interface FileRoutesByTo {
   '/dev/explore-gen/assets': typeof DevExploreGenAssetsRoute
   '/dev/explore-gen/girls': typeof DevExploreGenGirlsRoute
   '/explore/$styleId/try': typeof ExploreStyleIdTryRoute
+  '/explore/category/$categoryId': typeof ExploreCategoryCategoryIdRoute
   '/morf-ai/look/$styleId': typeof MorfAiLookStyleIdRoute
   '/morf-ai/share/$shareId': typeof MorfAiShareShareIdRoute
   '/salon/$id/location': typeof SalonIdLocationRoute
@@ -798,6 +823,7 @@ export interface FileRoutesById {
   '/favorites': typeof FavoritesRoute
   '/for-salons': typeof ForSalonsRoute
   '/giftcard': typeof GiftcardRoute
+  '/guides': typeof GuidesRoute
   '/loyalty': typeof LoyaltyRoute
   '/map': typeof MapRoute
   '/notifications': typeof NotificationsRoute
@@ -838,6 +864,7 @@ export interface FileRoutesById {
   '/chat/$id': typeof ChatIdRoute
   '/dev/explore-gen': typeof DevExploreGenRouteWithChildren
   '/explore_/$styleId': typeof ExploreStyleIdRoute
+  '/guides_/$slug': typeof GuidesSlugRoute
   '/morf-ai/chat': typeof MorfAiChatRoute
   '/morf-ai/hair-care': typeof MorfAiHairCareRoute
   '/morf-ai/hairstyles': typeof MorfAiHairstylesRoute
@@ -866,6 +893,7 @@ export interface FileRoutesById {
   '/dev/explore-gen/assets': typeof DevExploreGenAssetsRoute
   '/dev/explore-gen/girls': typeof DevExploreGenGirlsRoute
   '/explore_/$styleId_/try': typeof ExploreStyleIdTryRoute
+  '/explore_/category/$categoryId': typeof ExploreCategoryCategoryIdRoute
   '/morf-ai/look/$styleId': typeof MorfAiLookStyleIdRoute
   '/morf-ai/share/$shareId': typeof MorfAiShareShareIdRoute
   '/salon/$id/location': typeof SalonIdLocationRoute
@@ -897,6 +925,7 @@ export interface FileRouteTypes {
     | '/favorites'
     | '/for-salons'
     | '/giftcard'
+    | '/guides'
     | '/loyalty'
     | '/map'
     | '/notifications'
@@ -937,6 +966,7 @@ export interface FileRouteTypes {
     | '/chat/$id'
     | '/dev/explore-gen'
     | '/explore/$styleId'
+    | '/guides/$slug'
     | '/morf-ai/chat'
     | '/morf-ai/hair-care'
     | '/morf-ai/hairstyles'
@@ -965,6 +995,7 @@ export interface FileRouteTypes {
     | '/dev/explore-gen/assets'
     | '/dev/explore-gen/girls'
     | '/explore/$styleId/try'
+    | '/explore/category/$categoryId'
     | '/morf-ai/look/$styleId'
     | '/morf-ai/share/$shareId'
     | '/salon/$id/location'
@@ -994,6 +1025,7 @@ export interface FileRouteTypes {
     | '/favorites'
     | '/for-salons'
     | '/giftcard'
+    | '/guides'
     | '/loyalty'
     | '/map'
     | '/notifications'
@@ -1033,6 +1065,7 @@ export interface FileRouteTypes {
     | '/category/$category'
     | '/chat/$id'
     | '/explore/$styleId'
+    | '/guides/$slug'
     | '/morf-ai/chat'
     | '/morf-ai/hair-care'
     | '/morf-ai/hairstyles'
@@ -1061,6 +1094,7 @@ export interface FileRouteTypes {
     | '/dev/explore-gen/assets'
     | '/dev/explore-gen/girls'
     | '/explore/$styleId/try'
+    | '/explore/category/$categoryId'
     | '/morf-ai/look/$styleId'
     | '/morf-ai/share/$shareId'
     | '/salon/$id/location'
@@ -1090,6 +1124,7 @@ export interface FileRouteTypes {
     | '/favorites'
     | '/for-salons'
     | '/giftcard'
+    | '/guides'
     | '/loyalty'
     | '/map'
     | '/notifications'
@@ -1130,6 +1165,7 @@ export interface FileRouteTypes {
     | '/chat/$id'
     | '/dev/explore-gen'
     | '/explore_/$styleId'
+    | '/guides_/$slug'
     | '/morf-ai/chat'
     | '/morf-ai/hair-care'
     | '/morf-ai/hairstyles'
@@ -1158,6 +1194,7 @@ export interface FileRouteTypes {
     | '/dev/explore-gen/assets'
     | '/dev/explore-gen/girls'
     | '/explore_/$styleId_/try'
+    | '/explore_/category/$categoryId'
     | '/morf-ai/look/$styleId'
     | '/morf-ai/share/$shareId'
     | '/salon/$id/location'
@@ -1188,6 +1225,7 @@ export interface RootRouteChildren {
   FavoritesRoute: typeof FavoritesRoute
   ForSalonsRoute: typeof ForSalonsRoute
   GiftcardRoute: typeof GiftcardRoute
+  GuidesRoute: typeof GuidesRoute
   LoyaltyRoute: typeof LoyaltyRoute
   MapRoute: typeof MapRoute
   NotificationsRoute: typeof NotificationsRoute
@@ -1226,6 +1264,7 @@ export interface RootRouteChildren {
   CategoryCategoryRoute: typeof CategoryCategoryRoute
   DevExploreGenRoute: typeof DevExploreGenRouteWithChildren
   ExploreStyleIdRoute: typeof ExploreStyleIdRoute
+  GuidesSlugRoute: typeof GuidesSlugRoute
   MorfAiChatRoute: typeof MorfAiChatRoute
   MorfAiHairCareRoute: typeof MorfAiHairCareRoute
   MorfAiHairstylesRoute: typeof MorfAiHairstylesRoute
@@ -1251,6 +1290,7 @@ export interface RootRouteChildren {
   AiStyleCareProductsRoute: typeof AiStyleCareProductsRoute
   BookingBarberBarberIdRoute: typeof BookingBarberBarberIdRoute
   ExploreStyleIdTryRoute: typeof ExploreStyleIdTryRoute
+  ExploreCategoryCategoryIdRoute: typeof ExploreCategoryCategoryIdRoute
   MorfAiLookStyleIdRoute: typeof MorfAiLookStyleIdRoute
   MorfAiShareShareIdRoute: typeof MorfAiShareShareIdRoute
   LocaleBookingIndexRoute: typeof LocaleBookingIndexRoute
@@ -1368,6 +1408,13 @@ declare module '@tanstack/react-router' {
       path: '/giftcard'
       fullPath: '/giftcard'
       preLoaderRoute: typeof GiftcardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/guides': {
+      id: '/guides'
+      path: '/guides'
+      fullPath: '/guides'
+      preLoaderRoute: typeof GuidesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/loyalty': {
@@ -1664,6 +1711,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ExploreStyleIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/guides_/$slug': {
+      id: '/guides_/$slug'
+      path: '/guides/$slug'
+      fullPath: '/guides/$slug'
+      preLoaderRoute: typeof GuidesSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/morf-ai/': {
       id: '/morf-ai/'
       path: '/morf-ai'
@@ -1867,6 +1921,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ExploreStyleIdTryRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/explore_/category/$categoryId': {
+      id: '/explore_/category/$categoryId'
+      path: '/explore/category/$categoryId'
+      fullPath: '/explore/category/$categoryId'
+      preLoaderRoute: typeof ExploreCategoryCategoryIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/morf-ai/look/$styleId': {
       id: '/morf-ai/look/$styleId'
       path: '/morf-ai/look/$styleId'
@@ -2009,6 +2070,7 @@ const rootRouteChildren: RootRouteChildren = {
   FavoritesRoute: FavoritesRoute,
   ForSalonsRoute: ForSalonsRoute,
   GiftcardRoute: GiftcardRoute,
+  GuidesRoute: GuidesRoute,
   LoyaltyRoute: LoyaltyRoute,
   MapRoute: MapRoute,
   NotificationsRoute: NotificationsRoute,
@@ -2047,6 +2109,7 @@ const rootRouteChildren: RootRouteChildren = {
   CategoryCategoryRoute: CategoryCategoryRoute,
   DevExploreGenRoute: DevExploreGenRouteWithChildren,
   ExploreStyleIdRoute: ExploreStyleIdRoute,
+  GuidesSlugRoute: GuidesSlugRoute,
   MorfAiChatRoute: MorfAiChatRoute,
   MorfAiHairCareRoute: MorfAiHairCareRoute,
   MorfAiHairstylesRoute: MorfAiHairstylesRoute,
@@ -2072,6 +2135,7 @@ const rootRouteChildren: RootRouteChildren = {
   AiStyleCareProductsRoute: AiStyleCareProductsRoute,
   BookingBarberBarberIdRoute: BookingBarberBarberIdRoute,
   ExploreStyleIdTryRoute: ExploreStyleIdTryRoute,
+  ExploreCategoryCategoryIdRoute: ExploreCategoryCategoryIdRoute,
   MorfAiLookStyleIdRoute: MorfAiLookStyleIdRoute,
   MorfAiShareShareIdRoute: MorfAiShareShareIdRoute,
   LocaleBookingIndexRoute: LocaleBookingIndexRoute,

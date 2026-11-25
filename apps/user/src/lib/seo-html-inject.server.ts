@@ -1,3 +1,5 @@
+import { fetchGuideArticleSeo } from "@/lib/guide-seo.server";
+import { fetchExploreStyleSeo } from "@/lib/hairstyle-seo.server";
 import { buildSalonHeadMeta, fetchSalonSeoMeta } from "@/lib/salon-seo.server";
 import {
   buildMorphLookHeadMeta,
@@ -7,9 +9,11 @@ import {
 } from "@/lib/morph-share-seo.server";
 import { buildDynamicHead, buildHeadForPathname, type BuiltHead } from "@/seo/build-head";
 import { SITE_ORIGIN } from "@/seo/constants";
+import { resolveExploreCategoryPath } from "@/seo/hairstyles/categories";
 import {
   breadcrumbJsonLd,
   hairSalonJsonLd,
+  imageObjectJsonLd,
   landingJsonLdBlocks,
   softwareApplicationJsonLd,
 } from "@/seo/json-ld";
@@ -124,17 +128,107 @@ async function headForPath(
     return { head: built, jsonLd: [], prerender };
   }
 
+  const categoryDef = resolveExploreCategoryPath(pathname);
+  if (categoryDef) {
+    const copy = categoryDef.copy.uz;
+    const canonical = `${SITE_ORIGIN}${categoryDef.uzPath}`;
+    const head = buildDynamicHead({
+      title: copy.title,
+      description: copy.description,
+      canonical,
+      image: `${SITE_ORIGIN}/brand-logo.png`,
+    });
+    const prerender = buildPrerenderInner(copy.h1, copy.intro, [
+      { href: "/explore", text: "Katalog" },
+      { href: "/morf-ai/try-on", text: "Try-on" },
+    ]);
+    const jsonLd = [
+      breadcrumbJsonLd([
+        { name: "MySaloon", path: "/" },
+        { name: "Soch uslublari", path: "/explore" },
+        { name: copy.h1, path: categoryDef.uzPath },
+      ]),
+    ];
+    return { head, jsonLd, prerender };
+  }
+
   const exploreMatch = pathname.match(/^\/explore\/([^/]+)\/?$/);
   if (exploreMatch) {
     const styleId = decodeURIComponent(exploreMatch[1]!);
-    const seo = await fetchMorphLookSeo(styleId);
-    const title = seo?.title ?? `${styleId} — soch uslubi`;
-    const description = seo?.description ?? "Soch uslubini Morf AI da sinab ko'ring.";
-    const canonical = `${SITE_ORIGIN}/explore/${encodeURIComponent(styleId)}`;
-    const head = buildDynamicHead({ title, description, canonical, image: seo?.image });
-    const prerender = buildPrerenderInner(seo?.styleTitle ?? styleId, description, [
-      { href: `/explore/${encodeURIComponent(styleId)}/try`, text: "Try-on" },
-    ]);
+    const pack = await fetchExploreStyleSeo(styleId);
+    const title = pack?.title ?? `${styleId} — soch uslubi`;
+    const description = pack?.description ?? "Soch uslubini Morf AI da sinab ko'ring.";
+    const canonical = pack?.canonical ?? `${SITE_ORIGIN}/explore/${encodeURIComponent(styleId)}`;
+    const image = pack?.image ?? null;
+    const head = buildDynamicHead({ title, description, canonical, image });
+    if (image) {
+      head.meta.push(
+        { property: "og:image:width", content: "768" },
+        { property: "og:image:height", content: "1024" },
+        { property: "og:image:alt", content: pack?.imageSeo.alt.uz ?? title },
+      );
+    }
+    const prerender = buildPrerenderInner(
+      pack?.styleTitle ?? styleId,
+      description,
+      [
+        { href: pack?.tryOnHref ?? `/explore/${encodeURIComponent(styleId)}/try`, text: "Try-on" },
+        { href: "/explore", text: "Boshqa uslublar" },
+      ],
+      pack?.imageSeo.caption.uz,
+    );
+    const jsonLd = pack
+      ? [
+          imageObjectJsonLd({
+            name: pack.imageSeo.modelName,
+            description: pack.imageSeo.description.uz,
+            url: canonical,
+            contentUrl: pack.imageSeo.imageUrl,
+            width: pack.imageSeo.width,
+            height: pack.imageSeo.height,
+            caption: pack.imageSeo.caption.uz,
+          }),
+          breadcrumbJsonLd([
+            { name: "MySaloon", path: "/" },
+            { name: "Soch uslublari", path: "/explore" },
+            { name: pack.styleTitle, path: `/explore/${encodeURIComponent(pack.styleId)}` },
+          ]),
+        ]
+      : [];
+    return { head, jsonLd, prerender };
+  }
+
+  const guidesMatch = pathname.match(/^\/guides\/([^/]+)\/?$/);
+  if (guidesMatch) {
+    const slug = decodeURIComponent(guidesMatch[1]!);
+    const article = await fetchGuideArticleSeo(slug, "uz");
+    if (article) {
+      const canonical = `${SITE_ORIGIN}/guides/${encodeURIComponent(slug)}`;
+      const head = buildDynamicHead({
+        title: article.seoTitle,
+        description: article.metaDescription,
+        canonical,
+        image: article.coverImage,
+      });
+      const prerender = buildPrerenderInner(article.title, article.excerpt, [
+        { href: article.ctaHref, text: article.ctaLabel },
+      ]);
+      return { head, jsonLd: article.jsonLd, prerender };
+    }
+  }
+
+  if (pathname === "/guides" || pathname === "/guides/") {
+    const head = buildDynamicHead({
+      title: "Qo'llanmalar va maslahatlar — MySaloon",
+      description:
+        "Soch parvarishi, Morf AI, try-on va salon bron qilish bo'yicha mustaqil maqolalar.",
+      canonical: `${SITE_ORIGIN}/guides`,
+    });
+    const prerender = buildPrerenderInner(
+      "Qo'llanmalar",
+      "Soch parvarishi, uslublar va MySaloon xizmatlari haqida maqolalar.",
+      [{ href: "/explore", text: "Soch katalogi" }],
+    );
     return { head, jsonLd: [], prerender };
   }
 

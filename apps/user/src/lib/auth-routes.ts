@@ -26,6 +26,7 @@ const PUBLIC_EXACT = new Set([
   "/morf-ai/ingredient-scanner",
   "/morf-ai/chat",
   "/morf-ai/weather-care",
+  "/guides",
 ]);
 
 /** /explore/:styleId/try — try-on sahifasini ko'rish. */
@@ -34,7 +35,15 @@ function isGuestTryOnPath(path: string): boolean {
 }
 
 function isGuestExploreStylePath(path: string): boolean {
-  return /^\/explore\/[^/]+$/.test(path);
+  return /^\/explore\/[^/]+$/.test(path) && !path.startsWith("/explore/category/");
+}
+
+function isGuestExploreCategoryPath(path: string): boolean {
+  return /^\/explore\/category\/[^/]+$/.test(path);
+}
+
+function isGuestGuidePath(path: string): boolean {
+  return path === "/guides" || /^\/guides\/[^/]+$/.test(path);
 }
 
 function isGuestSalonPath(path: string): boolean {
@@ -74,6 +83,8 @@ export function pathRequiresAuth(pathname: string): boolean {
   if (isGuestTryOnPath(path)) return false;
   if (isHairAdvisorResultDemoPath(path)) return false;
   if (isGuestExploreStylePath(path)) return false;
+  if (isGuestExploreCategoryPath(path)) return false;
+  if (isGuestGuidePath(path)) return false;
   if (isGuestSalonPath(path)) return false;
   if (isGuestBarberPath(path)) return false;
   if (isGuestMorphSharePath(path)) return false;

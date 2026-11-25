@@ -144,6 +144,28 @@ export function breadcrumbJsonLd(crumbs: Array<{ name: string; path: string }>) 
   };
 }
 
+export function imageObjectJsonLd(opts: {
+  name: string;
+  description: string;
+  url: string;
+  contentUrl: string;
+  width?: number;
+  height?: number;
+  caption?: string;
+}) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "ImageObject",
+    name: opts.name,
+    description: opts.description,
+    url: opts.url,
+    contentUrl: opts.contentUrl,
+    ...(opts.width ? { width: opts.width } : {}),
+    ...(opts.height ? { height: opts.height } : {}),
+    ...(opts.caption ? { caption: opts.caption } : {}),
+  };
+}
+
 export function landingJsonLdBlocks(copy: SeoPageCopy, canonical: string, serviceName: string) {
   const blocks: unknown[] = [
     organizationJsonLd(),

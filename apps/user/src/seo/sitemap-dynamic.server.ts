@@ -1,11 +1,24 @@
 import { resolveFetchBase } from "@/lib/api/base-url";
+import {
+  buildHairstyleImageSeo,
+  hairstylePassesSitemapGate,
+  type HairstyleSeoSource,
+} from "./hairstyles/image-seo";
+import { indexableCategories } from "./hairstyles/categories";
 import { SITE_ORIGIN } from "./constants";
+
+export type SitemapImageRef = {
+  loc: string;
+  title?: string;
+  caption?: string;
+};
 
 export type SitemapUrl = {
   loc: string;
   lastmod?: string;
   changefreq?: string;
   priority?: number;
+  images?: SitemapImageRef[];
 };
 
 function apiBase(): string {
@@ -63,33 +76,82 @@ export async function fetchSalonSitemapUrls(limit = 2000): Promise<SitemapUrl[]>
   return out.slice(0, limit);
 }
 
-export async function fetchHairstyleSitemapUrls(limit = 3000): Promise<SitemapUrl[]> {
+async function fetchHairstyleRows(): Promise<HairstyleSeoSource[]> {
   const res = await fetch(`${apiBase()}/api/v1/hairstyles/`, {
     headers: { Accept: "application/json" },
   });
   if (!res.ok) return [];
-  const list = (await res.json()) as Array<{
-    id?: string;
-    slug?: string;
-    description_uz?: string;
-    tags?: string[];
-    image_url?: string;
-    updated_at?: string;
-  }>;
+  return (await res.json()) as HairstyleSeoSource[];
+}
 
+export async function fetchHairstyleSitemapUrls(limit = 3000): Promise<SitemapUrl[]> {
+  const list = await fetchHairstyleRows();
   const out: SitemapUrl[] = [];
+
   for (const row of list) {
+    if (!hairstylePassesSitemapGate(row)) continue;
     const id = row.id?.trim() || row.slug?.trim();
     if (!id) continue;
-    const hasDesc = Boolean(row.description_uz?.trim());
-    const hasTags = Boolean(row.tags?.length);
-    const hasImage = Boolean(row.image_url?.trim());
-    if (!hasImage || (!hasDesc && !hasTags)) continue;
+    const imageSeo = buildHairstyleImageSeo(row);
     out.push({
       loc: `${SITE_ORIGIN}/explore/${encodeURIComponent(id)}`,
+      lastmod: toIsoDate((row as { updated_at?: string }).updated_at),
+      changefreq: "monthly",
+      priority: 0.55,
+      images: [
+        {
+          loc: imageSeo.imageUrl,
+          title: imageSeo.pageTitle.uz,
+          caption: imageSeo.caption.uz,
+        },
+      ],
+    });
+    if (out.length >= limit) break;
+  }
+  return out;
+}
+
+/** Google Image Sitemap: faqat rasm URLlari bilan alohida urlset (parent = model sahifasi). */
+export async function fetchImageOnlySitemapUrls(limit = 5000): Promise<SitemapUrl[]> {
+  return fetchHairstyleSitemapUrls(limit);
+}
+
+export async function fetchExploreCategorySitemapUrls(): Promise<SitemapUrl[]> {
+  const rows = await fetchHairstyleRows();
+  const cats = indexableCategories(rows.filter(hairstylePassesSitemapGate));
+  const today = new Date().toISOString().slice(0, 10);
+  return cats.map((cat) => ({
+    loc: `${SITE_ORIGIN}${cat.uzPath}`,
+    lastmod: today,
+    changefreq: "weekly" as const,
+    priority: cat.priority,
+  }));
+}
+
+type BlogSitemapRow = {
+  slug?: string;
+  locale?: string;
+  updated_at?: string;
+  title?: string;
+};
+
+export async function fetchBlogSitemapUrls(limit = 500): Promise<SitemapUrl[]> {
+  const res = await fetch(`${apiBase()}/api/v1/content/articles/?status=published`, {
+    headers: { Accept: "application/json" },
+  });
+  if (!res.ok) return [];
+  const list = (await res.json()) as BlogSitemapRow[];
+  const out: SitemapUrl[] = [];
+  for (const row of list) {
+    const slug = row.slug?.trim();
+    const locale = row.locale?.trim() || "uz";
+    if (!slug) continue;
+    const prefix = locale === "uz" ? "" : `/${locale}`;
+    out.push({
+      loc: `${SITE_ORIGIN}${prefix}/guides/${encodeURIComponent(slug)}`,
       lastmod: toIsoDate(row.updated_at),
       changefreq: "monthly",
-      priority: 0.5,
+      priority: 0.65,
     });
     if (out.length >= limit) break;
   }
@@ -137,4 +199,8 @@ export async function fetchBarberSitemapUrls(limit = 1500): Promise<SitemapUrl[]
   }
 
   return out.slice(0, limit);
+}
+
+export function countSitemapImages(urls: SitemapUrl[]): number {
+  return urls.reduce((acc, u) => acc + (u.images?.length ?? 0), 0);
 }

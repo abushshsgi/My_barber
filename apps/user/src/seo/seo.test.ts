@@ -45,6 +45,22 @@ describe("sitemap", () => {
     expect(xml).toContain("<urlset");
     expect(xml).toContain("<loc>");
   });
+
+  it("renders image extension when requested", () => {
+    const xml = renderUrlSet(
+      [
+        {
+          loc: `${SITE_ORIGIN}/explore/men-textured-crop`,
+          images: [
+            { loc: `${SITE_ORIGIN}/hairstyles/men/textured-crop.webp`, title: "Textured Crop" },
+          ],
+        },
+      ],
+      true,
+    );
+    expect(xml).toContain("xmlns:image");
+    expect(xml).toContain("<image:loc>");
+  });
 });
 
 describe("robots", () => {

@@ -27,7 +27,13 @@ export type AnalyticsEventName =
   | "catalog_opened"
   | "shampoo_product_viewed"
   | "barcode_scan_started"
-  | "barcode_scan_completed";
+  | "barcode_scan_completed"
+  | "organic_landing_view"
+  | "hairstyle_model_view"
+  | "tryon_cta_click"
+  | "blog_article_view"
+  | "scan_cta_click"
+  | "generation_completed";
 
 type Props = Record<string, string | number | boolean>;
 
@@ -112,6 +118,23 @@ export function currentUtm(): Props {
   return Object.keys(last).length ? last : readUtm(window.localStorage.getItem(FIRST_UTM));
 }
 
+function organicReferrerProps(): Props {
+  if (typeof document === "undefined") return {};
+  const ref = document.referrer?.trim();
+  if (!ref) return {};
+  try {
+    const host = new URL(ref).hostname.toLowerCase();
+    if (!host.includes("google.")) return {};
+    const isImages = /[?&]tbm=isch|imgres/i.test(ref);
+    return {
+      traffic_source: "google",
+      google_surface: isImages ? "images" : "search",
+    };
+  } catch {
+    return {};
+  }
+}
+
 function cleanProps(properties: Props | undefined): Props {
   const cleaned: Props = {};
   if (!properties) return cleaned;
@@ -135,12 +158,18 @@ export function trackEvent(
       if (seen.has(token)) return;
       seen.add(token);
     }
+    const merged =
+      name === "organic_landing_view" ||
+      name === "hairstyle_model_view" ||
+      name === "blog_article_view"
+        ? { ...organicReferrerProps(), ...cleanProps(properties) }
+        : cleanProps(properties);
     queue.push({
       event_id: randomId(),
       name,
       version: 1,
       page: window.location.pathname.slice(0, 300),
-      properties: cleanProps(properties),
+      properties: merged,
       occurred_at: new Date().toISOString(),
     });
     if (queue.length >= 15) {

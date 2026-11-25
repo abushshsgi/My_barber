@@ -1,6 +1,8 @@
 import { Link, createFileRoute, notFound } from "@tanstack/react-router";
 import { MapPin, ScanFace } from "lucide-react";
+import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
+import { trackEvent } from "@/lib/analytics";
 import { DesktopPageSplit } from "@/components/desktop/DesktopPageSplit";
 import { ExploreStyleGallery } from "@/components/explore/ExploreStyleGallery";
 import { HairstylePreviewFrame } from "@/components/hairstyles/HairstylePreviewImage";
@@ -15,6 +17,7 @@ import {
   type HairstyleGalleryItem,
 } from "@/lib/hairstyles/catalog";
 import { cn } from "@/lib/utils";
+import { buildHairstyleImageSeo } from "@/seo/hairstyles/image-seo";
 
 export const Route = createFileRoute("/explore_/$styleId")({
   head: () => ({ meta: [{ title: "Uslub — mysaloon.uz" }] }),
@@ -33,9 +36,10 @@ const ctaDesktopSecondaryClass =
 type StyleProps = {
   entry: HairstyleEntry;
   galleryItems: HairstyleGalleryItem[];
+  imageAlt: string;
 };
 
-function ExploreStyleMobile({ entry, galleryItems }: StyleProps) {
+function ExploreStyleMobile({ entry, galleryItems, imageAlt }: StyleProps) {
   const { t } = useTranslation();
 
   return (
@@ -50,6 +54,7 @@ function ExploreStyleMobile({ entry, galleryItems }: StyleProps) {
           autoPlay={false}
           description={entry.descriptionUz}
           priority
+          primaryAlt={imageAlt}
         />
 
         {entry.faceShapes.length > 0 ? (
@@ -69,14 +74,14 @@ function ExploreStyleMobile({ entry, galleryItems }: StyleProps) {
   );
 }
 
-function ExploreStyleDesktop({ entry, galleryItems }: StyleProps) {
+function ExploreStyleDesktop({ entry, galleryItems, imageAlt }: StyleProps) {
   const { t } = useTranslation();
 
   return (
     <div className="grid grid-cols-[minmax(0,1fr)_300px] items-start gap-10 pt-2">
       <div className="min-w-0">
         <HairstylePreviewFrame>
-          <ExploreStyleGallery items={galleryItems} title={entry.titleUz} />
+          <ExploreStyleGallery items={galleryItems} title={entry.titleUz} primaryAlt={imageAlt} />
         </HairstylePreviewFrame>
 
         {entry.faceShapes.length > 0 || entry.hairLength ? (
@@ -128,6 +133,15 @@ function ExploreStyleDetailPage() {
   const { personaId } = useExplorePersona();
   const { data: entry, isLoading, isError } = useHairstyle(styleId, personaId);
 
+  useEffect(() => {
+    if (!entry) return;
+    trackEvent(
+      "hairstyle_model_view",
+      { style_id: entry.id, slug: entry.slug },
+      { dedupeKey: entry.id },
+    );
+  }, [entry?.id, entry?.slug]);
+
   if (isLoading) {
     return (
       <div className="pb-10">
@@ -141,6 +155,18 @@ function ExploreStyleDetailPage() {
     throw notFound();
   }
 
+  const imageSeo = buildHairstyleImageSeo({
+    id: entry.id,
+    slug: entry.slug,
+    title: entry.title,
+    title_uz: entry.titleUz,
+    audience: entry.audience,
+    hair_length: entry.hairLength,
+    image_url: entry.imageUrl,
+    description_uz: entry.descriptionUz,
+    tags: entry.tags,
+  });
+
   const imageUrl = getHairstyleDisplayUrl(entry);
   const galleryItems =
     entry.gallery.length > 0 ? entry.gallery : [{ view: "front", label: "Old", url: imageUrl }];
@@ -149,13 +175,32 @@ function ExploreStyleDetailPage() {
     <>
       <div className={cn(MOBILE_STICKY_CONTENT_PADDING_NO_DOCK_CLASS, "min-w-0 lg:px-6 lg:pb-10")}>
         <DesktopPageSplit
-          mobile={<ExploreStyleMobile entry={entry} galleryItems={galleryItems} />}
-          desktop={<ExploreStyleDesktop entry={entry} galleryItems={galleryItems} />}
+          mobile={
+            <ExploreStyleMobile
+              entry={entry}
+              galleryItems={galleryItems}
+              imageAlt={imageSeo.alt.uz}
+            />
+          }
+          desktop={
+            <ExploreStyleDesktop
+              entry={entry}
+              galleryItems={galleryItems}
+              imageAlt={imageSeo.alt.uz}
+            />
+          }
         />
       </div>
 
       <MobileStickyActionBar>
-        <Link to="/explore/$styleId/try" params={{ styleId: entry.id }} className={ctaPrimaryClass}>
+        <Link
+          to="/explore/$styleId/try"
+          params={{ styleId: entry.id }}
+          className={ctaPrimaryClass}
+          onClick={() =>
+            trackEvent("tryon_cta_click", { style_id: entry.id, surface: "explore_detail" })
+          }
+        >
           <ScanFace className="h-4 w-4 shrink-0" strokeWidth={2.25} />
           <span className="min-w-0 truncate">{t("explorePage.tryOnMe")}</span>
         </Link>

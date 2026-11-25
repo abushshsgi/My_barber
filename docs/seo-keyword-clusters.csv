@@ -1,0 +1,4 @@
+entity_type,entity_id,locale,primary_keyword,secondary_keywords,search_intent,monthly_volume_note,competition_note
+service,morf-ai-try-on,uz,soch turmagi sinab ko'rish,virtual try on; selfie soch,transactional,estimate: medium,estimate: medium
+category,mens-haircuts,uz,erkaklar soch turmaklari,barber uslublari,informational,estimate: medium-high,estimate: medium
+model,men-textured-crop,uz,textured crop soch turmagi,crop erkak,informational,estimate: low-medium,estimate: low

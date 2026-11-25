@@ -72,9 +72,11 @@ export function buildPrerenderInner(
   h1: string,
   intro: string,
   links: Array<{ href: string; text: string }>,
+  caption?: string,
 ): string {
   const nav = links
     .map((l) => `<a href="${escapeHtml(l.href)}">${escapeHtml(l.text)}</a>`)
     .join(" · ");
-  return `<h1>${escapeHtml(h1)}</h1><p>${escapeHtml(intro)}</p><nav>${nav}</nav>`;
+  const cap = caption ? `<figure><figcaption>${escapeHtml(caption)}</figcaption></figure>` : "";
+  return `<h1>${escapeHtml(h1)}</h1><p>${escapeHtml(intro)}</p>${cap}<nav>${nav}</nav>`;
 }

@@ -3,8 +3,12 @@ import { LANDING_PAGES } from "./content/landings";
 import { localizedLandingPath } from "./registry";
 import type { SitemapUrl } from "./sitemap-dynamic.server";
 import {
+  countSitemapImages,
   fetchBarberSitemapUrls,
+  fetchBlogSitemapUrls,
+  fetchExploreCategorySitemapUrls,
   fetchHairstyleSitemapUrls,
+  fetchImageOnlySitemapUrls,
   fetchSalonSitemapUrls,
 } from "./sitemap-dynamic.server";
 
@@ -16,6 +20,7 @@ export function staticSitemapUrls(): SitemapUrl[] {
     { loc: `${SITE_ORIGIN}/today`, changefreq: "daily", priority: 0.75 },
     { loc: `${SITE_ORIGIN}/top`, changefreq: "daily", priority: 0.7 },
     { loc: `${SITE_ORIGIN}/compare`, changefreq: "monthly", priority: 0.5 },
+    { loc: `${SITE_ORIGIN}/guides`, changefreq: "weekly", priority: 0.7 },
   ];
 
   for (const page of LANDING_PAGES) {
@@ -56,17 +61,32 @@ export function morfMarketingSitemapUrls(): SitemapUrl[] {
   return urls;
 }
 
-export function renderUrlSet(urls: SitemapUrl[]): string {
+function renderImageBlock(images: SitemapUrl["images"]): string {
+  if (!images?.length) return "";
+  return images
+    .map((img) => {
+      const title = img.title ? `<image:title>${escapeXml(img.title)}</image:title>` : "";
+      const caption = img.caption ? `<image:caption>${escapeXml(img.caption)}</image:caption>` : "";
+      return `    <image:image>\n      <image:loc>${escapeXml(img.loc)}</image:loc>\n      ${title}\n      ${caption}\n    </image:image>`;
+    })
+    .join("\n");
+}
+
+export function renderUrlSet(urls: SitemapUrl[], withImages = false): string {
+  const xmlns = withImages
+    ? 'xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1"'
+    : 'xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"';
   const body = urls
     .map((u) => {
       const lastmod = u.lastmod ? `<lastmod>${u.lastmod}</lastmod>` : "";
       const changefreq = u.changefreq ? `<changefreq>${u.changefreq}</changefreq>` : "";
       const priority = u.priority != null ? `<priority>${u.priority.toFixed(2)}</priority>` : "";
-      return `  <url>\n    <loc>${escapeXml(u.loc)}</loc>\n    ${lastmod}\n    ${changefreq}\n    ${priority}\n  </url>`;
+      const images = withImages && u.images?.length ? `\n${renderImageBlock(u.images)}` : "";
+      return `  <url>\n    <loc>${escapeXml(u.loc)}</loc>\n    ${lastmod}\n    ${changefreq}\n    ${priority}${images}\n  </url>`;
     })
     .join("\n");
 
-  return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${body}\n</urlset>`;
+  return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset ${xmlns}>\n${body}\n</urlset>`;
 }
 
 export function renderSitemapIndex(entries: Array<{ loc: string; lastmod?: string }>): string {
@@ -88,9 +108,10 @@ function escapeXml(value: string): string {
     .replace(/'/g, "&apos;");
 }
 
-export async function buildSitemapSection(
-  section: "static" | "morf" | "salons" | "styles" | "barbers",
-): Promise<string> {
+export type SitemapSection =
+  "static" | "morf" | "salons" | "styles" | "barbers" | "images" | "categories" | "blog";
+
+export async function buildSitemapSection(section: SitemapSection): Promise<string> {
   switch (section) {
     case "static":
       return renderUrlSet(staticSitemapUrls());
@@ -98,8 +119,18 @@ export async function buildSitemapSection(
       return renderUrlSet(morfMarketingSitemapUrls());
     case "salons":
       return renderUrlSet(await fetchSalonSitemapUrls());
-    case "styles":
-      return renderUrlSet(await fetchHairstyleSitemapUrls());
+    case "styles": {
+      const urls = await fetchHairstyleSitemapUrls();
+      return renderUrlSet(urls, true);
+    }
+    case "images": {
+      const urls = await fetchImageOnlySitemapUrls();
+      return renderUrlSet(urls, true);
+    }
+    case "categories":
+      return renderUrlSet(await fetchExploreCategorySitemapUrls());
+    case "blog":
+      return renderUrlSet(await fetchBlogSitemapUrls());
     case "barbers":
       return renderUrlSet(await fetchBarberSitemapUrls());
     default:
@@ -114,8 +145,16 @@ export function sitemapIndexXml(): string {
     { loc: `${SITE_ORIGIN}/sitemap-morf.xml`, lastmod: today },
     { loc: `${SITE_ORIGIN}/sitemap-salons.xml`, lastmod: today },
     { loc: `${SITE_ORIGIN}/sitemap-styles.xml`, lastmod: today },
+    { loc: `${SITE_ORIGIN}/sitemap-images.xml`, lastmod: today },
+    { loc: `${SITE_ORIGIN}/sitemap-categories.xml`, lastmod: today },
+    { loc: `${SITE_ORIGIN}/sitemap-blog.xml`, lastmod: today },
     { loc: `${SITE_ORIGIN}/sitemap-barbers.xml`, lastmod: today },
   ]);
+}
+
+export async function estimateImageSitemapCount(): Promise<number> {
+  const urls = await fetchImageOnlySitemapUrls().catch(() => [] as SitemapUrl[]);
+  return countSitemapImages(urls);
 }
 
 export async function estimateSitemapUrlCount(): Promise<number> {
