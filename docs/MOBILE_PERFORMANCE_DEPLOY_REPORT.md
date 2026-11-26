@@ -42,4 +42,8 @@ curl -sS https://mysaloon.uz/ai-style | grep -c morph-lcp-static   # expect 1
 
 ## Status
 
-**Pending** — deploy triggered with optimization commit; verify timestamps on `dist/client/version.json` buildId after VPS build completes.
+- **Commit:** `3cc9ba1f` on `main` (pushed 2026-11-26).
+- **Production `buildId`:** still `1a401c7` after 3+ min — VPS auto-deploy not observed from this workstation.
+- **Next step:** on server run `sudo bash deploy/vps/deploy-frontends.sh user`, then re-run PageSpeed ×3.
+
+Relevant paths after release: `version.json` should change from `1a401c7`; homepage HTML must omit try-on hero.
