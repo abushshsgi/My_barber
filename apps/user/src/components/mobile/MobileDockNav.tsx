@@ -24,14 +24,6 @@ const morphRightTabs = [
   { to: "/profile", icon: User, key: "profile" },
 ] as const;
 
-const preloadRoutes = [
-  ...mysaloonLeftTabs,
-  ...mysaloonRightTabs,
-  ...morphLeftTabs,
-  ...morphRightTabs,
-  { to: "/ai-style" },
-] as const;
-
 type DockIcon = typeof Home;
 
 type Props = {
@@ -103,10 +95,27 @@ export function MobileDockNav({ unreadCount: _unreadCount = 0 }: Props) {
   const [faceCameraOpen, setFaceCameraOpen] = useState(false);
 
   useEffect(() => {
-    preloadRoutes.forEach((tab) => {
-      void router.preloadRoute({ to: tab.to });
-    });
-  }, [router]);
+    const tabs =
+      shell === "morph"
+        ? [...morphLeftTabs, ...morphRightTabs]
+        : [...mysaloonLeftTabs, ...mysaloonRightTabs];
+    const run = () => {
+      tabs.forEach((tab) => {
+        void router.preloadRoute({ to: tab.to });
+      });
+    };
+    const idleId =
+      typeof window.requestIdleCallback === "function"
+        ? window.requestIdleCallback(run, { timeout: 8000 })
+        : window.setTimeout(run, 3500);
+    return () => {
+      if (typeof window.requestIdleCallback === "function" && typeof idleId === "number") {
+        window.cancelIdleCallback(idleId);
+      } else {
+        window.clearTimeout(idleId as number);
+      }
+    };
+  }, [router, shell]);
 
   useEffect(() => {
     const sync = () => {
@@ -174,7 +183,8 @@ export function MobileDockNav({ unreadCount: _unreadCount = 0 }: Props) {
             <span
               className={cn(
                 "grid size-[clamp(34px,10vw,42px)] place-items-center rounded-full bg-[#1e1e1e] text-white shadow-[0_2px_10px_rgba(0,0,0,0.22)] ring-2 ring-white",
-                pathname.startsWith("/ai-style/care/ingredient") && "scale-105 shadow-[0_4px_14px_rgba(0,0,0,0.28)]",
+                pathname.startsWith("/ai-style/care/ingredient") &&
+                  "scale-105 shadow-[0_4px_14px_rgba(0,0,0,0.28)]",
               )}
             >
               <ScanLine className="size-[22px]" strokeWidth={2.1} aria-hidden />

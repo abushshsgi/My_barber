@@ -7,11 +7,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Link, createRootRouteWithContext, HeadContent, Scripts } from "@tanstack/react-router";
 
 import appCss from "../styles.css?url";
-import {
-  MORPH_LCP_BOOT_SCRIPT,
-  TRY_ON_HERO_PRELOAD,
-  TRY_ON_HERO_SRCSET,
-} from "@/lib/try-on-hero-assets";
+import { MORPH_LCP_BOOT_SCRIPT } from "@/lib/try-on-hero-assets";
 import { DeferredClientWidgets } from "@/components/DeferredClientWidgets";
 import spaceGroteskLatin from "@fontsource-variable/space-grotesk/files/space-grotesk-latin-wght-normal.woff2?url";
 import { I18nProvider } from "../components/I18nProvider";
@@ -183,39 +179,12 @@ function RootShell({ children }: { children: React.ReactNode }) {
   return (
     <html lang="uz">
       <head>
-        <link
-          rel="preload"
-          href={TRY_ON_HERO_PRELOAD}
-          as="image"
-          type="image/webp"
-          fetchPriority="high"
-          imageSrcSet={TRY_ON_HERO_SRCSET}
-          imageSizes="100vw"
-        />
         <HeadContent />
-        <style
-          dangerouslySetInnerHTML={{
-            __html:
-              "html:not([data-morph-lcp]) #morph-lcp-static{display:none!important}#morph-lcp-static{position:fixed;inset:0;z-index:1;pointer-events:none;overflow:hidden;background:#f6f3f0}#morph-lcp-static img{position:absolute;inset:0;height:100%;width:100%;object-fit:cover;object-position:top}",
-          }}
-        />
         <script dangerouslySetInnerHTML={{ __html: MORPH_LCP_BOOT_SCRIPT }} />
         <script dangerouslySetInnerHTML={{ __html: APPEARANCE_BOOT_SCRIPT }} />
         <script dangerouslySetInnerHTML={{ __html: CLIENT_BOOT_SCRIPT }} />
       </head>
       <body>
-        <div id="morph-lcp-static">
-          <img
-            src={TRY_ON_HERO_PRELOAD}
-            srcSet={TRY_ON_HERO_SRCSET}
-            sizes="100vw"
-            alt=""
-            width={864}
-            height={1152}
-            decoding="async"
-            fetchPriority="high"
-          />
-        </div>
         <MaintenanceBanner />
         {children}
         <Scripts />

@@ -1,11 +1,17 @@
-import { useEffect, type CSSProperties } from "react";
+import { lazy, Suspense, useEffect, type CSSProperties } from "react";
 import { useRouterState } from "@tanstack/react-router";
 import { ClientOnly } from "@/components/ClientOnly";
 import { DemoEnvironmentBanner } from "@/components/DemoEnvironmentBanner";
 import { DesktopAppHeader } from "@/components/desktop/shell/DesktopShellParts";
 import { MobileDockNav } from "@/components/mobile/MobileDockNav";
 import { SiteFooter } from "@/components/SiteFooter";
-import { ScrollToTopIndicator } from "@/components/ui/ScrollToTopIndicator";
+import { useIsLgUp } from "@/hooks/use-mobile";
+
+const ScrollToTopIndicator = lazy(() =>
+  import("@/components/ui/ScrollToTopIndicator").then((m) => ({
+    default: m.ScrollToTopIndicator,
+  })),
+);
 import { PaymeReturnCatcher } from "@/components/subscriptions/PaymeCheckoutStatus";
 import { useAppShell } from "@/hooks/use-app-shell";
 import { useLayoutRouteFlags } from "@/hooks/use-layout-route-flags";
@@ -68,6 +74,7 @@ export function UserLayout({ children }: { children: React.ReactNode }) {
   const showMobileDock = shouldShowMobileDock(pathname);
   const isAuth = pathname === "/auth";
   const showScrollTop = shouldShowScrollToTop(pathname);
+  const isLgUp = useIsLgUp();
 
   useReleaseStuckDocumentScroll(pathname);
 
@@ -87,11 +94,14 @@ export function UserLayout({ children }: { children: React.ReactNode }) {
     );
   }
 
-  const scrollTop = showScrollTop ? (
-    <ClientOnly>
-      <ScrollToTopIndicator />
-    </ClientOnly>
-  ) : null;
+  const scrollTop =
+    showScrollTop && isLgUp ? (
+      <ClientOnly>
+        <Suspense fallback={null}>
+          <ScrollToTopIndicator />
+        </Suspense>
+      </ClientOnly>
+    ) : null;
 
   const footerInset = flags.bazaarInset
     ? flags.isHome
@@ -136,7 +146,9 @@ export function UserLayout({ children }: { children: React.ReactNode }) {
         <div
           className={cn(
             "mobile-neo neo-page texture-grid mx-auto flex w-full min-w-0 flex-1 flex-col overflow-x-clip",
-            showMobileDock || pathname === "/onboarding" || flags.isHairAdvisorFlow ? "max-w-none" : "max-w-md",
+            showMobileDock || pathname === "/onboarding" || flags.isHairAdvisorFlow
+              ? "max-w-none"
+              : "max-w-md",
             pathname === "/onboarding" && "lg:pt-3",
             flags.isMap &&
               "shell-below-banner fixed inset-x-0 top-0 bottom-[calc(3.5rem+env(safe-area-inset-bottom,0px))] z-10 max-w-none flex-none overflow-hidden overscroll-none lg:static lg:inset-auto lg:z-auto lg:h-[calc(100dvh-5.25rem)] lg:max-w-none lg:overflow-hidden",
@@ -157,7 +169,13 @@ export function UserLayout({ children }: { children: React.ReactNode }) {
               (flags.isAiStyleSection && showMobileDock ? MOBILE_CONTENT_PADDING_CLASS : "pb-0"),
             !flags.isFullBleed && getMobileContentPaddingClass(pathname),
             !flags.isFullBleed && "lg:pb-12",
-            flags.isHome ? "lg:pt-3" : flags.isAiStyle ? "lg:pt-2" : flags.isHairAdvisorFlow ? "lg:pt-0" : "lg:pt-6",
+            flags.isHome
+              ? "lg:pt-3"
+              : flags.isAiStyle
+                ? "lg:pt-2"
+                : flags.isHairAdvisorFlow
+                  ? "lg:pt-0"
+                  : "lg:pt-6",
             !flags.isFullBleed && !flags.bazaarInset && !flags.isMobileFlush && DESKTOP_SHELL_INSET,
             flags.isMobileFlush && !flags.isHairAdvisorFlow && "px-0 lg:px-10",
             flags.isHairAdvisorFlow && "p-0",

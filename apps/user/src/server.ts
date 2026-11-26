@@ -3,6 +3,7 @@ import "./lib/error-capture";
 import { maybeProxyApi } from "./lib/api-proxy.server";
 import { consumeLastCapturedError } from "./lib/error-capture";
 import { renderErrorPage } from "./lib/error-page";
+import { injectMorphLcpShell } from "./lib/morph-lcp-shell.server";
 import { injectSeoIntoHtml } from "./lib/seo-html-inject.server";
 import { applyStaticCacheHeaders } from "./lib/static-cache.server";
 import { maybeServeSeoAsset } from "./lib/sitemap-handlers.server";
@@ -55,6 +56,14 @@ export default {
       const { pathname } = new URL(request.url);
       if (request.method === "GET" && response.headers.get("content-type")?.includes("text/html")) {
         response = await injectSeoIntoHtml(response, pathname);
+        const html = injectMorphLcpShell(await response.text(), pathname);
+        const outHeaders = new Headers(response.headers);
+        outHeaders.delete("content-length");
+        response = new Response(html, {
+          status: response.status,
+          statusText: response.statusText,
+          headers: outHeaders,
+        });
       }
 
       return applyStaticCacheHeaders(request, response);

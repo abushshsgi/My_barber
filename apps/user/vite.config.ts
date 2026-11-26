@@ -19,6 +19,17 @@ export default defineConfig({
             if (id.includes("@mediapipe")) return "vendor-mediapipe";
             if (id.includes("@react-three") || /[/\\]three[/\\]/.test(id)) return "vendor-three";
             if (id.includes("recharts")) return "vendor-recharts";
+            if (id.includes("lucide-react")) return "vendor-lucide";
+            if (id.includes("@radix-ui")) return "vendor-radix";
+            if (id.includes("@tanstack/react-query") || id.includes("@tanstack/query-core")) {
+              return "vendor-query";
+            }
+            if (id.includes("@tanstack/react-router") || id.includes("@tanstack/router-core")) {
+              return "vendor-router";
+            }
+            if (id.includes("i18next") || id.includes("react-i18next")) return "vendor-i18n";
+            if (id.includes("@zxing")) return "vendor-zxing";
+            if (id.includes("@react-oauth")) return "vendor-google-oauth";
           },
         },
       },
