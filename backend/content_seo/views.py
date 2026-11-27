@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.utils import timezone
 from rest_framework.exceptions import NotFound
 from rest_framework.permissions import AllowAny
@@ -8,14 +9,19 @@ from content_seo.models import SeoArticle
 from content_seo.serializers import SeoArticleSerializer
 
 
+def _published():
+    return SeoArticle.objects.filter(
+        status=SeoArticle.Status.PUBLISHED,
+        published_at__isnull=False,
+        published_at__lte=timezone.now(),
+    )
+
+
 class SeoArticleListView(UnthrottledAPIView):
     permission_classes = [AllowAny]
 
     def get(self, request):
-        qs = SeoArticle.objects.filter(status=SeoArticle.Status.PUBLISHED).filter(
-            published_at__isnull=False,
-            published_at__lte=timezone.now(),
-        )
+        qs = _published()
         locale = (request.query_params.get("locale") or "uz").strip()
         if locale:
             qs = qs.filter(locale=locale)
@@ -29,14 +35,15 @@ class SeoArticleDetailView(UnthrottledAPIView):
 
     def get(self, request, slug: str):
         locale = (request.query_params.get("locale") or "uz").strip()
+        preview = (
+            request.query_params.get("preview") == "1"
+            and getattr(settings, "CONTENT_DRAFT_PREVIEW", False)
+        )
         try:
-            article = SeoArticle.objects.get(
-                slug=slug,
-                locale=locale,
-                status=SeoArticle.Status.PUBLISHED,
-                published_at__isnull=False,
-                published_at__lte=timezone.now(),
-            )
+            if preview:
+                article = SeoArticle.objects.get(slug=slug, locale=locale)
+            else:
+                article = _published().get(slug=slug, locale=locale)
         except SeoArticle.DoesNotExist as exc:
             raise NotFound() from exc
         data = SeoArticleSerializer(article, context={"request": request}).data

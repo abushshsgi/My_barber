@@ -136,24 +136,27 @@ type BlogSitemapRow = {
 };
 
 export async function fetchBlogSitemapUrls(limit = 500): Promise<SitemapUrl[]> {
-  const res = await fetch(`${apiBase()}/api/v1/content/articles/?status=published`, {
-    headers: { Accept: "application/json" },
-  });
-  if (!res.ok) return [];
-  const list = (await res.json()) as BlogSitemapRow[];
   const out: SitemapUrl[] = [];
-  for (const row of list) {
-    const slug = row.slug?.trim();
-    const locale = row.locale?.trim() || "uz";
-    if (!slug) continue;
-    const prefix = locale === "uz" ? "" : `/${locale}`;
-    out.push({
-      loc: `${SITE_ORIGIN}${prefix}/guides/${encodeURIComponent(slug)}`,
-      lastmod: toIsoDate(row.updated_at),
-      changefreq: "monthly",
-      priority: 0.65,
-    });
+  for (const requested of ["uz", "ru", "en"] as const) {
     if (out.length >= limit) break;
+    const res = await fetch(`${apiBase()}/api/v1/content/articles/?locale=${requested}`, {
+      headers: { Accept: "application/json" },
+    });
+    if (!res.ok) continue;
+    const list = (await res.json()) as BlogSitemapRow[];
+    for (const row of list) {
+      const slug = row.slug?.trim();
+      const locale = row.locale?.trim() || requested;
+      if (!slug) continue;
+      const prefix = locale === "uz" ? "" : `/${locale}`;
+      out.push({
+        loc: `${SITE_ORIGIN}${prefix}/guides/${encodeURIComponent(slug)}`,
+        lastmod: toIsoDate(row.updated_at),
+        changefreq: "monthly",
+        priority: 0.65,
+      });
+      if (out.length >= limit) break;
+    }
   }
   return out;
 }

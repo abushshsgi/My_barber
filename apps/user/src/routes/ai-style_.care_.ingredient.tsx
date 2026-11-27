@@ -1,5 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useEffect } from "react";
 import { HairAdvisor2ScanPage } from "@/components/hair-advisor-2/HairAdvisor2ScanPage";
+import { trackEvent } from "@/lib/analytics";
 
 export const Route = createFileRoute("/ai-style_/care_/ingredient")({
   head: () => ({
@@ -15,6 +17,14 @@ export const Route = createFileRoute("/ai-style_/care_/ingredient")({
 });
 
 function RouteComponent() {
+  useEffect(() => {
+    trackEvent(
+      "barcode_scan_started",
+      { surface: "hair_advisor" },
+      { dedupeKey: "hair-advisor-scan" },
+    );
+  }, []);
+
   return (
     <HairAdvisor2ScanPage
       scanPath="/ai-style/care/ingredient"

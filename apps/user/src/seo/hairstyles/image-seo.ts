@@ -259,6 +259,13 @@ export function buildHairstyleImageSeo(row: HairstyleSeoSource): HairstyleImageS
   };
 }
 
+/** Browser va crawler bitta satrni ko‘radi. Bo‘sh SEO sarlavhada style id qoladi. */
+export function exploreDocumentTitle(styleId: string, seoTitle?: string | null): string {
+  const title = seoTitle?.trim();
+  if (title) return title;
+  return `${styleId} — soch uslubi`;
+}
+
 export function hairstylePassesSitemapGate(row: HairstyleSeoSource): boolean {
   const id = row.id?.trim() || row.slug?.trim();
   if (!id) return false;

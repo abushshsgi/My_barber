@@ -11,6 +11,7 @@ class SeoArticleAdmin(admin.ModelAdmin):
         "locale",
         "category",
         "status",
+        "author",
         "published_at",
         "updated_at",
     )

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { buildHreflangAlternates, buildRegistryHead } from "./build-head";
 import { SITE_ORIGIN } from "./constants";
 import { robotsTxtBody } from "./robots";
-import { renderUrlSet, staticSitemapUrls, sitemapIndexXml } from "./sitemap";
+import { dedupeSitemapImages, renderUrlSet, staticSitemapUrls, sitemapIndexXml } from "./sitemap";
 import { getCanonicalUrl, localizedPath } from "./url";
 import { isNoindexPath } from "./noindex";
 
@@ -60,6 +60,20 @@ describe("sitemap", () => {
     );
     expect(xml).toContain("xmlns:image");
     expect(xml).toContain("<image:loc>");
+  });
+
+  it("keeps one image:loc when the same file is listed twice", () => {
+    const images = dedupeSitemapImages([
+      { loc: `${SITE_ORIGIN}/hairstyles/men/personas/irland/textured-crop.webp`, title: "A" },
+      { loc: `${SITE_ORIGIN}/hairstyles/men/personas/irland/textured-crop.webp`, title: "A again" },
+      { loc: `${SITE_ORIGIN}/hairstyles/men/personas/irland/french-crop.webp`, title: "B" },
+    ]);
+    expect(images).toHaveLength(2);
+    const xml = renderUrlSet(
+      [{ loc: `${SITE_ORIGIN}/explore/men-textured-crop`, images }],
+      true,
+    );
+    expect(xml.match(/<image:loc>/g)).toHaveLength(2);
   });
 });
 

@@ -161,7 +161,9 @@ export function trackEvent(
     const merged =
       name === "organic_landing_view" ||
       name === "hairstyle_model_view" ||
-      name === "blog_article_view"
+      name === "blog_article_view" ||
+      name === "tryon_cta_click" ||
+      name === "scan_cta_click"
         ? { ...organicReferrerProps(), ...cleanProps(properties) }
         : cleanProps(properties);
     queue.push({

@@ -48,6 +48,7 @@ import { Route as TopRouteImport } from './routes/top'
 import { Route as VerifyEmailRouteImport } from './routes/verify-email'
 import { Route as WalletRouteImport } from './routes/wallet'
 import { Route as LocaleIndexRouteImport } from './routes/$locale.index'
+import { Route as LocaleGuidesRouteImport } from './routes/$locale.guides'
 import { Route as AccountActivityRouteImport } from './routes/account.activity'
 import { Route as AccountHouseholdRouteImport } from './routes/account.household'
 import { Route as AccountPaymentsRouteImport } from './routes/account.payments'
@@ -83,6 +84,7 @@ import { Route as WalletHistoryRouteImport } from './routes/wallet_.history'
 import { Route as WalletQrPayRouteImport } from './routes/wallet_.qr-pay'
 import { Route as WalletTopUpRouteImport } from './routes/wallet_.top-up'
 import { Route as LocaleBookingIndexRouteImport } from './routes/$locale.booking.index'
+import { Route as LocaleGuidesSlugRouteImport } from './routes/$locale.guides_.$slug'
 import { Route as LocaleMorfAiIndexRouteImport } from './routes/$locale.morf-ai.index'
 import { Route as LocaleMorfAiChatRouteImport } from './routes/$locale.morf-ai.chat'
 import { Route as LocaleMorfAiHairCareRouteImport } from './routes/$locale.morf-ai.hair-care'
@@ -303,6 +305,11 @@ const LocaleIndexRoute = LocaleIndexRouteImport.update({
   path: '/$locale/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LocaleGuidesRoute = LocaleGuidesRouteImport.update({
+  id: '/$locale/guides',
+  path: '/$locale/guides',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AccountActivityRoute = AccountActivityRouteImport.update({
   id: '/account/activity',
   path: '/account/activity',
@@ -478,6 +485,11 @@ const LocaleBookingIndexRoute = LocaleBookingIndexRouteImport.update({
   path: '/$locale/booking/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const LocaleGuidesSlugRoute = LocaleGuidesSlugRouteImport.update({
+  id: '/$locale/guides_/$slug',
+  path: '/$locale/guides/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LocaleMorfAiIndexRoute = LocaleMorfAiIndexRouteImport.update({
   id: '/$locale/morf-ai/',
   path: '/$locale/morf-ai/',
@@ -646,6 +658,7 @@ export interface FileRoutesByFullPath {
   '/top': typeof TopRoute
   '/verify-email': typeof VerifyEmailRoute
   '/wallet': typeof WalletRoute
+  '/$locale/guides': typeof LocaleGuidesRoute
   '/account/activity': typeof AccountActivityRoute
   '/account/household': typeof AccountHouseholdRoute
   '/account/payments': typeof AccountPaymentsRoute
@@ -681,6 +694,7 @@ export interface FileRoutesByFullPath {
   '/$locale/': typeof LocaleIndexRoute
   '/booking/': typeof BookingIndexRoute
   '/morf-ai/': typeof MorfAiIndexRoute
+  '/$locale/guides/$slug': typeof LocaleGuidesSlugRoute
   '/$locale/morf-ai/chat': typeof LocaleMorfAiChatRoute
   '/$locale/morf-ai/hair-care': typeof LocaleMorfAiHairCareRoute
   '/$locale/morf-ai/hairstyles': typeof LocaleMorfAiHairstylesRoute
@@ -746,6 +760,7 @@ export interface FileRoutesByTo {
   '/top': typeof TopRoute
   '/verify-email': typeof VerifyEmailRoute
   '/wallet': typeof WalletRoute
+  '/$locale/guides': typeof LocaleGuidesRoute
   '/account/activity': typeof AccountActivityRoute
   '/account/household': typeof AccountHouseholdRoute
   '/account/payments': typeof AccountPaymentsRoute
@@ -780,6 +795,7 @@ export interface FileRoutesByTo {
   '/$locale': typeof LocaleIndexRoute
   '/booking': typeof BookingIndexRoute
   '/morf-ai': typeof MorfAiIndexRoute
+  '/$locale/guides/$slug': typeof LocaleGuidesSlugRoute
   '/$locale/morf-ai/chat': typeof LocaleMorfAiChatRoute
   '/$locale/morf-ai/hair-care': typeof LocaleMorfAiHairCareRoute
   '/$locale/morf-ai/hairstyles': typeof LocaleMorfAiHairstylesRoute
@@ -846,6 +862,7 @@ export interface FileRoutesById {
   '/top': typeof TopRoute
   '/verify-email': typeof VerifyEmailRoute
   '/wallet': typeof WalletRoute
+  '/$locale/guides': typeof LocaleGuidesRoute
   '/account/activity': typeof AccountActivityRoute
   '/account/household': typeof AccountHouseholdRoute
   '/account/payments': typeof AccountPaymentsRoute
@@ -881,6 +898,7 @@ export interface FileRoutesById {
   '/$locale/': typeof LocaleIndexRoute
   '/booking/': typeof BookingIndexRoute
   '/morf-ai/': typeof MorfAiIndexRoute
+  '/$locale/guides_/$slug': typeof LocaleGuidesSlugRoute
   '/$locale/morf-ai/chat': typeof LocaleMorfAiChatRoute
   '/$locale/morf-ai/hair-care': typeof LocaleMorfAiHairCareRoute
   '/$locale/morf-ai/hairstyles': typeof LocaleMorfAiHairstylesRoute
@@ -948,6 +966,7 @@ export interface FileRouteTypes {
     | '/top'
     | '/verify-email'
     | '/wallet'
+    | '/$locale/guides'
     | '/account/activity'
     | '/account/household'
     | '/account/payments'
@@ -983,6 +1002,7 @@ export interface FileRouteTypes {
     | '/$locale/'
     | '/booking/'
     | '/morf-ai/'
+    | '/$locale/guides/$slug'
     | '/$locale/morf-ai/chat'
     | '/$locale/morf-ai/hair-care'
     | '/$locale/morf-ai/hairstyles'
@@ -1048,6 +1068,7 @@ export interface FileRouteTypes {
     | '/top'
     | '/verify-email'
     | '/wallet'
+    | '/$locale/guides'
     | '/account/activity'
     | '/account/household'
     | '/account/payments'
@@ -1082,6 +1103,7 @@ export interface FileRouteTypes {
     | '/$locale'
     | '/booking'
     | '/morf-ai'
+    | '/$locale/guides/$slug'
     | '/$locale/morf-ai/chat'
     | '/$locale/morf-ai/hair-care'
     | '/$locale/morf-ai/hairstyles'
@@ -1147,6 +1169,7 @@ export interface FileRouteTypes {
     | '/top'
     | '/verify-email'
     | '/wallet'
+    | '/$locale/guides'
     | '/account/activity'
     | '/account/household'
     | '/account/payments'
@@ -1182,6 +1205,7 @@ export interface FileRouteTypes {
     | '/$locale/'
     | '/booking/'
     | '/morf-ai/'
+    | '/$locale/guides_/$slug'
     | '/$locale/morf-ai/chat'
     | '/$locale/morf-ai/hair-care'
     | '/$locale/morf-ai/hairstyles'
@@ -1248,6 +1272,7 @@ export interface RootRouteChildren {
   TopRoute: typeof TopRoute
   VerifyEmailRoute: typeof VerifyEmailRoute
   WalletRoute: typeof WalletRoute
+  LocaleGuidesRoute: typeof LocaleGuidesRoute
   AccountActivityRoute: typeof AccountActivityRoute
   AccountHouseholdRoute: typeof AccountHouseholdRoute
   AccountPaymentsRoute: typeof AccountPaymentsRoute
@@ -1280,6 +1305,7 @@ export interface RootRouteChildren {
   LocaleIndexRoute: typeof LocaleIndexRoute
   BookingIndexRoute: typeof BookingIndexRoute
   MorfAiIndexRoute: typeof MorfAiIndexRoute
+  LocaleGuidesSlugRoute: typeof LocaleGuidesSlugRoute
   LocaleMorfAiChatRoute: typeof LocaleMorfAiChatRoute
   LocaleMorfAiHairCareRoute: typeof LocaleMorfAiHairCareRoute
   LocaleMorfAiHairstylesRoute: typeof LocaleMorfAiHairstylesRoute
@@ -1578,6 +1604,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LocaleIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/$locale/guides': {
+      id: '/$locale/guides'
+      path: '/$locale/guides'
+      fullPath: '/$locale/guides'
+      preLoaderRoute: typeof LocaleGuidesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/account/activity': {
       id: '/account/activity'
       path: '/account/activity'
@@ -1821,6 +1854,13 @@ declare module '@tanstack/react-router' {
       path: '/$locale/booking'
       fullPath: '/$locale/booking/'
       preLoaderRoute: typeof LocaleBookingIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/$locale/guides_/$slug': {
+      id: '/$locale/guides_/$slug'
+      path: '/$locale/guides/$slug'
+      fullPath: '/$locale/guides/$slug'
+      preLoaderRoute: typeof LocaleGuidesSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/$locale/morf-ai/': {
@@ -2093,6 +2133,7 @@ const rootRouteChildren: RootRouteChildren = {
   TopRoute: TopRoute,
   VerifyEmailRoute: VerifyEmailRoute,
   WalletRoute: WalletRoute,
+  LocaleGuidesRoute: LocaleGuidesRoute,
   AccountActivityRoute: AccountActivityRoute,
   AccountHouseholdRoute: AccountHouseholdRoute,
   AccountPaymentsRoute: AccountPaymentsRoute,
@@ -2125,6 +2166,7 @@ const rootRouteChildren: RootRouteChildren = {
   LocaleIndexRoute: LocaleIndexRoute,
   BookingIndexRoute: BookingIndexRoute,
   MorfAiIndexRoute: MorfAiIndexRoute,
+  LocaleGuidesSlugRoute: LocaleGuidesSlugRoute,
   LocaleMorfAiChatRoute: LocaleMorfAiChatRoute,
   LocaleMorfAiHairCareRoute: LocaleMorfAiHairCareRoute,
   LocaleMorfAiHairstylesRoute: LocaleMorfAiHairstylesRoute,

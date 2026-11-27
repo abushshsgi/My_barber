@@ -17,10 +17,17 @@ import {
   type HairstyleGalleryItem,
 } from "@/lib/hairstyles/catalog";
 import { cn } from "@/lib/utils";
-import { buildHairstyleImageSeo } from "@/seo/hairstyles/image-seo";
+import { fetchExploreStyleSeo } from "@/lib/hairstyle-seo.server";
+import { buildHairstyleImageSeo, exploreDocumentTitle } from "@/seo/hairstyles/image-seo";
 
 export const Route = createFileRoute("/explore_/$styleId")({
-  head: () => ({ meta: [{ title: "Uslub — mysaloon.uz" }] }),
+  loader: async ({ params }) => {
+    const pack = await fetchExploreStyleSeo(params.styleId);
+    return { seoTitle: exploreDocumentTitle(params.styleId, pack?.title) };
+  },
+  head: ({ loaderData, params }) => ({
+    meta: [{ title: loaderData?.seoTitle ?? exploreDocumentTitle(params.styleId, null) }],
+  }),
   component: ExploreStyleDetailPage,
 });
 

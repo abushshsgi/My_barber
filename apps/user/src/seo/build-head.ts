@@ -73,16 +73,21 @@ export function buildDynamicHead(opts: {
   description: string;
   canonical: string;
   image?: string | null;
+  imageAlt?: string | null;
+  imageWidth?: number | null;
+  imageHeight?: number | null;
+  ogType?: "website" | "article";
   noindex?: boolean;
   hreflangCluster?: LandingPageId;
   locale?: SeoLocale;
+  alternates?: HeadLink[];
 }): BuiltHead {
   const meta: HeadMeta[] = [
     { title: opts.title },
     { name: "description", content: opts.description },
     { property: "og:title", content: opts.title },
     { property: "og:description", content: opts.description },
-    { property: "og:type", content: "website" },
+    { property: "og:type", content: opts.ogType ?? "website" },
     { property: "og:url", content: opts.canonical },
     { property: "og:site_name", content: ORG_NAME },
     { name: "twitter:card", content: "summary_large_image" },
@@ -95,6 +100,11 @@ export function buildDynamicHead(opts: {
       { property: "og:image", content: opts.image },
       { name: "twitter:image", content: opts.image },
     );
+    if (opts.imageAlt) meta.push({ property: "og:image:alt", content: opts.imageAlt });
+    if (opts.imageWidth)
+      meta.push({ property: "og:image:width", content: String(opts.imageWidth) });
+    if (opts.imageHeight)
+      meta.push({ property: "og:image:height", content: String(opts.imageHeight) });
   } else {
     meta.push({ property: "og:image", content: ORG_LOGO });
   }
@@ -106,6 +116,9 @@ export function buildDynamicHead(opts: {
   const links: HeadLink[] = [{ rel: "canonical", href: opts.canonical }];
   if (opts.hreflangCluster) {
     links.push(...buildHreflangAlternates(opts.hreflangCluster));
+  }
+  if (opts.alternates?.length) {
+    links.push(...opts.alternates);
   }
 
   return { meta, links };

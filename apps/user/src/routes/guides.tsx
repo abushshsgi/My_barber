@@ -5,15 +5,10 @@ import { DesktopPageSplit } from "@/components/desktop/DesktopPageSplit";
 import { PageHeader } from "@/components/PageHeader";
 import { resolveFetchBase } from "@/lib/api/base-url";
 import { trackEvent } from "@/lib/analytics";
+import { guideIndexHead } from "@/lib/guide-seo.server";
 
 export const Route = createFileRoute("/guides")({
-  head: () => ({
-    meta: [
-      {
-        title: "Qo'llanmalar — soch parvarishi va Morf AI | mysaloon.uz",
-      },
-    ],
-  }),
+  head: () => guideIndexHead("uz"),
   component: GuidesIndexPage,
 });
 

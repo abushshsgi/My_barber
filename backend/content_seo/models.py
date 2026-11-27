@@ -23,7 +23,13 @@ class SeoArticle(models.Model):
     excerpt = models.TextField(blank=True, default="")
     content = models.TextField(blank=True, default="")
     cover_image_path = models.CharField(max_length=255, blank=True, default="")
+    cover_alt = models.CharField(max_length=240, blank=True, default="")
+    cover_width = models.PositiveIntegerField(default=0)
+    cover_height = models.PositiveIntegerField(default=0)
     author = models.CharField(max_length=120, blank=True, default="MySaloon")
+    reviewed_by = models.CharField(max_length=120, blank=True, default="")
+    sources = models.JSONField(default=list, blank=True)
+    related_slugs = models.JSONField(default=list, blank=True)
     status = models.CharField(
         max_length=16,
         choices=Status.choices,

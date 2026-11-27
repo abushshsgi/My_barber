@@ -262,6 +262,9 @@ function Auth() {
       const intent: PhoneAuthIntent = data.registered ? "login" : "register";
       setAuthIntent(intent);
       trackAuthFunnel("phone_continue", { intent, method: "phone" });
+      if (intent === "register") {
+        trackEvent("registration_started", { method: "phone" }, { dedupeKey: "register-phone" });
+      }
       if (data.has_password) {
         trackAuthFunnel("password_step", { intent, method: "password" });
         setStep("password");

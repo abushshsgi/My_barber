@@ -1,4 +1,4 @@
-import { fetchGuideArticleSeo } from "@/lib/guide-seo.server";
+import { fetchGuideArticleSeo, guideHead, guideIndexHead } from "@/lib/guide-seo.server";
 import { fetchExploreStyleSeo } from "@/lib/hairstyle-seo.server";
 import { buildSalonHeadMeta, fetchSalonSeoMeta } from "@/lib/salon-seo.server";
 import {
@@ -27,7 +27,8 @@ import {
   stripReplaceableSeoTags,
 } from "@/seo/html-utils";
 import { isNoindexPath } from "@/seo/noindex";
-import { getCanonicalUrl } from "@/seo/url";
+import { getCanonicalUrl, localizedPath, parseLocaleFromPath } from "@/seo/url";
+import { exploreDocumentTitle } from "@/seo/hairstyles/image-seo";
 
 function toBuiltHead(raw: {
   meta: Array<Record<string, string>>;
@@ -156,7 +157,7 @@ async function headForPath(
   if (exploreMatch) {
     const styleId = decodeURIComponent(exploreMatch[1]!);
     const pack = await fetchExploreStyleSeo(styleId);
-    const title = pack?.title ?? `${styleId} — soch uslubi`;
+    const title = exploreDocumentTitle(styleId, pack?.title);
     const description = pack?.description ?? "Soch uslubini Morf AI da sinab ko'ring.";
     const canonical = pack?.canonical ?? `${SITE_ORIGIN}/explore/${encodeURIComponent(styleId)}`;
     const image = pack?.image ?? null;
@@ -198,18 +199,13 @@ async function headForPath(
     return { head, jsonLd, prerender };
   }
 
-  const guidesMatch = pathname.match(/^\/guides\/([^/]+)\/?$/);
+  const { locale: pathLocale, pathWithoutLocale } = parseLocaleFromPath(pathname);
+  const guidesMatch = pathWithoutLocale.match(/^\/guides\/([^/]+)\/?$/);
   if (guidesMatch) {
     const slug = decodeURIComponent(guidesMatch[1]!);
-    const article = await fetchGuideArticleSeo(slug, "uz");
+    const article = await fetchGuideArticleSeo(slug, pathLocale);
     if (article) {
-      const canonical = `${SITE_ORIGIN}/guides/${encodeURIComponent(slug)}`;
-      const head = buildDynamicHead({
-        title: article.seoTitle,
-        description: article.metaDescription,
-        canonical,
-        image: article.coverImage,
-      });
+      const head = guideHead(article, slug, pathLocale);
       const prerender = buildPrerenderInner(article.title, article.excerpt, [
         { href: article.ctaHref, text: article.ctaLabel },
       ]);
@@ -217,17 +213,12 @@ async function headForPath(
     }
   }
 
-  if (pathname === "/guides" || pathname === "/guides/") {
-    const head = buildDynamicHead({
-      title: "Qo'llanmalar va maslahatlar — MySaloon",
-      description:
-        "Soch parvarishi, Morf AI, try-on va salon bron qilish bo'yicha mustaqil maqolalar.",
-      canonical: `${SITE_ORIGIN}/guides`,
-    });
+  if (pathWithoutLocale === "/guides") {
+    const head = guideIndexHead(pathLocale);
     const prerender = buildPrerenderInner(
-      "Qo'llanmalar",
-      "Soch parvarishi, uslublar va MySaloon xizmatlari haqida maqolalar.",
-      [{ href: "/explore", text: "Soch katalogi" }],
+      pathLocale === "ru" ? "Руководства" : pathLocale === "en" ? "Guides" : "Qo'llanmalar",
+      head.meta.find((item) => item.name === "description")?.content ?? "",
+      [{ href: localizedPath("/explore", "uz"), text: "Explore" }],
     );
     return { head, jsonLd: [], prerender };
   }

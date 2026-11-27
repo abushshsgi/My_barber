@@ -61,9 +61,25 @@ export function morfMarketingSitemapUrls(): SitemapUrl[] {
   return urls;
 }
 
+export function dedupeSitemapImages(
+  images: SitemapUrl["images"],
+): NonNullable<SitemapUrl["images"]> {
+  if (!images?.length) return [];
+  const seen = new Set<string>();
+  const out: NonNullable<SitemapUrl["images"]> = [];
+  for (const img of images) {
+    const loc = img.loc.trim();
+    if (!loc || seen.has(loc)) continue;
+    seen.add(loc);
+    out.push({ ...img, loc });
+  }
+  return out;
+}
+
 function renderImageBlock(images: SitemapUrl["images"]): string {
-  if (!images?.length) return "";
-  return images
+  const unique = dedupeSitemapImages(images);
+  if (!unique.length) return "";
+  return unique
     .map((img) => {
       const title = img.title ? `<image:title>${escapeXml(img.title)}</image:title>` : "";
       const caption = img.caption ? `<image:caption>${escapeXml(img.caption)}</image:caption>` : "";

@@ -387,6 +387,12 @@ MORPH_ENTITLEMENT_BYPASS = os.environ.get("MORPH_ENTITLEMENT_BYPASS", "false").l
     "true",
     "yes",
 )
+# Draft maqolani ochiq API ga chiqarmaydi. Faqat lokal ko'rik uchun "true".
+CONTENT_DRAFT_PREVIEW = os.environ.get("CONTENT_DRAFT_PREVIEW", "false").lower() in (
+    "1",
+    "true",
+    "yes",
+)
 # Parvarish / Tarkib — default yopiq. Faqat lokal test uchun true.
 MORPH_CARE_ACCESS_DEBUG = os.environ.get("MORPH_CARE_ACCESS_DEBUG", "false").lower() in (
     "1",
