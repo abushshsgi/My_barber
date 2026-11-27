@@ -1,0 +1,93 @@
+# Opt-in preview for a non-production host.
+# Does not run on main and does not change deploy-frontends-vps.yml or deploy-vps.yml.
+name: Preview user web (staging only)
+
+on:
+  workflow_dispatch:
+    inputs:
+      staging_api_origin:
+        description: HTTPS origin of a non-production API. Refused if it contains mysaloon.uz.
+        required: true
+        type: string
+
+jobs:
+  preview:
+    if: github.ref != 'refs/heads/main' && vars.STAGING_SSH_HOST != '' && vars.STAGING_WEB_ROOT != ''
+    runs-on: ubuntu-latest
+    concurrency:
+      group: preview-user-staging
+      cancel-in-progress: false
+    steps:
+      - name: Guard production targets
+        env:
+          API: ${{ inputs.staging_api_origin }}
+          HOST: ${{ vars.STAGING_SSH_HOST }}
+          ROOT: ${{ vars.STAGING_WEB_ROOT }}
+          USER_NAME: ${{ vars.STAGING_SSH_USER }}
+        run: |
+          set -euo pipefail
+          case "$API" in
+            *mysaloon.uz*) echo "Refusing production API origin"; exit 1 ;;
+          esac
+          case "$API" in
+            https://*) ;;
+            *) echo "Staging API must be https://"; exit 1 ;;
+          esac
+          case "$HOST" in
+            mysaloon.uz|www.mysaloon.uz|api.mysaloon.uz|admin.mysaloon.uz|partner.mysaloon.uz)
+              echo "Refusing production host"; exit 1 ;;
+          esac
+          case "$ROOT" in
+            /opt/mysaloon/Mybarber*|/var/www/mysaloon/source*)
+              echo "Refusing production checkout path"; exit 1 ;;
+          esac
+          if [ -z "$USER_NAME" ]; then
+            echo "STAGING_SSH_USER is empty"; exit 1
+          fi
+          echo "Staging target accepted. No migration will run."
+
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Build user web against the staging API
+        env:
+          VITE_API_URL: ${{ inputs.staging_api_origin }}
+        run: npm ci && npm run build:user
+
+      - name: Upload the build to the staging directory only
+        env:
+          HOST: ${{ vars.STAGING_SSH_HOST }}
+          USER_NAME: ${{ vars.STAGING_SSH_USER }}
+          ROOT: ${{ vars.STAGING_WEB_ROOT }}
+          KEY: ${{ secrets.STAGING_SSH_KEY }}
+        run: |
+          set -euo pipefail
+          if [ -z "$KEY" ]; then
+            echo "STAGING_SSH_KEY is unset. Not uploading."
+            exit 1
+          fi
+          mkdir -p ~/.ssh
+          printf '%s\n' "$KEY" > ~/.ssh/staging
+          chmod 600 ~/.ssh/staging
+          if [ ! -f apps/user/dist/server/index.mjs ]; then
+            echo "User build did not produce dist/server/index.mjs"
+            exit 1
+          fi
+          tar -C apps/user/dist -czf /tmp/user-preview.tgz .
+          scp -o StrictHostKeyChecking=accept-new -i ~/.ssh/staging /tmp/user-preview.tgz "$USER_NAME@$HOST:/tmp/user-preview.tgz"
+          ssh -o StrictHostKeyChecking=accept-new -i ~/.ssh/staging "$USER_NAME@$HOST" "bash -s" <<REMOTE
+          set -euo pipefail
+          case "$ROOT" in
+            /opt/mysaloon/Mybarber*|/var/www/mysaloon/source*)
+              echo "Refusing production path on the server"; exit 1 ;;
+          esac
+          mkdir -p "$ROOT"
+          tar -C "$ROOT" -xzf /tmp/user-preview.tgz
+          rm -f /tmp/user-preview.tgz
+          echo "Uploaded user preview to $ROOT"
+          echo "No migrate. No systemctl restart. No production deploy script."
+          REMOTE

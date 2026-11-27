@@ -2,196 +2,218 @@
 
 **Date:** 2026-11-27  
 **Branch:** `feat/scanner-v2-release-candidate`  
-**Base:** `f0573e39` (Universal Smart Scanner V2 on Hair Advisor)  
-**RC commits:**
-- `20fd4275` — `fix(scanner): harden universal scanner v2 and advisor integration`
-- `be29ed88` — `fix(scanner): close RC gaps for abort, mobile pick, and QA docs`  
-**Verdict:** **NOT production-ready** — awaiting owner physical-device QA approval.  
+**Previous HEAD:** `e9622536`  
+**Verdict:** **NOT production-ready.** Physical-device QA is not done.  
 **Explicit:** **NOT** merged to `main`. **NOT** deployed to production.
 
 ---
 
-## 1. Executive summary
+## 1. Preview / staging URL
 
-Local Scanner V2 hardening was verified with unit/e2e tests, committed, and pushed only to `feat/scanner-v2-release-candidate`. Remaining code-only gaps closed where feasible (HTTP abort, mobile product-pick parity, result Sources/Missing sections, capability matrix honesty). Physical camera QA, paid barcode APIs, global SKU coverage, staging frontend for this branch, and EAS mobile binaries remain open/blocked.
+No public preview URL. Production workflows still run only on `main` and were not modified.
 
----
-
-## 2. Branch / push
-
-| Item | Value |
+| Path | Result |
 |------|--------|
-| Branch | `feat/scanner-v2-release-candidate` |
-| Remote | `https://github.com/abushshsgi/My_barber` |
-| PR draft URL | https://github.com/abushshsgi/My_barber/pull/new/feat/scanner-v2-release-candidate |
-| Force-push | **No** |
-| Merged to main | **No** |
+| Production hosts | Unchanged. Not deployed. |
+| `.github/workflows/preview-user-staging.yml` | Added. Runs only on `workflow_dispatch`, never on `main`. It uploads `apps/user/dist` only when `STAGING_SSH_HOST`, `STAGING_WEB_ROOT`, `STAGING_SSH_USER`, and `STAGING_SSH_KEY` are set, and it refuses `mysaloon.uz` / `api.mysaloon.uz` and the production checkouts. It does not migrate or restart production services. Those variables are not set, so the job does nothing. |
+| Local desktop (secure context) | `http://127.0.0.1:3000/ai-style/care/ingredient` — confirmed loading in this session. `npm run dev:user` was left running. |
+| Phone browser | `node scripts/dev-https-preview.mjs` after `openssl` is installed. OpenSSL is not on PATH here, so the HTTPS proxy was not started. A LAN `http://` URL will not open the camera. |
+| API | Vite proxies `/api/v1` to `http://127.0.0.1:8000`. Do not set `DEV_API_TARGET` or `EXPO_PUBLIC_API_URL` to `https://api.mysaloon.uz` for QA scans. |
+
+Details: `docs/scanner-v2-qa/staging-preview.md`.
 
 ---
 
-## 3. Tests re-run (this RC session)
+## 2. Mobile testing commands
 
-| Command | Result |
-|---------|--------|
-| `npm run test -w @mybarber/scanner` | **21 passed** |
-| `npm run test -w user-web -- --run src/lib/hair-advisor-scanner-logic.test.ts src/lib/hair-advisor-barcode-decode.test.ts` | **11 passed** |
-| `backend/.venv … pytest …test_scanner_barcode_normalize.py …test_scanner_product_resolver.py` | **17 passed** |
-| `npm run test:e2e -- --grep "Universal Smart Scanner"` (apps/user) | **9 passed** (simulated; backend `:8000` down — UI mocks/demo only) |
+Expo Go (SDK 57) is the fastest path. `expo-camera` still-image and live scan are in Expo Go. EAS is not required unless Expo Go rejects the SDK. Firebase and Google Sign-In load only when those flows run.
 
----
-
-## 4. Gaps closed vs still open
-
-### Closed / improved in RC (code)
-
-| Requirement | Was | Now |
-|-------------|-----|-----|
-| #17 Result UI missing info + sources | Partial (web only) | Web + **mobile** result sections |
-| #20 Offline UX | Wired prior session | Confirmed web + mobile; e2e offline |
-| #22 Extended formats docs vs code | Partial / optimistic matrix | Matrix rewritten to **code truth** |
-| #27 Mobile ambiguous product-pick | NOT IMPLEMENTED | **IMPLEMENTED** (stack + screen + routing) — **UNTESTED** on device |
-| #28 Abort in-flight HTTP on cancel | Session ignore only | `AbortSignal` passed into `createHairScan` (web + mobile) |
-
-### Still open (honest)
-
-| Requirement | Status | Root cause / blocker |
-|-------------|--------|----------------------|
-| #3 Web live decode (physical) | IMPLEMENTED BUT UNTESTED | No Android Chrome / Safari device in session |
-| #6 Camera cleanup LED | IMPLEMENTED BUT UNTESTED | Needs physical observe |
-| #7 Mobile Expo live scan | IMPLEMENTED BUT UNTESTED | No emulator/device run |
-| #8 Mobile checksum/dedup/cancel on device | IMPLEMENTED BUT UNTESTED | Device QA |
-| #10 Gallery + manual | PARTIAL | Web ZXing OK; **mobile gallery still server image path** (no client decode lib) |
-| #22 Extended live formats | PARTIAL | Primary EAN/UPC (+ web CODE-128 BD); others not primary |
-| #23 Paid Barcode Lookup / GS1 | BLOCKED | Keys unset (intentional) |
-| #24 Global product coverage | BLOCKED | Verified DB + free/trial providers only |
-| #25 Physical device matrix | NOT DONE | Owner must run `docs/scanner-v2-qa/physical-device-qa.md` |
-
-### Per-gap detail template (remaining)
-
-#### #3 Web live decode
-- **Current:** BarcodeDetector + ZXing in `HairAdvisorBarcodeCamera.tsx`
-- **Missing:** Physical pass evidence
-- **Owner:** Device QA script
-
-#### #6 Camera cleanup
-- **Current:** Track stop on unmount / mobile `useIsFocused`
-- **Missing:** LED-off confirmation
-- **Owner:** Device QA
-
-#### #7 / #8 Mobile live + cancel
-- **Current:** Expo CameraView + session/abort
-- **Missing:** Device evidence
-- **Owner:** Device QA
-
-#### #10 Mobile gallery barcode-first
-- **Current:** Status copy notes server fallback
-- **Missing:** Client ZXing/wasm decode dependency
-- **Proposed fix (future):** Add RN-safe image barcode decode or accept server-only
-- **External?** No — product choice
-
-#### #23 / #24 Providers & coverage
-- **External blocker:** Paid API keys / catalog enrichment
-
-#### #25 Physical matrix
-- **Doc:** `docs/scanner-v2-qa/physical-device-qa.md`
-
----
-
-## 5. Staging deploy
-
-| Check | Evidence |
-|-------|----------|
-| Frontend deploy workflow | `.github/workflows/deploy-frontends-vps.yml` triggers on **`main` only** |
-| Production hosts | `www.mysaloon.uz` / `api.mysaloon.uz` (prod paths) |
-| Hair staging DB scripts | `backend/deploy/vps/*staging*` exist historically |
-| RC branch staging URL | **Not deployed** |
-
-**Blocker:** No CI path deploys feature branches to an isolated staging frontend. Deploying this RC to VPS prod hosts would violate “no production deploy”.
-
-**Exact commands if owner wants a dedicated staging later (not run):**
 ```bash
-# After provisioning a non-prod host + env:
-git checkout feat/scanner-v2-release-candidate
-# build user-web against staging API base
-npm run build:user
-# rsync/nginx to STAGING host only — never /opt/mysaloon production without approval
+cd apps/mobile
+# PowerShell. Use this PC's LAN IP. Android emulator: http://10.0.2.2:8000
+$env:EXPO_PUBLIC_API_URL = "http://192.168.1.13:8000"
+npx expo start
 ```
 
-### Config evidence (not invented runtime)
+The LAN address above was observed for this machine during the session and can change. Start a local API first (`python manage.py runserver 127.0.0.1:8000` from `backend`). Do not leave the default production API in place.
 
-| Item | Evidence |
-|------|----------|
-| HTTPS / SSL redirect (Django when not DEBUG) | `SECURE_SSL_REDIRECT`, HSTS in `backend/config/settings.py` |
-| CORS allowlist | `CORS_ALLOWED_ORIGINS` / `FRONTEND_*` builders; `CORS_ALLOW_ALL_ORIGINS = DEBUG` |
-| Proxy SSL header | `SECURE_PROXY_SSL_HEADER = X-Forwarded-Proto` |
-| Camera secure context | Client `diagnoseCameraAccess` / `isSecureContext` (prior QA) |
+Android emulator or a USB device, only if the Android SDK is installed:
+
+```bash
+npx expo start --android
+```
+
+This machine has no `adb`, no `java` on PATH, and no `ANDROID_HOME`. A local Android build was not produced.
 
 ---
 
-## 6. Mobile builds (EAS)
+## 3. Expo authentication
 
-| Item | Status |
-|------|--------|
-| `apps/mobile/eas.json` | `development` / `preview` (internal APK) / `production` |
-| `app.config.ts` | `expo-camera` permissions present |
-| `eas whoami` | **Not logged in** |
-| Android internal/dev build | **Not started** |
-| iOS build | **Blocked** — Apple credentials + EAS login required |
-| APK/IPA download links | **None invented** |
+`npx eas-cli whoami` → **Not logged in**.
 
-**Commands for owner (when logged in):**
+The project owner runs this themselves. Do not send a password or token in chat.
+
 ```bash
 cd apps/mobile
 npx eas-cli login
-npx eas-cli build -p android --profile preview --non-interactive
-# iOS (requires Apple team / certs):
-npx eas-cli build -p ios --profile preview
 ```
 
 ---
 
-## 7. Screenshots
+## 4. Android build status
+
+**Not built.**
+
+No Android SDK on this machine, and EAS is not logged in. No APK was created and none is linked. Expo Go is the test build.
+
+If Expo Go rejects SDK 57 after login:
+
+```bash
+npx eas-cli build -p android --profile development --non-interactive
+```
+
+Do not use the `production` or `production-apk` profiles for this QA, and do not submit to Google Play.
+
+---
+
+## 5. iOS build status
+
+**Not built.**
+
+This session is on Windows. There is no local iOS toolchain. EAS is not logged in, and an Apple team is required for a device build. No IPA was created.
+
+On a Mac, or after `npx eas-cli login` with an Apple team:
+
+```bash
+cd apps/mobile
+npx eas-cli build -p ios --profile development
+```
+
+Do not submit to TestFlight or the App Store.
+
+---
+
+## 6. Mobile gallery decoding status
+
+**Implemented in code. Not verified on a device.**
+
+| Platform | Still-image behavior |
+|----------|----------------------|
+| Android native | `scanFromURLAsync` → ML Kit for `ean13`, `ean8`, `upc_a`, `upc_e`, `code128`, `code39`, `qr`, `datamatrix` when Play Services exist. Not PDF417 or Aztec. |
+| iOS native | `scanFromURLAsync` is QR only. `CameraViewModule.swift` uses `CIDetectorTypeQRCode` and ignores the requested type list. |
+| Both | JPEG is re-encoded with `expo-image-manipulator` so EXIF orientation is baked in. `@zxing/library` then tries EAN-13/8, UPC-A/E, CODE-128, and QR at 0/90/180/270 degrees. |
+| Miss | If there is no checksum-valid retail GTIN, the existing `createHairScan` image call runs only when the user is online and has an access token. Otherwise the UI stays on the device. |
+
+A local hit calls the existing `processBarcode` path (`input_method: barcode`), which is the shared validator and product resolver. It does not open a second pipeline.
+
+Automated proof is a synthetic JPEG round-trip (drawn EAN-13, including a 90° rotation) plus a QR that is only a URL, which is rejected. That is not a photo of a retail pack.
+
+---
+
+## 7. Automated tests
+
+| Command | Result |
+|---------|--------|
+| `npm run test -w @mybarber/scanner` | **38 passed** (was 21) |
+| `npm run test -w user-web -- --run src/lib/hair-advisor-scanner-logic.test.ts src/lib/hair-advisor-barcode-decode.test.ts` | **11 passed** |
+| `backend/.venv` pytest `test_scanner_barcode_normalize.py` `test_scanner_product_resolver.py` | **18 passed** (was 17) |
+| `npm run test:e2e -- --grep "Universal Smart Scanner"` | **9 passed** (mocked UI; local user server was up) |
+
+**76 passed** in this session. No physical-device test is included.
+
+---
+
+## 8. Real-device testing procedure
+
+Follow `docs/scanner-v2-qa/physical-device-qa.md` and fill `docs/scanner-v2-qa/real-product-qa.md`.
+
+Categories to record separately: shampoo, conditioner, hair mask, hair serum, hair oil, other cosmetic. For each: barcode detected, format, validation, latency, product found, identity correct, ingredients available, advisor success, result UI. A valid barcode with “product not found” is a catalog miss, not a decode failure.
+
+There is no country allowlist. Checksum-valid GTINs are accepted regardless of GS1 prefix. That is covered by the scanner and backend normalizer tests. It is not a claim that every retail SKU is in the catalog.
+
+Development builds show a **QA** button on the scanner. The copied report has platform, permission, camera readiness, decoder readiness, formats, redacted barcode, validation, lock, lookup, provider, advisor, latency, decode path, and a redacted error. Production builds hide it (`__DEV__` is false and `EXPO_PUBLIC_SCANNER_DIAGNOSTICS` is not set on the production EAS profiles).
+
+**Physical-device QA: not completed.** No phone or emulator was attached.
+
+---
+
+## 9. Remaining blockers
+
+| Item | Status |
+|------|--------|
+| Physical camera / gallery / torch / LED-off | Not done. Owner device pass. |
+| Public staging URL | Not configured. Staging GitHub variables are absent. |
+| Android APK / iOS IPA | Not built. EAS logged out. No Android SDK. No Apple toolchain on this PC. |
+| Paid Barcode Lookup / GS1 | Not wired. No purchase. Scanner works without them. See `docs/scanner-v2-qa/product-providers.md`. |
+| Global SKU coverage | Limited to the verified catalog plus Open Beauty Facts and the UPCitemdb trial. |
+| Real product matrix | Blank on purpose. |
+
+---
+
+## 10. Files modified
+
+Code:
+
+- `packages/scanner/src/core/galleryPlan.ts`
+- `packages/scanner/src/core/scannerDiagnostics.ts`
+- `packages/scanner/src/gallery/decodeJpeg.ts`
+- `packages/scanner/src/core/galleryPlan.test.ts`
+- `packages/scanner/src/gallery/decodeJpeg.test.ts`
+- `packages/scanner/package.json`
+- `packages/scanner/src/core/index.ts`
+- `apps/mobile/src/lib/gallery-barcode.ts`
+- `apps/mobile/src/lib/product-label.ts`
+- `apps/mobile/src/components/scanner/ScannerDiagnosticsSheet.tsx`
+- `apps/mobile/src/screens/morph/hair-advisor/HairAdvisor2ScanScreen.tsx`
+- `apps/mobile/metro.config.js`
+- `apps/mobile/package.json`
+- `backend/hair_advisor/tests/test_scanner_product_resolver.py`
+
+Delivery:
+
+- `.github/workflows/preview-user-staging.yml`
+- `scripts/dev-https-preview.mjs`
+- `docs/scanner-v2-qa/staging-preview.md`
+- `docs/scanner-v2-qa/product-providers.md`
+- `docs/scanner-v2-qa/real-product-qa.md`
+- `docs/scanner-v2-qa/physical-device-qa.md`
+- `docs/scanner-v2-capability-matrix.md`
+- `docs/scanner-v2-qa/screenshots/` (new local captures)
+- lockfiles updated by the dependency installs
+
+Production deploy workflows were not edited.
+
+---
+
+## 11. Screenshots
 
 Path: `docs/scanner-v2-qa/screenshots/`
 
-| File | Notes |
-|------|--------|
-| `demo-result-simulated.png` | Simulated |
-| `scanner-chrome-simulated.png` | Simulated |
-| `manual-entry-simulated.png` | Simulated |
-| `offline-mobile-viewport-simulated.png` | Simulated |
-| `result-sources-desktop-simulated.png` | Simulated |
-| `mode-image-simulated.png` | Simulated |
-| Native Expo / physical camera | **Missing** |
+| File | What it is |
+|------|------------|
+| `desktop-scanner-local.png` | Local desktop scanner. Camera permission denied in this browser. |
+| `mobile-web-scanner-local.png` | 390px layout of the same page. |
+| `mobile-web-offline-local.png` | Offline banner after `navigator.onLine = false`. |
+| `demo-advisor-result-local.png` | Existing demo fixture result, not a scanned product. |
+| `demo-result-sources-local.png` | Demo sources / INCI / advisor copy. |
+| `*-simulated.png` | Earlier Playwright UI captures. Still simulated. |
+
+Not captured: native Expo scanner, gallery decode of a real photo, product-not-found from a real barcode, scan history from a real account.
 
 ---
 
-## 8. Owner manual QA
+## 12. Commit
 
-Follow **`docs/scanner-v2-qa/physical-device-qa.md`**.  
-Prior report: `docs/scanner-v2-production-qa-report.md`.
-
----
-
-## 9. Updated coverage counts (RC)
-
-| Status | Count |
-|--------|------:|
-| IMPLEMENTED AND VERIFIED (automated / code) | ~17 |
-| IMPLEMENTED BUT UNTESTED (physical) | 4 (+ mobile pick device) |
-| PARTIALLY IMPLEMENTED | 2 (#10 gallery mobile, #22 extended) |
-| NOT DONE this session | 1 (#25 physical matrix) |
-| BLOCKED BY EXTERNAL | 2 (#23, #24) |
-| BROKEN | 0 |
-
-**Production readiness: NOT READY** until physical QA signed off and owner approves merge/deploy.
+Recorded after the commit on `feat/scanner-v2-release-candidate`. Not merged. Not production-deployed.
 
 ---
 
-## 10. Safety attestation
+## 13. Safety
 
 - [x] Not merged to `main`
 - [x] Not production deployed
-- [x] No force-push
-- [x] No invented store/APK links
-- [x] Unrelated untracked junk (`apps/user/android`, eslint-out, sqlite, tmp-hairstyles, lighthouse) left unstaged
+- [x] No force-push intended
+- [x] No invented store or APK links
+- [x] No paid subscription purchased
+- [x] No production database writes from this session
+- [x] Physical-device QA not marked complete

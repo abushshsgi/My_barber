@@ -98,6 +98,16 @@ def test_resolve_uses_inflight_cache():
             assert q.call_count == 1
 
 
+def test_default_providers_skip_paid_catalogs():
+    """Paid barcode APIs stay out of the chain until credentials exist. None are required."""
+    from hair_advisor.services.scanner.product_providers.chain import default_providers
+
+    names = [provider.name for provider in default_providers()]
+    assert names == ["verified_catalog", "open_beauty_facts", "upcitemdb"]
+    assert "barcode_lookup" not in names
+    assert "gs1" not in names
+
+
 def test_external_negative_cache_skips_network():
     from hair_advisor.services.scanner.product_providers.external import OpenBeautyFactsProvider
 

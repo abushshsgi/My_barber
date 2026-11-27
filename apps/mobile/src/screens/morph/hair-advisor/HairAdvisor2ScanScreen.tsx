@@ -9,6 +9,7 @@ import {
   Animated,
   Easing,
   Modal,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -19,14 +20,22 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   EXPO_PRIMARY_BARCODE_TYPES,
+  emptyScannerDiagnostics,
   isDuplicateBarcodeSubmit,
+  mapDecoderFormat,
+  redactBarcode,
+  redactDiagnosticText,
+  scannerDiagnosticsEnabled,
   validateRetailBarcodeChecksum,
+  type ScannerDiagnosticSnapshot,
 } from "@mybarber/scanner";
 import { createHairScan, fetchHairScanHistory, type HairScan } from "../../../api/hair-advisor";
+import { getAccessToken } from "../../../auth/storage";
+import { ScannerDiagnosticsSheet } from "../../../components/scanner/ScannerDiagnosticsSheet";
 import { useHideTabBar } from "../../../hooks/useHideTabBar";
-import { pickProductLabelFromGallery } from "../../../lib/product-label";
+import { currentGalleryDecodeSummary, prepareGalleryScan } from "../../../lib/gallery-barcode";
+import { pickScannerGalleryAsset } from "../../../lib/product-label";
 import { playBarcodeBeep, primeBarcodeBeep } from "../../../lib/barcode-beep";
-import { toDataUrl } from "../../../lib/selfie";
 import { resolveScanToAnalysis, shouldOpenProductPick } from "../../../lib/hair-advisor-2/scan-flow";
 import { isOnline, subscribeNetwork } from "../../../lib/network-status";
 import type { MorphIngredientStackParamList } from "../../../navigation/MorphIngredientStack";
@@ -36,6 +45,11 @@ import { safeBottom, safeTop } from "../../../lib/safe-area";
 
 type Props = NativeStackScreenProps<MorphIngredientStackParamList, "IngredientScan">;
 type Mode = "barcode" | "product_image";
+
+const DIAGNOSTICS_ON = scannerDiagnosticsEnabled(
+  typeof __DEV__ !== "undefined" && __DEV__,
+  process.env.EXPO_PUBLIC_SCANNER_DIAGNOSTICS,
+);
 
 export function HairAdvisor2ScanScreen({ navigation }: Props) {
   useHideTabBar();
@@ -59,13 +73,45 @@ export function HairAdvisor2ScanScreen({ navigation }: Props) {
   const [manualCode, setManualCode] = useState("");
   const [history, setHistory] = useState<HairScan[]>([]);
   const [offline, setOffline] = useState(() => !isOnline());
+  const [diagOpen, setDiagOpen] = useState(false);
+  const [diag, setDiag] = useState<ScannerDiagnosticSnapshot>(() => emptyScannerDiagnostics(Platform.OS));
   const cameraRef = useRef<CameraView>(null);
+  const lookupStartedRef = useRef<number | null>(null);
+
+  const patchDiag = useCallback((patch: Partial<ScannerDiagnosticSnapshot>) => {
+    if (!DIAGNOSTICS_ON) return;
+    setDiag((prev) => ({
+      ...prev,
+      ...patch,
+      error: patch.error != null ? redactDiagnosticText(patch.error).slice(0, 180) : prev.error,
+    }));
+  }, []);
 
   useEffect(() => {
     void primeBarcodeBeep();
   }, []);
 
   useEffect(() => subscribeNetwork((online) => setOffline(!online)), []);
+
+  useEffect(() => {
+    if (!DIAGNOSTICS_ON) return;
+    const permission = !camPerm
+      ? "unknown"
+      : camPerm.granted
+        ? "granted"
+        : camPerm.canAskAgain
+          ? "undetermined"
+          : "denied";
+    patchDiag({
+      platform: Platform.OS,
+      cameraPermission: permission,
+      cameraReady: Boolean(focused && camPerm?.granted),
+      decoderReady: Boolean(camPerm?.granted),
+      supportedFormats: EXPO_PRIMARY_BARCODE_TYPES.join(","),
+      galleryDecode: currentGalleryDecodeSummary(),
+      scanLock: barcodeLock.current,
+    });
+  }, [camPerm, focused, patchDiag]);
 
   useEffect(() => {
     if (!focused || !camPerm?.granted) return;
@@ -121,61 +167,95 @@ export function HairAdvisor2ScanScreen({ navigation }: Props) {
     (e instanceof Error && e.name === "AbortError") ||
     (typeof DOMException !== "undefined" && e instanceof DOMException && e.name === "AbortError");
 
+  const finishLookup = useCallback(
+    (patch: Partial<ScannerDiagnosticSnapshot>) => {
+      const started = lookupStartedRef.current;
+      patchDiag({
+        ...patch,
+        scanLock: false,
+        latencyMs: started == null ? null : Date.now() - started,
+      });
+    },
+    [patchDiag],
+  );
+
   const afterScan = useCallback(
     async (scan: HairScan, session: number) => {
       if (session !== sessionRef.current) return;
+      const providerStatus = scan.lookup_source || scan.catalog_tier || scan.status || "n/a";
       if (scan.status === "failed") {
         setError(scan.error_message || t("scanner.errors.scanFailed", { defaultValue: "Skan muvaffaqiyatsiz" }));
+        finishLookup({
+          productLookup: "failed",
+          providerStatus,
+          advisorStatus: "skipped",
+          error: scan.error_code || scan.error_message || "scan_failed",
+        });
         barcodeLock.current = false;
         setBusy(false);
         return;
       }
       if (scan.status === "product_not_found") {
+        finishLookup({ productLookup: "not_found", providerStatus, advisorStatus: "skipped" });
         navigation.navigate("HairAdvisorRecover", { scanId: scan.id });
         barcodeLock.current = false;
         setBusy(false);
         return;
       }
       if (shouldOpenProductPick(scan)) {
+        finishLookup({ productLookup: "ambiguous", providerStatus, advisorStatus: "skipped" });
         navigation.navigate("HairAdvisorProductPick", { scanId: scan.id });
         barcodeLock.current = false;
         setBusy(false);
         return;
       }
+      patchDiag({ productLookup: "found", providerStatus, advisorStatus: "running" });
       const resolved = await resolveScanToAnalysis(scan);
       if (session !== sessionRef.current) return;
       if ("needIngredients" in resolved) {
+        finishLookup({ productLookup: "found", providerStatus, advisorStatus: "need_ingredients" });
         navigation.navigate("HairAdvisorRecover", { scanId: scan.id });
         barcodeLock.current = false;
         setBusy(false);
         return;
       }
+      finishLookup({ productLookup: "found", providerStatus, advisorStatus: "ok", error: "" });
       navigation.navigate("HairAdvisorResult", { scanId: resolved.scan.id });
       barcodeLock.current = false;
       setBusy(false);
     },
-    [navigation, t],
+    [finishLookup, navigation, patchDiag, t],
   );
 
   const processBarcode = useCallback(
-    async (raw: string) => {
+    async (raw: string, formatHint?: string, startedAt?: number) => {
       const checksum = validateRetailBarcodeChecksum(raw);
+      const detectedFormat = formatHint ? mapDecoderFormat(formatHint) : "unknown";
+      patchDiag({
+        lastDetectedFormat: detectedFormat === "unknown" && checksum.valid ? "retail" : detectedFormat,
+        lastBarcodeRedacted: redactBarcode(checksum.normalized || raw),
+        validation: checksum.valid ? "valid" : "invalid",
+        scanLock: barcodeLock.current,
+      });
       if (!checksum.valid) {
         setError(t("scanner.errors.invalidBarcode", { defaultValue: "Shtrix-kod formati noto‘g‘ri" }));
+        patchDiag({ productLookup: "skipped", advisorStatus: "skipped", error: "invalid_barcode" });
         return;
       }
       if (!isOnline()) {
         setOffline(true);
         setError(t("scanner.status.offline", { defaultValue: "Offline — remote lookup unavailable" }));
+        patchDiag({ productLookup: "skipped", advisorStatus: "skipped", error: "offline" });
         return;
       }
-      if (barcodeLock.current || busy) return;
+      if (barcodeLock.current) return;
       const now = Date.now();
       const last = lastBarcodeRef.current;
       if (last && isDuplicateBarcodeSubmit(checksum.normalized, last.code, last.at, now)) return;
 
       const session = bumpSession();
       barcodeLock.current = true;
+      lookupStartedRef.current = startedAt ?? now;
       lastBarcodeRef.current = { code: checksum.normalized, at: now };
       setDetectedCode(checksum.normalized);
       setStatus(t("scanner.status.barcodeDetected", { defaultValue: "Shtrixkod aniqlandi" }));
@@ -183,6 +263,7 @@ export function HairAdvisor2ScanScreen({ navigation }: Props) {
       setBusy(true);
       setError(null);
       setStatus(t("scanner.status.lookingUpProduct", { defaultValue: "Mahsulot ma’lumotlari qidirilmoqda" }));
+      patchDiag({ productLookup: "running", advisorStatus: "idle", scanLock: true, error: "" });
       try {
         const scan = await createHairScan(
           {
@@ -197,11 +278,16 @@ export function HairAdvisor2ScanScreen({ navigation }: Props) {
       } catch (e) {
         if (session !== sessionRef.current || isAbortError(e)) return;
         setError(t("scanner.errors.network", { defaultValue: "Internet aloqasini tekshiring" }));
+        finishLookup({
+          productLookup: "failed",
+          advisorStatus: "skipped",
+          error: e instanceof Error ? e.message : "network",
+        });
         barcodeLock.current = false;
         setBusy(false);
       }
     },
-    [afterScan, busy, t],
+    [afterScan, finishLookup, patchDiag, t],
   );
 
   const submitManual = useCallback(async () => {
@@ -246,31 +332,72 @@ export function HairAdvisor2ScanScreen({ navigation }: Props) {
   }, [afterScan, manualCode, t]);
 
   const onGallery = useCallback(async () => {
-    const uri = await pickProductLabelFromGallery();
-    if (!uri) return;
-    if (!isOnline()) {
-      setOffline(true);
-      setError(t("scanner.status.offline", { defaultValue: "Offline — remote lookup unavailable" }));
-      return;
-    }
+    const asset = await pickScannerGalleryAsset();
+    if (!asset) return;
     const session = bumpSession();
+    const started = Date.now();
+    lookupStartedRef.current = started;
     setBusy(true);
     setError(null);
-    // Mobile has no client ZXing path yet — gallery always uploads image for server OCR/lookup.
-    setStatus(
-      mode === "barcode"
-        ? t("scanner.status.galleryBarcodeFallback", {
-            defaultValue: "Rasm yuborilmoqda (mijozda barcode decode yo‘q)…",
-          })
-        : t("scanner.status.recognizingProduct", { defaultValue: "Mahsulot aniqlanmoqda…" }),
-    );
+    setStatus(t("scanner.status.galleryDecoding", { defaultValue: "Shtrix-kod rasmda qidirilmoqda" }));
+    patchDiag({ decodePath: "none", productLookup: "idle", advisorStatus: "idle", error: "" });
     try {
-      const dataUrl = uri.startsWith("data:") ? uri : await toDataUrl(uri);
-      if (!dataUrl) throw new Error("fail");
+      const token = await getAccessToken();
+      const prepared = await prepareGalleryScan({
+        uri: asset.uri,
+        width: asset.width,
+        mode,
+        online: isOnline(),
+        hasAuth: Boolean(token),
+        signal: abortRef.current?.signal,
+      });
+      if (session !== sessionRef.current || prepared.action.action === "cancelled") {
+        if (session === sessionRef.current) setBusy(false);
+        return;
+      }
+      patchDiag({
+        decodePath: prepared.decodePath,
+        galleryDecode: `${currentGalleryDecodeSummary()}; exif ${asset.exifOrientation ?? "n/a"}`,
+        validation: prepared.action.action === "lookup_barcode" ? "valid" : "not_found",
+        lastDetectedFormat: prepared.action.action === "lookup_barcode" ? prepared.action.format : "none",
+        lastBarcodeRedacted:
+          prepared.action.action === "lookup_barcode" ? redactBarcode(prepared.action.normalized) : "none",
+      });
+      if (prepared.action.action === "lookup_barcode") {
+        setBusy(false);
+        barcodeLock.current = false;
+        await processBarcode(prepared.action.normalized, prepared.action.format, started);
+        return;
+      }
+      if (prepared.action.action === "offline") {
+        setOffline(true);
+        setError(t("scanner.status.offline", { defaultValue: "Offline — remote lookup unavailable" }));
+        finishLookup({ productLookup: "skipped", advisorStatus: "skipped", error: "offline" });
+        setBusy(false);
+        return;
+      }
+      if (prepared.action.action === "needs_auth") {
+        setError(
+          t("scanner.errors.galleryAuth", {
+            defaultValue: "Rasmni serverga yuborish uchun hisobga kiring",
+          }),
+        );
+        finishLookup({ productLookup: "skipped", advisorStatus: "skipped", error: "auth_required" });
+        setBusy(false);
+        return;
+      }
+      if (prepared.action.action !== "server_image" || !prepared.dataUrl) {
+        setError(t("scanner.errors.imageFailed", { defaultValue: "Rasm o'qilmadi" }));
+        finishLookup({ productLookup: "skipped", advisorStatus: "skipped", error: "image_unreadable" });
+        setBusy(false);
+        return;
+      }
+      setStatus(t("scanner.status.recognizingProduct", { defaultValue: "Mahsulot aniqlanmoqda…" }));
+      patchDiag({ decodePath: "server", productLookup: "running" });
       const scan = await createHairScan(
         {
           input_method: mode === "barcode" ? "gallery" : "camera_label",
-          image: dataUrl,
+          image: prepared.dataUrl,
         },
         { signal: abortRef.current?.signal },
       );
@@ -279,9 +406,14 @@ export function HairAdvisor2ScanScreen({ navigation }: Props) {
     } catch (e) {
       if (session !== sessionRef.current || isAbortError(e)) return;
       setError(t("scanner.errors.imageFailed", { defaultValue: "Rasm o'qilmadi" }));
+      finishLookup({
+        productLookup: "failed",
+        advisorStatus: "skipped",
+        error: e instanceof Error ? e.message : "image_failed",
+      });
       setBusy(false);
     }
-  }, [afterScan, mode, t]);
+  }, [afterScan, finishLookup, mode, patchDiag, processBarcode, t]);
 
   const onCapture = useCallback(async () => {
     if (mode !== "product_image" || busy) return;
@@ -319,7 +451,8 @@ export function HairAdvisor2ScanScreen({ navigation }: Props) {
     setBusy(false);
     setError(null);
     setDetectedCode(null);
-  }, []);
+    finishLookup({ productLookup: "cancelled", advisorStatus: "skipped", error: "" });
+  }, [finishLookup]);
 
   return (
     <View style={styles.root}>
@@ -331,6 +464,11 @@ export function HairAdvisor2ScanScreen({ navigation }: Props) {
           <Text style={styles.headerTitle}>{t("scanner.title", { defaultValue: "Smart Scanner" })}</Text>
           <Text style={styles.headerSub}>{t("scanner.subtitle", { defaultValue: "Mahsulotni aniqlang va tahlil qiling." })}</Text>
         </View>
+        {DIAGNOSTICS_ON ? (
+          <Pressable hitSlop={8} onPress={() => setDiagOpen(true)} accessibilityLabel="Diagnostika">
+            <Text style={styles.diagBtn}>QA</Text>
+          </Pressable>
+        ) : null}
         <Pressable
           hitSlop={12}
           accessibilityLabel={t("scanner.history", { defaultValue: "Tarix" })}
@@ -370,8 +508,9 @@ export function HairAdvisor2ScanScreen({ navigation }: Props) {
             }
             onBarcodeScanned={
               mode === "barcode" && !busy
-                ? ({ data }) => {
-                    void processBarcode(String(data));
+                ? ({ data, type }) => {
+                    patchDiag({ decodePath: "camera" });
+                    void processBarcode(String(data), String(type || ""));
                   }
                 : undefined
             }
@@ -473,6 +612,10 @@ export function HairAdvisor2ScanScreen({ navigation }: Props) {
         </View>
       </Modal>
 
+      {DIAGNOSTICS_ON ? (
+        <ScannerDiagnosticsSheet visible={diagOpen} snapshot={diag} onClose={() => setDiagOpen(false)} />
+      ) : null}
+
       <Modal visible={historyOpen} transparent animationType="slide">
         <View style={styles.modalBg}>
           <View style={styles.modalCard}>
@@ -523,6 +666,7 @@ const styles = StyleSheet.create({
   headerCenter: { flex: 1, alignItems: "center", paddingHorizontal: 8 },
   headerTitle: { ...morphFont, color: "#fff", fontSize: fontSize(17), fontWeight: "600" },
   headerSub: { ...morphFont, color: "rgba(255,255,255,0.7)", fontSize: fontSize(11), marginTop: 2, textAlign: "center" },
+  diagBtn: { ...morphFont, color: "rgba(255,255,255,0.85)", fontSize: fontSize(11), fontWeight: "700" },
   modeRow: { flexDirection: "row", justifyContent: "center", gap: 8, marginTop: 8 },
   chip: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 999, backgroundColor: "rgba(255,255,255,0.12)" },
   chipOn: { backgroundColor: "#fff" },

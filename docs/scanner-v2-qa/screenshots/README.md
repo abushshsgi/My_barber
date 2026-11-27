@@ -15,6 +15,18 @@ Screenshots are produced only when Playwright e2e can reach a running `apps/user
 | `result-sources-desktop-simulated.png` | Result sources / sections |
 | `mode-image-simulated.png` | Image mode selected |
 
+### Local browser captures (2026-11-27)
+
+Taken against `http://127.0.0.1:3000` with the e2e mock session. Camera permission was denied in this browser, so these are UI captures, not physical barcode decodes. The result page is the existing demo fixture (`Deep Cleanse Shampoo`), not a scanned retail product.
+
+| File | State |
+|------|--------|
+| `desktop-scanner-local.png` | Desktop scanner chrome |
+| `mobile-web-scanner-local.png` | 390px-wide scanner layout |
+| `mobile-web-offline-local.png` | Same layout after `navigator.onLine = false` |
+| `demo-advisor-result-local.png` | Demo Advisor result |
+| `demo-result-sources-local.png` | Demo sources and INCI |
+
 ### Not captured (native / physical)
 
 | Surface | Status |

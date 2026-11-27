@@ -4,3 +4,5 @@ export * from "./barcodeNormalizer";
 export * from "./scanDeduplicator";
 export * from "./scannerStateMachine";
 export * from "./scannerTypes";
+export * from "./galleryPlan";
+export * from "./scannerDiagnostics";

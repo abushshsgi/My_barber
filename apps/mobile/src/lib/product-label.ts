@@ -46,6 +46,49 @@ const LABEL_OPTS = {
   allowsEditing: false,
 };
 
+export type ScannerGalleryAsset = {
+  uri: string;
+  width: number | null;
+  exifOrientation: number | null;
+};
+
+function readExifOrientation(
+  exif: { Orientation?: unknown; orientation?: unknown } | null | undefined,
+): number | null {
+  if (!exif) return null;
+  const raw = exif.Orientation ?? exif.orientation;
+  const n = typeof raw === "number" ? raw : typeof raw === "string" ? Number(raw) : Number.NaN;
+  return Number.isFinite(n) ? n : null;
+}
+
+/** Scanner gallery pick keeps the file URI so still-image decode can run before any upload. */
+export async function pickScannerGalleryAsset(): Promise<ScannerGalleryAsset | null> {
+  try {
+    if (Platform.OS !== "web") {
+      const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!perm.granted) {
+        notify("Ruxsat", "Galereyaga ruxsat bering.");
+        return null;
+      }
+    }
+    const res = await ImagePicker.launchImageLibraryAsync({
+      ...LABEL_OPTS,
+      base64: false,
+      exif: true,
+    });
+    if (res.canceled || !res.assets?.[0]?.uri) return null;
+    const asset = res.assets[0];
+    return {
+      uri: asset.uri,
+      width: typeof asset.width === "number" ? asset.width : null,
+      exifOrientation: readExifOrientation(asset.exif),
+    };
+  } catch (err) {
+    notify("Galereya", err instanceof Error ? err.message : "Rasm tanlashda xatolik.");
+    return null;
+  }
+}
+
 export async function pickProductLabelFromGallery(): Promise<string | null> {
   try {
     if (Platform.OS !== "web") {

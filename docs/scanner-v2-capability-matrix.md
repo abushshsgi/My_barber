@@ -9,7 +9,11 @@ Formats listed as **Image** are supported via static image / gallery decode or b
   (`HairAdvisorBarcodeCamera.tsx` `NATIVE_FORMATS`).
 - Web gallery ZXing retail hints = EAN-13/8 + UPC-A/E only.
 - Mobile live = `EXPO_PRIMARY_BARCODE_TYPES` (`ean13`, `ean8`, `upc_a`, `upc_e`).
-- Mobile gallery = **server image/OCR upload** (no client barcode-from-image decode).
+- Mobile gallery still image:
+  - Android `scanFromURLAsync` = ML Kit (`ean13`, `ean8`, `upc_a`, `upc_e`, `code128`, `code39`, `qr`, `datamatrix`) when Play Services are present. Not PDF417/Aztec.
+  - iOS `scanFromURLAsync` = **QR only** (`CIDetectorTypeQRCode` in `expo-camera` `CameraViewModule.swift`). The requested type list is ignored.
+  - Both platforms then try a JPEG ZXing decode for EAN-13/8, UPC-A/E, CODE-128, and QR (rotations 0/90/180/270). EXIF is baked with `expo-image-manipulator` before decode.
+  - If no checksum-valid retail GTIN is found, the existing authenticated `createHairScan` image path runs. No second scanner pipeline.
 
 | Format | Web Live | Web Image | Android Live | iOS Live | Notes |
 |--------|----------|-----------|--------------|----------|-------|
@@ -28,7 +32,7 @@ Formats listed as **Image** are supported via static image / gallery decode or b
 ## Retail-optimized strategy
 
 1. **Primary live:** EAN-13, EAN-8, UPC-A, UPC-E (+ CODE-128 on web native detector).
-2. **Gallery:** Web barcode mode tries ZXing first; mobile always uploads image for server path.
+2. **Gallery:** Web barcode mode tries ZXing first. Mobile tries native still-image decode, then JPEG ZXing, then the existing server image path.
 3. Reject non-product identifiers (URLs without GTIN) for automatic product lookup.
 
 ## Libraries
@@ -36,6 +40,7 @@ Formats listed as **Image** are supported via static image / gallery decode or b
 | Platform | Library |
 |----------|---------|
 | Web | Native `BarcodeDetector` when available; `@zxing/browser` + `@zxing/library` fallback |
-| Mobile | `expo-camera` barcode API; gallery → server OCR / hybrid recognition |
+| Mobile live | `expo-camera` `CameraView` barcode API |
+| Mobile gallery | `scanFromURLAsync` (Android ML Kit; iOS QR only) + `@zxing/library` JPEG + existing server image fallback |
 
 Do not claim universal format support beyond this matrix.

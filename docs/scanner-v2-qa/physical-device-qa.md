@@ -17,13 +17,22 @@ npm run dev:user
 Or staging/prod HTTPS host if available — **plain HTTP on LAN IP will fail camera**.
 
 ### Mobile (Expo)
+Scanner camera and gallery decode use `expo-camera`, which Expo Go includes. Firebase and Google Sign-In are loaded only when those flows run, so Expo Go is the fastest scanner test. EAS is not required for this pass.
+
+Point the app at a **local or staging API**. The default `EXPO_PUBLIC_API_URL` is production (`https://api.mysaloon.uz`). QA scans must not be written there.
+
 ```bash
 cd apps/mobile
-npm run start
-# Android: press `a` or `npx expo start --android`
-# iOS: press `i` or `npx expo start --ios`
+# Windows PowerShell — replace the host with this PC's LAN IP. Android emulator: http://10.0.2.2:8000
+$env:EXPO_PUBLIC_API_URL = "http://192.168.0.10:8000"
+npx expo start
+# Phone: Expo Go (SDK 57) → scan the QR code
+# Android emulator, SDK installed: npx expo start --android
 ```
-Dev client / preview build preferred over Expo Go if native camera modules differ.
+
+If Expo Go rejects the SDK, use a local Android build (`npx expo run:android`). iOS builds need a Mac. Do not publish to Play or the App Store.
+
+Full product rows: `docs/scanner-v2-qa/real-product-qa.md`. Leave them blank until a physical device is used.
 
 ### Test materials
 - Real retail packs: EAN-13, EAN-8, UPC-A (and UPC-E if available)
@@ -46,7 +55,7 @@ Dev client / preview build preferred over Expo Go if native camera modules diffe
 | 6 | Leave page / blur — camera LED off | | | | | |
 | 7 | Mode switch Barcode ↔ Image | | | | | |
 | 8 | Image mode shutter only (barcode mode no shutter) | | | | | |
-| 9 | Gallery: web barcode-first decode; mobile image upload | | | | | |
+| 9 | Gallery: local barcode first (Android ML Kit + JPEG ZXing; iOS native QR only, then ZXing). Server image only if local miss, online, and signed in | | | | | |
 | 10 | Manual barcode entry (valid + invalid checksum) | | | | | |
 | 11 | Duplicate scan dedup (same code rapid fire) | | | | | |
 | 12 | Cancel mid-lookup (no stale navigation) | | | | | |

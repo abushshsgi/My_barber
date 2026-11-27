@@ -24,6 +24,7 @@ backend/secrets/
 _upstream_salon_creator_suite/
 .vercel
 .idea/
+scripts/.certs/
 
 # Production secrets
 .env.bak

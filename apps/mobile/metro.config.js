@@ -51,6 +51,12 @@ config.resolver.resolveRequest = (context, moduleName, platform) => {
       filePath: path.resolve(projectRoot, "src/shims/expo-media-library.web.js"),
     };
   }
+  if (moduleName === "@mybarber/scanner/gallery") {
+    return {
+      type: "sourceFile",
+      filePath: path.resolve(monorepoRoot, "packages/scanner/src/gallery/decodeJpeg.ts"),
+    };
+  }
   if (upstreamResolveRequest) {
     return upstreamResolveRequest(context, moduleName, platform);
   }
