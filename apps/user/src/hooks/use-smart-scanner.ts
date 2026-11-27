@@ -40,6 +40,9 @@ export function useSmartScanner(resultPath: (id: string) => string) {
   const [notFoundScan, setNotFoundScan] = useState<HairScan | null>(null);
   const [cameraOn, setCameraOn] = useState(true);
   const [detectedBarcode, setDetectedBarcode] = useState<string | null>(null);
+  const [offline, setOffline] = useState(() =>
+    typeof navigator !== "undefined" ? navigator.onLine === false : false,
+  );
 
   const clearSuccessTimer = () => {
     if (successTimerRef.current) {
@@ -61,6 +64,28 @@ export function useSmartScanner(resultPath: (id: string) => string) {
       abortRef.current?.abort();
     };
   }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const sync = () => setOffline(navigator.onLine === false);
+    sync();
+    window.addEventListener("online", sync);
+    window.addEventListener("offline", sync);
+    return () => {
+      window.removeEventListener("online", sync);
+      window.removeEventListener("offline", sync);
+    };
+  }, []);
+
+  // Block remote lookup paths when offline (local decode/validate still allowed).
+  const guardOnline = useCallback((): boolean => {
+    if (typeof navigator !== "undefined" && navigator.onLine === false) {
+      setOffline(true);
+      setError(t("scanner.status.offline"));
+      return false;
+    }
+    return true;
+  }, [t]);
 
   const navigateAfterResolve = useCallback(
     async (scan: HairScan, session: number) => {
@@ -130,6 +155,7 @@ export function useSmartScanner(resultPath: (id: string) => string) {
         setError(t("scanner.errors.invalidBarcode"));
         return;
       }
+      if (!guardOnline()) return;
       if (lockRef.current || lookupInFlightRef.current) return;
       const now = Date.now();
       const last = lastBarcodeRef.current;
@@ -147,8 +173,19 @@ export function useSmartScanner(resultPath: (id: string) => string) {
       setPhase("barcode_detected");
 
       successTimerRef.current = setTimeout(() => {
+        // Cancel / remount must ignore this timer — never start a stale lookup.
+        if (session !== sessionRef.current) return;
+        if (typeof navigator !== "undefined" && navigator.onLine === false) {
+          setPhase("error");
+          setError(t("scanner.status.offline"));
+          lockRef.current = false;
+          lookupInFlightRef.current = false;
+          setCameraOn(true);
+          return;
+        }
         setPhase("looking_up");
         void (async () => {
+          if (session !== sessionRef.current) return;
           if (lookupInFlightRef.current) return;
           lookupInFlightRef.current = true;
           try {
@@ -170,7 +207,7 @@ export function useSmartScanner(resultPath: (id: string) => string) {
         })();
       }, SUCCESS_MS);
     },
-    [afterScanCreated, t],
+    [afterScanCreated, guardOnline, t],
   );
 
   const submitManualBarcode = useCallback(
@@ -184,6 +221,7 @@ export function useSmartScanner(resultPath: (id: string) => string) {
         setError(t("scanner.errors.invalidBarcode"));
         return;
       }
+      if (!guardOnline()) return;
       const session = bumpSession();
       lockRef.current = true;
       setDetectedBarcode(checksum.normalized);
@@ -204,12 +242,13 @@ export function useSmartScanner(resultPath: (id: string) => string) {
         setCameraOn(true);
       }
     },
-    [afterScanCreated, t],
+    [afterScanCreated, guardOnline, t],
   );
 
   const captureProductImage = useCallback(
     async (dataUrl: string) => {
       if (lockRef.current) return;
+      if (!guardOnline()) return;
       const session = bumpSession();
       lockRef.current = true;
       setPhase("looking_up");
@@ -225,7 +264,7 @@ export function useSmartScanner(resultPath: (id: string) => string) {
         setCameraOn(true);
       }
     },
-    [afterScanCreated, t],
+    [afterScanCreated, guardOnline, t],
   );
 
   const processGalleryFile = useCallback(
@@ -239,6 +278,7 @@ export function useSmartScanner(resultPath: (id: string) => string) {
           return;
         }
       }
+      if (!guardOnline()) return;
       const session = bumpSession();
       lockRef.current = true;
       setPhase("looking_up");
@@ -257,7 +297,7 @@ export function useSmartScanner(resultPath: (id: string) => string) {
         setCameraOn(true);
       }
     },
-    [afterScanCreated, mode, processBarcode, t],
+    [afterScanCreated, guardOnline, mode, processBarcode, t],
   );
 
   const resetScanner = useCallback(() => {
@@ -273,6 +313,7 @@ export function useSmartScanner(resultPath: (id: string) => string) {
   }, []);
 
   const cancelLookup = useCallback(() => {
+    clearSuccessTimer();
     bumpSession();
     lockRef.current = false;
     lookupInFlightRef.current = false;
@@ -281,7 +322,7 @@ export function useSmartScanner(resultPath: (id: string) => string) {
     setError(null);
   }, []);
 
-  const statusKey = statusI18nKey(phase, mode);
+  const statusKey = offline ? "scanner.status.offline" : statusI18nKey(phase, mode);
   const statusText = statusKey
     ? t(statusKey, {
         defaultValue: "",
@@ -305,6 +346,7 @@ export function useSmartScanner(resultPath: (id: string) => string) {
     cancelLookup,
     statusText,
     statusKey,
+    offline,
     lockRef,
   };
 }

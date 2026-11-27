@@ -67,7 +67,7 @@ export function HairAdvisor2ProductPickPage({ scanId, scanPath, resultPath }: Pr
   if (loading) {
     return (
       <div className="grid min-h-[100dvh] place-items-center bg-white">
-        <Loader2 className="size-7 animate-spin text-[#8B5CF6]" />
+        <Loader2 className="size-7 animate-spin text-[#111111]/40" />
       </div>
     );
   }
@@ -136,7 +136,7 @@ export function HairAdvisor2ProductPickPage({ scanId, scanPath, resultPath }: Pr
               onClick={() => void onPick(p.id)}
               className={cn(
                 "flex w-full gap-4 rounded-[20px] bg-white p-4 text-left shadow-sm ring-1 ring-[#E8E8EB] transition",
-                busyId === p.id && "ring-2 ring-[#8B5CF6]",
+                busyId === p.id && "ring-2 ring-[#111111]",
               )}
             >
               {p.image_url ? (
@@ -157,7 +157,7 @@ export function HairAdvisor2ProductPickPage({ scanId, scanPath, resultPath }: Pr
                   </span>
                 ) : null}
               </div>
-              {busyId === p.id ? <Loader2 className="size-5 animate-spin text-[#8B5CF6]" /> : null}
+              {busyId === p.id ? <Loader2 className="size-5 animate-spin text-[#111111]/50" /> : null}
             </button>
           </li>
         ))}

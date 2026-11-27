@@ -15,7 +15,8 @@
       "aimProduct": "Mahsulotni ramkaga joylashtiring",
       "barcodeDetected": "Shtrixkod aniqlandi",
       "lookingUpProduct": "Mahsulot ma’lumotlari qidirilmoqda",
-      "recognizingProduct": "Mahsulot aniqlanmoqda…"
+      "recognizingProduct": "Mahsulot aniqlanmoqda…",
+      "offline": "Offline — masofaviy qidiruv mavjud emas"
     },
     "errors": {
       "invalidBarcode": "Shtrix-kod formati noto‘g‘ri",

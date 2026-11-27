@@ -15,7 +15,8 @@
       "aimProduct": "Наведите продукт и сделайте снимок",
       "barcodeDetected": "Штрихкод обнаружен",
       "lookingUpProduct": "Поиск информации о продукте",
-      "recognizingProduct": "Распознавание продукта…"
+      "recognizingProduct": "Распознавание продукта…",
+      "offline": "Офлайн — удалённый поиск недоступен"
     },
     "errors": {
       "invalidBarcode": "Неверный формат штрихкода",

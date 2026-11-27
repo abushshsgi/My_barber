@@ -15,7 +15,8 @@
       "aimProduct": "Frame the product and capture",
       "barcodeDetected": "Barcode detected",
       "lookingUpProduct": "Looking up product information",
-      "recognizingProduct": "Recognizing product…"
+      "recognizingProduct": "Recognizing product…",
+      "offline": "Offline — remote lookup unavailable"
     },
     "errors": {
       "invalidBarcode": "Invalid barcode format",

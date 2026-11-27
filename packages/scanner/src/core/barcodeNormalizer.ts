@@ -177,6 +177,16 @@ export function normalizeBarcode(
   if (validDigits.length === 13 && validDigits.startsWith("0")) {
     candidates.push(validDigits.slice(1));
   }
+  // GTIN-14 → also offer stripped EAN-13 / UPC-A forms for provider lookup
+  if (working !== validDigits && validateGtinChecksum(working)) {
+    candidates.push(working);
+    if (working.length === 13 && working.startsWith("0")) {
+      candidates.push(working.slice(1));
+    }
+    if (working.length === 12) {
+      candidates.push(`0${working}`);
+    }
+  }
   if (gtin14) candidates.push(gtin14);
   if (digits !== validDigits) candidates.push(digits);
 

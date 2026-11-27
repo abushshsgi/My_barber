@@ -98,7 +98,9 @@ export function HairAdvisorBarcodeCamera({
     let zxingReader: { reset: () => void } | null = null;
 
     const emitCode = (raw: string) => {
+      // Never auto-navigate QR/URL payloads — only emit when a retail GTIN is valid.
       const parsed = normalizeBarcode(raw);
+      if (!parsed.isValid || parsed.identifierType === "url") return;
       const normalized = parsed.normalizedValue;
       if (!normalized || normalized.length < 8 || lockedRef.current) return;
       if (lastNormalizedRef.current === normalized) {

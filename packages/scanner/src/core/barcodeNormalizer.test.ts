@@ -1,12 +1,29 @@
 import { describe, expect, it } from "vitest";
-import { expandUpcE, validateGtinChecksum } from "./barcodeValidator";
+import { expandUpcE, validateGtinChecksum, computeGtinCheckDigit } from "./barcodeValidator";
 import { normalizeBarcode, normalizeRetailBarcode, validateRetailBarcodeChecksum } from "./barcodeNormalizer";
 import { isDuplicateBarcodeSubmit } from "./scanDeduplicator";
 import { canTransition } from "./scannerStateMachine";
 
+/** Synthetic checksum-valid GTINs for tests only — NOT claimed product identities. */
+const FIXTURES = {
+  ean13: "5901234123457",
+  ean8: "96385074",
+  upcA: "036000291452",
+  /** International prefix samples (identifier shape only). */
+  prefixSamples: {
+    uz_or_intl_478: "4781234567890", // may fail checksum — built below when needed
+    de_400: "4006381333931",
+    jp_jan: "4901234567894",
+  },
+} as const;
+
+function makeValidGtin13(body12: string): string {
+  return `${body12}${computeGtinCheckDigit(body12)}`;
+}
+
 describe("validateGtinChecksum", () => {
   it("accepts valid EAN-13", () => {
-    expect(validateGtinChecksum("5901234123457")).toBe(true);
+    expect(validateGtinChecksum(FIXTURES.ean13)).toBe(true);
   });
 
   it("rejects invalid checksum", () => {
@@ -14,16 +31,19 @@ describe("validateGtinChecksum", () => {
   });
 
   it("accepts valid UPC-A", () => {
-    // 036000291452 — classic UPC-A example
-    expect(validateGtinChecksum("036000291452")).toBe(true);
+    expect(validateGtinChecksum(FIXTURES.upcA)).toBe(true);
   });
 
   it("accepts valid EAN-8", () => {
-    expect(validateGtinChecksum("96385074")).toBe(true);
+    expect(validateGtinChecksum(FIXTURES.ean8)).toBe(true);
+  });
+
+  it("accepts GTIN-14 with leading zeros", () => {
+    expect(validateGtinChecksum("00036000291452")).toBe(true);
   });
 
   it("preserves leading zeros as strings", () => {
-    const n = normalizeBarcode("036000291452");
+    const n = normalizeBarcode(FIXTURES.upcA);
     expect(n.normalizedValue.startsWith("0")).toBe(true);
     expect(typeof n.normalizedValue).toBe("string");
   });
@@ -31,20 +51,26 @@ describe("validateGtinChecksum", () => {
 
 describe("UPC-E expansion", () => {
   it("expands a known UPC-E", () => {
-    // 04252614 → number system 0, mid 425261, check 4
-    // Common fixture: 02345673 expands (verify checksum after expand)
     const expanded = expandUpcE("02345673");
     expect(expanded).not.toBeNull();
     expect(expanded!.length).toBe(12);
     expect(validateGtinChecksum(expanded!)).toBe(true);
   });
+
+  it("normalizeBarcode with upc_e hint returns retail_gtin", () => {
+    const n = normalizeBarcode("02345673", "upc_e");
+    expect(n.isValid).toBe(true);
+    expect(n.format).toBe("upc_e");
+    expect(n.normalizedValue.length).toBe(12);
+    expect(n.lookupCandidates.length).toBeGreaterThan(0);
+  });
 });
 
 describe("normalizeBarcode", () => {
-  it("builds UPC-A / EAN-13 lookup candidates", () => {
-    const n = normalizeBarcode("036000291452", "upc_a");
+  it("builds UPC-A / EAN-13 lookup candidates (equivalence)", () => {
+    const n = normalizeBarcode(FIXTURES.upcA, "upc_a");
     expect(n.isValid).toBe(true);
-    expect(n.lookupCandidates).toContain("036000291452");
+    expect(n.lookupCandidates).toContain(FIXTURES.upcA);
     expect(n.lookupCandidates).toContain("0036000291452");
     expect(n.gtin14).toBe("00036000291452");
   });
@@ -52,11 +78,29 @@ describe("normalizeBarcode", () => {
   it("handles EAN-13 with leading zero as UPC variant", () => {
     const n = normalizeBarcode("0036000291452", "ean_13");
     expect(n.isValid).toBe(true);
-    expect(n.lookupCandidates).toContain("036000291452");
+    expect(n.lookupCandidates).toContain(FIXTURES.upcA);
+  });
+
+  it("normalizes EAN-8", () => {
+    const n = normalizeBarcode(FIXTURES.ean8, "ean_8");
+    expect(n.isValid).toBe(true);
+    expect(n.format).toBe("ean_8");
+    expect(n.gtin14).toBe("00000096385074");
+  });
+
+  it("pads GTIN-14 and strips leading zero for working form", () => {
+    const n = normalizeBarcode("00036000291452", "gtin_14");
+    expect(n.isValid).toBe(true);
+    expect(n.lookupCandidates).toContain(FIXTURES.upcA);
   });
 
   it("marks malformed data invalid", () => {
     const n = normalizeBarcode("123");
+    expect(n.isValid).toBe(false);
+  });
+
+  it("rejects checksum fail", () => {
+    const n = normalizeBarcode("5901234123450");
     expect(n.isValid).toBe(false);
   });
 
@@ -71,6 +115,16 @@ describe("normalizeBarcode", () => {
     expect(n.isValid).toBe(true);
     expect(n.normalizedValue).toContain("36000291452");
   });
+
+  it("accepts international prefix samples only as identifier shapes when checksum-valid", () => {
+    // Build valid EAN-13 bodies with regional-looking prefixes (not product claims).
+    const de = makeValidGtin13("400638133393");
+    const jp = makeValidGtin13("490123456789");
+    expect(validateGtinChecksum(de)).toBe(true);
+    expect(validateGtinChecksum(jp)).toBe(true);
+    expect(normalizeBarcode(de).isValid).toBe(true);
+    expect(normalizeBarcode(jp).isValid).toBe(true);
+  });
 });
 
 describe("legacy helpers", () => {
@@ -80,7 +134,7 @@ describe("legacy helpers", () => {
   });
 
   it("validateRetailBarcodeChecksum matches server rules", () => {
-    expect(validateRetailBarcodeChecksum("5901234123457").valid).toBe(true);
+    expect(validateRetailBarcodeChecksum(FIXTURES.ean13).valid).toBe(true);
     expect(validateRetailBarcodeChecksum("5901234123450").valid).toBe(false);
   });
 });

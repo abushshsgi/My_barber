@@ -37,10 +37,13 @@ export type HairScan = {
   search_query?: string;
   message_uz?: string;
   recognition_meta?: {
-    recognition_status?: "none" | "exact" | "ambiguous";
+    recognition_status?: "none" | "exact" | "ambiguous" | string;
     candidate_ids?: number[];
     ocr_brand?: string;
     ocr_product_name?: string;
+    scan_method?: string;
+    barcode_lookup_result?: string;
+    [key: string]: unknown;
   };
   product_candidates?: Array<{
     id: number;
@@ -101,6 +104,7 @@ export async function createHairScan(body: {
   barcode?: string;
   search_query?: string;
   image?: string;
+  idempotency_key?: string;
 }): Promise<HairScan> {
   return postJson("/api/v1/hair-advisor/scans/", body);
 }

@@ -202,6 +202,43 @@ export function HairAdvisor2ResultPage({ scanId, inciListPath, scanPath }: Props
             </button>
           ) : null}
         </section>
+
+        {fitState === "insufficient_information" || !ingredients.length ? (
+          <section className="rounded-[20px] bg-[#FFF7E8] p-4 ring-1 ring-[#F3E0B8]">
+            <p className="text-[16px] font-semibold text-[#92400E]">Yetishmayotgan ma’lumot</p>
+            <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-[#92400E]/90">
+              {!profileQ.data?.complete ? <li>Soch profili to‘liq emas</li> : null}
+              {!ingredients.length ? <li>INCI / ingredient ro‘yxati yo‘q</li> : null}
+              {!analysis ? <li>Advisor tahlili hali mavjud emas</li> : null}
+              {fitState === "insufficient_information" && analysis ? (
+                <li>Moslikni aniq baholash uchun ma’lumot yetarli emas</li>
+              ) : null}
+            </ul>
+          </section>
+        ) : null}
+
+        <section className="rounded-[20px] bg-[#F7F7F8] p-4 ring-1 ring-[#E8E8EB]">
+          <p className="text-[16px] font-semibold">Manbalar</p>
+          <ul className="mt-2 space-y-1 text-sm text-[#52525B]">
+            <li>
+              Katalog:{" "}
+              {product?.is_verified || payload.catalog_tier === "verified"
+                ? "Tasdiqlangan MySaloon katalogi"
+                : payload.catalog_tier
+                  ? String(payload.catalog_tier)
+                  : "Noma’lum / tasdiqlanmagan"}
+            </li>
+            {payload.recognition_meta?.scan_method ? (
+              <li>Skan usuli: {String(payload.recognition_meta.scan_method)}</li>
+            ) : null}
+            {payload.recognition_meta?.barcode_lookup_result ? (
+              <li>Barcode natija: {String(payload.recognition_meta.barcode_lookup_result)}</li>
+            ) : null}
+            <li className="text-xs text-[#71717A]">
+              Tahlil mavjud Advisor pipeline orqali; foizli “match score” ishlatilmaydi.
+            </li>
+          </ul>
+        </section>
       </main>
 
       <div

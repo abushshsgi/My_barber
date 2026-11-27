@@ -28,6 +28,7 @@ import { pickProductLabelFromGallery } from "../../../lib/product-label";
 import { playBarcodeBeep, primeBarcodeBeep } from "../../../lib/barcode-beep";
 import { toDataUrl } from "../../../lib/selfie";
 import { resolveScanToAnalysis } from "../../../lib/hair-advisor-2/scan-flow";
+import { isOnline, subscribeNetwork } from "../../../lib/network-status";
 import type { MorphIngredientStackParamList } from "../../../navigation/MorphIngredientStack";
 import { morphFont } from "../../../theme/morph-font";
 import { fontSize, moderateScale, scale, verticalScale } from "../../../utils/responsive";
@@ -43,6 +44,7 @@ export function HairAdvisor2ScanScreen({ navigation }: Props) {
   const focused = useIsFocused();
   const [camPerm, requestCamPerm] = useCameraPermissions();
   const barcodeLock = useRef(false);
+  const sessionRef = useRef(0);
   const lastBarcodeRef = useRef<{ code: string; at: number } | null>(null);
   const scanLine = useRef(new Animated.Value(0)).current;
   const [busy, setBusy] = useState(false);
@@ -55,11 +57,14 @@ export function HairAdvisor2ScanScreen({ navigation }: Props) {
   const [manualOpen, setManualOpen] = useState(false);
   const [manualCode, setManualCode] = useState("");
   const [history, setHistory] = useState<HairScan[]>([]);
+  const [offline, setOffline] = useState(() => !isOnline());
   const cameraRef = useRef<CameraView>(null);
 
   useEffect(() => {
     void primeBarcodeBeep();
   }, []);
+
+  useEffect(() => subscribeNetwork((online) => setOffline(!online)), []);
 
   useEffect(() => {
     if (!focused || !camPerm?.granted) return;
@@ -93,15 +98,25 @@ export function HairAdvisor2ScanScreen({ navigation }: Props) {
 
   useEffect(() => {
     if (busy) return;
+    if (offline) {
+      setStatus(t("scanner.status.offline", { defaultValue: "Offline — remote lookup unavailable" }));
+      return;
+    }
     setStatus(
       mode === "product_image"
         ? t("scanner.status.aimProduct", { defaultValue: "Mahsulotni ramkaga joylashtiring" })
         : t("scanner.status.autoScanActive", { defaultValue: "Avtomatik skanerlash faol" }),
     );
-  }, [busy, mode, t]);
+  }, [busy, mode, offline, t]);
+
+  const bumpSession = () => {
+    sessionRef.current += 1;
+    return sessionRef.current;
+  };
 
   const afterScan = useCallback(
-    async (scan: HairScan) => {
+    async (scan: HairScan, session: number) => {
+      if (session !== sessionRef.current) return;
       if (scan.status === "failed") {
         setError(scan.error_message || t("scanner.errors.scanFailed", { defaultValue: "Skan muvaffaqiyatsiz" }));
         barcodeLock.current = false;
@@ -115,6 +130,7 @@ export function HairAdvisor2ScanScreen({ navigation }: Props) {
         return;
       }
       const resolved = await resolveScanToAnalysis(scan);
+      if (session !== sessionRef.current) return;
       if ("needIngredients" in resolved) {
         navigation.navigate("HairAdvisorRecover", { scanId: scan.id });
         barcodeLock.current = false;
@@ -135,11 +151,17 @@ export function HairAdvisor2ScanScreen({ navigation }: Props) {
         setError(t("scanner.errors.invalidBarcode", { defaultValue: "Shtrix-kod formati noto‘g‘ri" }));
         return;
       }
+      if (!isOnline()) {
+        setOffline(true);
+        setError(t("scanner.status.offline", { defaultValue: "Offline — remote lookup unavailable" }));
+        return;
+      }
       if (barcodeLock.current || busy) return;
       const now = Date.now();
       const last = lastBarcodeRef.current;
       if (last && isDuplicateBarcodeSubmit(checksum.normalized, last.code, last.at, now)) return;
 
+      const session = bumpSession();
       barcodeLock.current = true;
       lastBarcodeRef.current = { code: checksum.normalized, at: now };
       setDetectedCode(checksum.normalized);
@@ -154,8 +176,10 @@ export function HairAdvisor2ScanScreen({ navigation }: Props) {
           barcode: checksum.normalized,
           idempotency_key: `ha2-${checksum.normalized}`,
         });
-        await afterScan(scan);
+        if (session !== sessionRef.current) return;
+        await afterScan(scan, session);
       } catch {
+        if (session !== sessionRef.current) return;
         setError(t("scanner.errors.network", { defaultValue: "Internet aloqasini tekshiring" }));
         barcodeLock.current = false;
         setBusy(false);
@@ -174,8 +198,14 @@ export function HairAdvisor2ScanScreen({ navigation }: Props) {
       setError(t("scanner.errors.invalidBarcode", { defaultValue: "Shtrix-kod formati noto‘g‘ri" }));
       return;
     }
+    if (!isOnline()) {
+      setOffline(true);
+      setError(t("scanner.status.offline", { defaultValue: "Offline — remote lookup unavailable" }));
+      return;
+    }
     setManualOpen(false);
     setManualCode("");
+    const session = bumpSession();
     barcodeLock.current = true;
     setBusy(true);
     setDetectedCode(checksum.normalized);
@@ -186,8 +216,10 @@ export function HairAdvisor2ScanScreen({ navigation }: Props) {
         barcode: checksum.normalized,
         idempotency_key: `ha2-manual-${checksum.normalized}`,
       });
-      await afterScan(scan);
+      if (session !== sessionRef.current) return;
+      await afterScan(scan, session);
     } catch {
+      if (session !== sessionRef.current) return;
       setError(t("scanner.errors.network", { defaultValue: "Internet aloqasini tekshiring" }));
       barcodeLock.current = false;
       setBusy(false);
@@ -197,6 +229,12 @@ export function HairAdvisor2ScanScreen({ navigation }: Props) {
   const onGallery = useCallback(async () => {
     const uri = await pickProductLabelFromGallery();
     if (!uri) return;
+    if (!isOnline()) {
+      setOffline(true);
+      setError(t("scanner.status.offline", { defaultValue: "Offline — remote lookup unavailable" }));
+      return;
+    }
+    const session = bumpSession();
     setBusy(true);
     setError(null);
     setStatus(t("scanner.status.recognizingProduct", { defaultValue: "Mahsulot aniqlanmoqda…" }));
@@ -207,8 +245,10 @@ export function HairAdvisor2ScanScreen({ navigation }: Props) {
         input_method: mode === "barcode" ? "gallery" : "camera_label",
         image: dataUrl,
       });
-      await afterScan(scan);
+      if (session !== sessionRef.current) return;
+      await afterScan(scan, session);
     } catch {
+      if (session !== sessionRef.current) return;
       setError(t("scanner.errors.imageFailed", { defaultValue: "Rasm o'qilmadi" }));
       setBusy(false);
     }
@@ -216,17 +256,24 @@ export function HairAdvisor2ScanScreen({ navigation }: Props) {
 
   const onCapture = useCallback(async () => {
     if (mode !== "product_image" || busy) return;
+    if (!isOnline()) {
+      setOffline(true);
+      setError(t("scanner.status.offline", { defaultValue: "Offline — remote lookup unavailable" }));
+      return;
+    }
     try {
       const photo = await cameraRef.current?.takePictureAsync({ quality: 0.7, base64: true });
       if (!photo?.base64) {
         setError(t("scanner.errors.imageFailed", { defaultValue: "Rasm o'qilmadi" }));
         return;
       }
+      const session = bumpSession();
       const dataUrl = `data:image/jpeg;base64,${photo.base64}`;
       setBusy(true);
       setError(null);
       const scan = await createHairScan({ input_method: "camera_label", image: dataUrl });
-      await afterScan(scan);
+      if (session !== sessionRef.current) return;
+      await afterScan(scan, session);
     } catch {
       setError(t("scanner.errors.imageFailed", { defaultValue: "Rasm o'qilmadi" }));
       setBusy(false);
@@ -322,6 +369,7 @@ export function HairAdvisor2ScanScreen({ navigation }: Props) {
             {detectedCode ? <Text style={styles.code}>{detectedCode}</Text> : null}
             <Pressable
               onPress={() => {
+                bumpSession();
                 barcodeLock.current = false;
                 setBusy(false);
                 setError(null);
@@ -333,6 +381,11 @@ export function HairAdvisor2ScanScreen({ navigation }: Props) {
         ) : null}
       </View>
 
+      {offline && !busy ? (
+        <Text style={styles.error} accessibilityRole="alert">
+          {t("scanner.status.offline", { defaultValue: "Offline — remote lookup unavailable" })}
+        </Text>
+      ) : null}
       {status && !busy ? <Text style={styles.status}>{status}</Text> : null}
       {error ? <Text style={styles.error}>{error}</Text> : null}
 

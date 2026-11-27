@@ -47,6 +47,7 @@ export function HairAdvisor2ScanPage({ resultPath }: Props) {
     resetScanner,
     cancelLookup,
     statusText,
+    offline,
     lockRef,
   } = scanner;
 
@@ -175,6 +176,11 @@ export function HairAdvisor2ScanPage({ resultPath }: Props) {
               />
             </div>
           </div>
+          {offline ? (
+            <p className="mt-3 px-5 text-center text-sm font-medium text-[#FCD34D]" role="status">
+              {t("scanner.status.offline")}
+            </p>
+          ) : null}
           {error ? (
             <p className="mt-3 px-5 text-center text-sm font-medium text-[#FCA5A5]" role="alert">
               {error}

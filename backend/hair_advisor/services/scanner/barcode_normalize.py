@@ -188,6 +188,13 @@ def normalize_barcode(raw_value: str, format_hint: str | None = None) -> dict[st
         candidates.append(f"0{valid_digits}")
     if len(valid_digits) == 13 and valid_digits.startswith("0"):
         candidates.append(valid_digits[1:])
+    # GTIN-14 → also offer stripped EAN-13 / UPC-A forms for provider lookup
+    if working != valid_digits and validate_gtin_checksum(working):
+        candidates.append(working)
+        if len(working) == 13 and working.startswith("0"):
+            candidates.append(working[1:])
+        if len(working) == 12:
+            candidates.append(f"0{working}")
     if gtin14:
         candidates.append(gtin14)
 
