@@ -1,0 +1,15 @@
+{
+  "route": "article-qa",
+  "url": "http://127.0.0.1:3002/guides/qa-lighthouse-article",
+  "formFactor": "mobile",
+  "runs": 3,
+  "performance": 53,
+  "accessibility": 100,
+  "bestPractices": 96,
+  "seo": 100,
+  "lcpMs": 9929.237999999994,
+  "cls": 0.06804374240583232,
+  "fcpMs": 6700.619,
+  "siMs": 6700.619,
+  "tbtMs": 243.00000000000182
+}

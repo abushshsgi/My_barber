@@ -20,6 +20,10 @@ try:
 except ImportError:
     pass
 
+# Isolated SQLite QA (port 8001): never touch production Redis from backend/.env.
+if os.environ.get("MYSALOON_QA_ISOLATED") == "1":
+    os.environ["REDIS_URL"] = ""
+
 SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", get_random_secret_key())
 
 # HS256 uchun barqaror uzun kalit (qisqa DJANGO_SECRET_KEY ham RFC 7518 / PyJWT talabiga mos).
@@ -485,6 +489,20 @@ else:
         "default": {
             "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
             "LOCATION": "mysaloon-default",
+            "TIMEOUT": 8,
+        }
+    }
+
+if os.environ.get("MYSALOON_QA_ISOLATED") == "1":
+    CHANNEL_LAYERS = {
+        "default": {
+            "BACKEND": "channels.layers.InMemoryChannelLayer",
+        },
+    }
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+            "LOCATION": "mysaloon-isolated-qa",
             "TIMEOUT": 8,
         }
     }

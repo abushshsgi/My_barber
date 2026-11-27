@@ -5,24 +5,14 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { expect, test } from "@playwright/test";
+import { obtainIsolatedTokens, seedIsolatedAuth } from "./helpers/isolated-auth";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const SHOT_DIR = path.resolve(__dirname, "../../../docs/mysaloon-v3-qa/screenshots/polish");
 
-const E2E_ACCESS =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjk5OTk5OTk5OTl9.e2e-mock";
-const E2E_REFRESH =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjk5OTk5OTk5OTl9.e2e-mock-refresh";
-
-function seedAuth(page: import("@playwright/test").Page) {
-  return page.addInitScript(
-    ({ access, refresh }) => {
-      localStorage.setItem("mybarber_user_access", access);
-      localStorage.setItem("mybarber_user_refresh", refresh);
-      localStorage.setItem("mysaloon.auth.user", JSON.stringify({ id: 1, phone: "900000001" }));
-    },
-    { access: E2E_ACCESS, refresh: E2E_REFRESH },
-  );
+async function seedAuth(page: import("@playwright/test").Page, request: import("@playwright/test").APIRequestContext) {
+  const tokens = await obtainIsolatedTokens(request);
+  await seedIsolatedAuth(page, tokens);
 }
 
 async function shot(page: import("@playwright/test").Page, name: string) {
@@ -30,12 +20,12 @@ async function shot(page: import("@playwright/test").Page, name: string) {
 }
 
 test.describe("V3 polish after screenshots", () => {
-  test("scanner permission denied (simulated — no camera grant)", async ({ browser }) => {
+  test("scanner permission denied (simulated — no camera grant)", async ({ browser, request }) => {
     const context = await browser.newContext({
       viewport: { width: 390, height: 844 },
     });
     const page = await context.newPage();
-    await seedAuth(page);
+    await seedAuth(page, request);
     await page.goto("/ai-style/care/ingredient", { waitUntil: "networkidle" });
     const body = await page.locator("body").innerText();
     expect(body).not.toMatch(/Avtomatik skanerlash faol/i);
@@ -43,11 +33,8 @@ test.describe("V3 polish after screenshots", () => {
     await context.close();
   });
 
-  test("scan history empty state", async ({ page }) => {
-    await seedAuth(page);
-    await page.route("**/api/v1/hair-advisor/history/**", async (route) => {
-      await route.fulfill({ status: 200, contentType: "application/json", body: "[]" });
-    });
+  test("scan history empty state", async ({ page, request }) => {
+    await seedAuth(page, request);
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto("/ai-style/care/ingredient", { waitUntil: "networkidle" });
     await page.getByRole("button", { name: /Tarix|History|История/i }).click();
@@ -55,6 +42,13 @@ test.describe("V3 polish after screenshots", () => {
       timeout: 15_000,
     });
     await shot(page, "after-history-empty.png");
+  });
+
+  test("article qa fixture desktop", async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await page.goto("/guides/qa-lighthouse-article", { waitUntil: "networkidle" });
+    await expect(page.getByRole("heading", { level: 1 })).toBeVisible({ timeout: 15_000 });
+    await shot(page, "after-article-qa-desktop.png");
   });
 
   test("advisor demo mobile and desktop", async ({ page }) => {
@@ -67,8 +61,8 @@ test.describe("V3 polish after screenshots", () => {
     await shot(page, "after-advisor-desktop.png");
   });
 
-  test("morf gallery icon", async ({ page }) => {
-    await seedAuth(page);
+  test("morf gallery icon", async ({ page, request }) => {
+    await seedAuth(page, request);
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto("/ai-style", { waitUntil: "networkidle" });
     await expect(page.getByRole("button", { name: /Galereyadan|gallery|Галере/i }).first()).toBeVisible({
@@ -125,10 +119,10 @@ test.describe("V3 polish after screenshots", () => {
 });
 
 test.describe("Scanner regression (simulated)", () => {
-  test("denied state hides active scanning copy", async ({ browser }) => {
+  test("denied state hides active scanning copy", async ({ browser, request }) => {
     const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
     const page = await context.newPage();
-    await seedAuth(page);
+    await seedAuth(page, request);
     await page.goto("/ai-style/care/ingredient");
     await expect(page.getByText(/Avtomatik skanerlash faol|Automatic scanning active/i)).toHaveCount(0);
     await context.close();

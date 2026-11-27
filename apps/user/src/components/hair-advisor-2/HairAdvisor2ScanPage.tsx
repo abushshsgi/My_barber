@@ -1,9 +1,13 @@
 import { useRouter } from "@tanstack/react-router";
 import { ChevronLeft, History, ImageIcon, Keyboard, Loader2, Zap, ZapOff } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
-import { HairAdvisorBarcodeCamera } from "@/components/ai-style/HairAdvisorBarcodeCamera";
+const HairAdvisorBarcodeCamera = lazy(() =>
+  import("@/components/ai-style/HairAdvisorBarcodeCamera").then((m) => ({
+    default: m.HairAdvisorBarcodeCamera,
+  })),
+);
 import { HairAdvisor2NotFoundPanel } from "@/components/hair-advisor-2/HairAdvisor2NotFoundPanel";
 import { HairAdvisorScannerOverlay } from "@/components/hair-advisor-2/HairAdvisorScannerOverlay";
 import { HA_SCANNER } from "@/components/hair-advisor-2/hair-advisor-scanner-theme";
@@ -130,7 +134,8 @@ export function HairAdvisor2ScanPage({ resultPath }: Props) {
   useEffect(() => {
     if (typeof window === "undefined") return;
     const params = new URLSearchParams(window.location.search);
-    if (params.get("history") === "1") {
+    const historyFlag = params.get("history")?.replace(/"/g, "").trim();
+    if (historyFlag === "1") {
       void openHistory();
     }
   }, [openHistory]);
@@ -167,44 +172,46 @@ export function HairAdvisor2ScanPage({ resultPath }: Props) {
               }}
             />
           ) : (
-            <HairAdvisorBarcodeCamera
-              active={cameraOn && !lookingUp && phase !== "barcode_detected"}
-              embedded
-              fullScreen
-              torch={torch}
-              stableReadCount={3}
-              enableDecode={mode === "barcode"}
-              onVideoElement={(v) => {
-                videoRef.current = v;
-              }}
-              onDetected={(code) => void processBarcode(code)}
-              onClose={() => {
-                setCameraOn(false);
-                setCameraBlocked(true);
-                setCameraStreamReady(false);
-                if (cameraGate !== "unavailable") setCameraGate("permission_denied");
-              }}
-              onCameraLifecycle={(state) => {
-                if (state === "ready") {
-                  setCameraGate("ready");
-                  setCameraStreamReady(true);
-                  setCameraBlocked(false);
-                } else if (state === "requesting") {
-                  setCameraGate("initializing");
-                  setCameraStreamReady(false);
-                } else if (state === "denied") {
-                  setCameraGate("permission_denied");
-                  setCameraStreamReady(false);
-                  setCameraBlocked(true);
+            <Suspense fallback={null}>
+              <HairAdvisorBarcodeCamera
+                active={cameraOn && !lookingUp && phase !== "barcode_detected"}
+                embedded
+                fullScreen
+                torch={torch}
+                stableReadCount={3}
+                enableDecode={mode === "barcode"}
+                onVideoElement={(v) => {
+                  videoRef.current = v;
+                }}
+                onDetected={(code) => void processBarcode(code)}
+                onClose={() => {
                   setCameraOn(false);
-                } else {
-                  setCameraGate("camera_unavailable");
-                  setCameraStreamReady(false);
                   setCameraBlocked(true);
-                  setCameraOn(false);
-                }
-              }}
-            />
+                  setCameraStreamReady(false);
+                  if (cameraGate !== "unavailable") setCameraGate("permission_denied");
+                }}
+                onCameraLifecycle={(state) => {
+                  if (state === "ready") {
+                    setCameraGate("ready");
+                    setCameraStreamReady(true);
+                    setCameraBlocked(false);
+                  } else if (state === "requesting") {
+                    setCameraGate("initializing");
+                    setCameraStreamReady(false);
+                  } else if (state === "denied") {
+                    setCameraGate("permission_denied");
+                    setCameraStreamReady(false);
+                    setCameraBlocked(true);
+                    setCameraOn(false);
+                  } else {
+                    setCameraGate("camera_unavailable");
+                    setCameraStreamReady(false);
+                    setCameraBlocked(true);
+                    setCameraOn(false);
+                  }
+                }}
+              />
+            </Suspense>
           )}
           <HairAdvisorScannerOverlay
             phase={displayPhase}

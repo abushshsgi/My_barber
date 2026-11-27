@@ -1,0 +1,15 @@
+{
+  "route": "morf-scanner-landing",
+  "url": "http://127.0.0.1:3002/morf-ai/ingredient-scanner",
+  "formFactor": "mobile",
+  "runs": 2,
+  "performance": 76.5,
+  "accessibility": 100,
+  "bestPractices": 96,
+  "seo": 100,
+  "lcpMs": 3702.6907,
+  "cls": 0.06807571211691707,
+  "fcpMs": 3702.6907,
+  "siMs": 3702.6907,
+  "tbtMs": 218
+}

@@ -1,0 +1,15 @@
+{
+  "route": "home",
+  "url": "http://127.0.0.1:3002/",
+  "formFactor": "mobile",
+  "runs": 3,
+  "performance": 43,
+  "accessibility": 100,
+  "bestPractices": 96,
+  "seo": 100,
+  "lcpMs": 13145.089800000005,
+  "cls": 0.06804374240583232,
+  "fcpMs": 6774.8387,
+  "siMs": 6774.8387,
+  "tbtMs": 577
+}

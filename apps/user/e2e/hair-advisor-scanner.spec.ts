@@ -1,22 +1,11 @@
 import { test, expect } from "@playwright/test";
+import {
+  obtainIsolatedTokens,
+  seedIsolatedAuth,
+  verifyHistoryApiAccess,
+} from "./helpers/isolated-auth";
 
-const E2E_ACCESS =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjk5OTk5OTk5OTl9.e2e-mock";
-const E2E_REFRESH =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjk5OTk5OTk5OTl9.e2e-mock-refresh";
-
-function seedAuth(page: import("@playwright/test").Page) {
-  return page.addInitScript(
-    ({ access, refresh }) => {
-      localStorage.setItem("mybarber_user_access", access);
-      localStorage.setItem("mybarber_user_refresh", refresh);
-      localStorage.setItem("mysaloon.auth.user", JSON.stringify({ id: 1, phone: "900000001" }));
-    },
-    { access: E2E_ACCESS, refresh: E2E_REFRESH },
-  );
-}
-
-test.describe("Universal Smart Scanner (mocked)", () => {
+test.describe("Universal Smart Scanner (isolated auth)", () => {
   test("demo result UI renders without login", async ({ page }) => {
     await page.goto("/ai-style/care/ingredient/result/demo", { waitUntil: "domcontentloaded" });
     await expect(page.getByText("Deep Cleanse Shampoo")).toBeVisible({ timeout: 15_000 });
@@ -24,8 +13,9 @@ test.describe("Universal Smart Scanner (mocked)", () => {
     await expect(page.getByRole("link", { name: /Morf AI/i }).first()).toBeVisible();
   });
 
-  test("scanner route loads authenticated with Smart Scanner chrome", async ({ page }) => {
-    await seedAuth(page);
+  test("scanner route loads authenticated with Smart Scanner chrome", async ({ page, request }) => {
+    const tokens = await obtainIsolatedTokens(request);
+    await seedIsolatedAuth(page, tokens);
     await page.goto("/ai-style/care/ingredient", { waitUntil: "domcontentloaded" });
     await expect(page).toHaveURL(/\/ai-style\/care\/ingredient/);
     await expect(page.getByRole("heading", { name: /Smart Scanner/i })).toBeVisible({
@@ -33,14 +23,46 @@ test.describe("Universal Smart Scanner (mocked)", () => {
     });
   });
 
-  test("mode selector exposes Barcode and Image options", async ({ page }) => {
-    await seedAuth(page);
+  test("mode selector exposes Barcode and Image options", async ({ page, request }) => {
+    const tokens = await obtainIsolatedTokens(request);
+    await seedIsolatedAuth(page, tokens);
     await page.goto("/ai-style/care/ingredient", { waitUntil: "domcontentloaded" });
     await expect(page.getByRole("button", { name: /Barcode|Shtrix/i }).first()).toBeVisible({
       timeout: 15_000,
     });
     await expect(page.getByRole("button", { name: /Image|Rasm|Фото/i }).first()).toBeVisible();
   });
+
+  test("history API empty with real JWT", async ({ request }) => {
+    const tokens = await obtainIsolatedTokens(request);
+    const hist = await verifyHistoryApiAccess(request, tokens);
+    expect(hist.status).toBe(200);
+    expect(hist.count).toBe(0);
+  });
+
+  test("history empty state with real API session", async ({ page, request }) => {
+    const tokens = await obtainIsolatedTokens(request);
+    await seedIsolatedAuth(page, tokens);
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto("/ai-style/care/ingredient", { waitUntil: "domcontentloaded" });
+    await page.getByRole("button", { name: /Tarix|History|История/i }).click();
+    await expect(
+      page.getByText(/Hali mahsulot skanerlanmagan|No products scanned yet|нет отсканированных/i),
+    ).toBeVisible({ timeout: 15_000 });
+  });
+
+  test("advisor demo links to scan page with history search", async ({ page, request }) => {
+    const tokens = await obtainIsolatedTokens(request);
+    await seedIsolatedAuth(page, tokens);
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto("/ai-style/care/ingredient/result/demo", { waitUntil: "domcontentloaded" });
+    const historyLink = page.getByRole("link", {
+      name: /Skanerlash tarixi|Scan history|История сканов/i,
+    });
+    await expect(historyLink).toBeVisible();
+    const href = await historyLink.getAttribute("href");
+    expect(href ?? "").toMatch(/history=/);
+  });
 });
 
-/** Mocked camera/API only — does not validate real-device barcode or OCR accuracy. */
+/** Does not validate real-device barcode, OCR, or camera hardware. */

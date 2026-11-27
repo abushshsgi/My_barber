@@ -1,0 +1,15 @@
+{
+  "route": "explore",
+  "url": "http://127.0.0.1:3002/explore",
+  "formFactor": "mobile",
+  "runs": 3,
+  "performance": 59,
+  "accessibility": 100,
+  "bestPractices": 96,
+  "seo": 100,
+  "lcpMs": 6713.0529,
+  "cls": 0,
+  "fcpMs": 6713.0529,
+  "siMs": 6713.0529,
+  "tbtMs": 139.5
+}

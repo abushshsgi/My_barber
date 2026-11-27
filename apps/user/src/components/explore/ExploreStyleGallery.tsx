@@ -121,6 +121,13 @@ export function ExploreStyleGallery({
             }
             width={768}
             height={1024}
+            sizes={
+              isGridCard
+                ? "(max-width: 640px) 48vw, (max-width: 1280px) 32vw, 280px"
+                : isMobileHero
+                  ? "(max-width: 480px) 92vw, 420px"
+                  : undefined
+            }
             loading={priority ? "eager" : "lazy"}
             decoding="async"
             fetchPriority={priority ? "high" : "auto"}

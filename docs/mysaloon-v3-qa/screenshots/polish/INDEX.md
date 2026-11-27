@@ -5,7 +5,7 @@ Captured: 2026-11-27 (Playwright + review archive). Viewports align with the ver
 | Issue | Before | After | Viewport | Status |
 | --- | --- | --- | --- | --- |
 | Scanner permission denied | [before-scanner-permission.png](./before-scanner-permission.png) | [after-scanner-permission-denied.png](./after-scanner-permission-denied.png) | 390px (simulated, no camera grant) | FIXED AND VERIFIED (simulated) |
-| Scan history empty | [before-history-empty.png](./before-history-empty.png) | *pending* — mock JWT does not pass API auth on scanner route | 390px | FIXED BUT UNVERIFIED |
+| Scan history empty | [before-history-empty.png](./before-history-empty.png) | [after-history-empty.png](./after-history-empty.png) | 390px | FIXED AND VERIFIED (isolated JWT on :8001 / prod :3002) |
 | Advisor mobile | [before-advisor-mobile.png](./before-advisor-mobile.png) | [after-advisor-mobile.png](./after-advisor-mobile.png) | 390px | FIXED AND VERIFIED |
 | Advisor desktop | — | [after-advisor-desktop.png](./after-advisor-desktop.png) | 1280px | FIXED AND VERIFIED |
 | Morf gallery icon | [before-morf-gallery.png](./before-morf-gallery.png) | [after-morf-gallery.png](./after-morf-gallery.png) | 390px | FIXED AND VERIFIED |

@@ -10,7 +10,8 @@ import {
   supportsBarcodeDetector,
 } from "@/lib/barcode-camera";
 import { currentLang } from "@/i18n/config";
-import { normalizeBarcode, retailBarcodeHints } from "@/lib/hair-advisor-barcode-decode";
+import { normalizeBarcode } from "@/lib/hair-advisor-barcode-normalize";
+import { retailBarcodeHints } from "@/lib/hair-advisor-barcode-decode";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -138,7 +139,7 @@ export function HairAdvisorBarcodeCamera({
     const startZxingLoop = async () => {
       try {
         const { BrowserMultiFormatReader } = await import("@zxing/browser");
-        const reader = new BrowserMultiFormatReader(retailBarcodeHints());
+        const reader = new BrowserMultiFormatReader(await retailBarcodeHints());
         zxingReader = reader;
         const video = videoRef.current;
         if (!video || stopped) {

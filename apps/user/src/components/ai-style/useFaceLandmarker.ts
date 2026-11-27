@@ -1,4 +1,4 @@
-import { FaceLandmarker, FilesetResolver } from "@mediapipe/tasks-vision";
+import type { FaceLandmarker } from "@mediapipe/tasks-vision";
 import { useEffect, useRef, useState } from "react";
 import { metricsFromLandmarks, type FaceFrameMetrics } from "@/components/ai-style/face-scan-utils";
 
@@ -6,19 +6,21 @@ const MODEL =
   "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task";
 const WASM = "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm";
 
-let visionPromise: ReturnType<typeof FilesetResolver.forVisionTasks> | null = null;
+let visionPromise: Promise<Awaited<ReturnType<typeof import("@mediapipe/tasks-vision")>>> | null =
+  null;
 let videoLandmarkerPromise: Promise<FaceLandmarker> | null = null;
 let imageLandmarkerPromise: Promise<FaceLandmarker> | null = null;
 
-function loadVision() {
+function loadVisionModule() {
   if (!visionPromise) {
-    visionPromise = FilesetResolver.forVisionTasks(WASM);
+    visionPromise = import("@mediapipe/tasks-vision");
   }
   return visionPromise;
 }
 
 async function createLandmarker(delegate: "GPU" | "CPU", runningMode: "VIDEO" | "IMAGE") {
-  const vision = await loadVision();
+  const { FaceLandmarker, FilesetResolver } = await loadVisionModule();
+  const vision = await FilesetResolver.forVisionTasks(WASM);
   return FaceLandmarker.createFromOptions(vision, {
     baseOptions: { modelAssetPath: MODEL, delegate },
     runningMode,

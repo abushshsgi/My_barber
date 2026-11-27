@@ -1,0 +1,15 @@
+{
+  "route": "scanner-auth",
+  "url": "http://127.0.0.1:3002/ai-style/care/ingredient",
+  "formFactor": "mobile",
+  "runs": 2,
+  "performance": 68,
+  "accessibility": 98,
+  "bestPractices": 96,
+  "seo": 100,
+  "lcpMs": 10410.934149999997,
+  "cls": 0.06804374240583232,
+  "fcpMs": 2407.21295,
+  "siMs": 2407.21295,
+  "tbtMs": 185.2499999999991
+}

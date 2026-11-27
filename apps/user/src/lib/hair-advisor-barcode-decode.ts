@@ -1,15 +1,21 @@
-import { BarcodeFormat, DecodeHintType } from "@zxing/library";
 import {
+  HA_BARCODE_MIN_DIGITS,
   normalizeBarcode,
   normalizeRetailBarcode,
   validateRetailBarcodeChecksum,
-} from "@mybarber/scanner";
+} from "@/lib/hair-advisor-barcode-normalize";
 
-export { normalizeBarcode, normalizeRetailBarcode, validateRetailBarcodeChecksum };
-export const HA_BARCODE_MIN_DIGITS = 8;
+export {
+  HA_BARCODE_MIN_DIGITS,
+  normalizeBarcode,
+  normalizeRetailBarcode,
+  validateRetailBarcodeChecksum,
+} from "@/lib/hair-advisor-barcode-normalize";
 
-export function retailBarcodeHints(): Map<DecodeHintType, unknown> {
-  return new Map<DecodeHintType, unknown>([
+/** ZXing faqat skaner yo‘lida yuklanadi. */
+export async function retailBarcodeHints(): Promise<Map<import("@zxing/library").DecodeHintType, unknown>> {
+  const { BarcodeFormat, DecodeHintType } = await import("@zxing/library");
+  return new Map<import("@zxing/library").DecodeHintType, unknown>([
     [
       DecodeHintType.POSSIBLE_FORMATS,
       [BarcodeFormat.EAN_13, BarcodeFormat.EAN_8, BarcodeFormat.UPC_A, BarcodeFormat.UPC_E],
@@ -28,7 +34,7 @@ export async function decodeRetailBarcodeFromImage(
 ): Promise<DecodeFromImageResult> {
   try {
     const { BrowserMultiFormatReader } = await import("@zxing/browser");
-    const reader = new BrowserMultiFormatReader(retailBarcodeHints());
+    const reader = new BrowserMultiFormatReader(await retailBarcodeHints());
 
     let dataUrl: string;
     if (typeof source === "string") {
