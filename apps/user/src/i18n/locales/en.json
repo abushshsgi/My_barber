@@ -32,6 +32,12 @@
     "torch": "Torch",
     "torchOff": "Torch off",
     "history": "History",
+    "historyEmptyTitle": "No products scanned yet",
+    "historyEmptyDescription": "Scanned products and analyses are saved here.",
+    "historyEmptyCta": "Scan a product",
+    "historyLoading": "Loading history…",
+    "historyLoadError": "Could not load history",
+    "historyUnauthorized": "Sign in to view history",
     "rescan": "Scan again",
     "cancel": "Cancel",
     "analyzeWithAdvisor": "Analyze with AI Advisor",
@@ -45,6 +51,7 @@
     "status": {
       "requestingPermission": "Requesting camera permission…",
       "permissionDenied": "Camera permission denied",
+      "cameraUnavailable": "Camera unavailable or in use",
       "initializingCamera": "Starting camera…",
       "cameraReady": "Camera ready",
       "autoScanActive": "Automatic scanning active",
@@ -146,7 +153,21 @@
     "ocrEmpty": "Could not read INCI — enter manually.",
     "analyzeFail": "Analysis failed",
     "errorGeneric": "Error",
-    "closeDetail": "Close"
+    "closeDetail": "Close",
+    "demoNotice": "Sample result. This is not a real scanned product.",
+    "resultCompatibility": "Compatibility with your hair",
+    "resultBenefits": "Main benefits",
+    "resultCautions": "Watch for",
+    "resultInci": "INCI list",
+    "resultRecommendation": "MySaloon recommendation",
+    "continueMorf": "Continue with Morf AI",
+    "scanAnother": "Scan another product",
+    "openScanHistory": "Scan history",
+    "fillProfileCta": "Complete your hair profile for a tailored recommendation",
+    "ingredientCount": "{{count}} ingredients",
+    "expand": "Read more",
+    "collapse": "Show less",
+    "scanNotFound": "Scan not found"
   },
   "comingSoon": {
     "title": "Salons are on the way",
@@ -1306,7 +1327,8 @@
   },
   "explorePage": {
     "title": "Trending styles",
-    "subtitle": "4 AI models — 12+ trending style samples on each.",
+    "subtitle": "{{count}} AI models — 12+ trending style samples on each.",
+    "subtitleModelNote": "Showing {{shown}} model previews · {{count}} available",
     "desktopDesc": "Pick a model, browse styles, and try them on your selfie.",
     "styleCount": "{{count}} styles",
     "aiStyleCtaTitle": "Try on your selfie",
@@ -1325,7 +1347,14 @@
     "relatedGuides": "About this haircut",
     "browseLength": "Haircuts of this length",
     "tryOnTitle": "{{style}}",
-    "tryOnDesc": "Upload a selfie — AI will show this style on your face."
+    "tryOnDesc": "Upload a selfie — AI will show this style on your face.",
+    "ageGroups": {
+      "kids": "Kids (10–12)",
+      "teen": "Teens (13–17)",
+      "young": "Young (18–29)",
+      "adult": "30+",
+      "mature": "Mature (45+)"
+    }
   },
   "styleTryOnPage": {
     "loadingTitle": "Try this style",

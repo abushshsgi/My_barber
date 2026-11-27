@@ -165,7 +165,7 @@ function syncGuideDocumentHead(article: GuideArticle, locale: SeoLocale) {
     document.head.appendChild(canonicalLink);
   }
   canonicalLink.setAttribute("href", canonical);
-  document.head.querySelectorAll('link[data-guide-alternate="1"]').forEach((node) => node.remove());
+  document.head.querySelectorAll('link[rel="alternate"][hreflang]').forEach((node) => node.remove());
   const alternates = published.length
     ? [
         ...published.map((item) => ({
@@ -400,7 +400,8 @@ export function GuideArticlePage({ slug, locale }: { slug: string; locale: SeoLo
             : "mt-8"
         }
       >
-        <div className="max-w-[46rem]">
+        <div className="max-w-[46rem] lg:max-w-none">
+          <div className="max-w-[70ch]">
           {blocks.map((block, index) => {
             if (block.type === "h2") {
               return (
@@ -436,11 +437,12 @@ export function GuideArticlePage({ slug, locale }: { slug: string; locale: SeoLo
               );
             }
             return (
-              <p key={index} className="mt-4 text-[17px] leading-8 text-foreground">
+              <p key={index} className="mt-4 text-[17px] leading-8 text-foreground lg:text-[1.0625rem] lg:leading-[1.75]">
                 <InlineText parts={block.inlines} locale={locale} />
               </p>
             );
           })}
+          </div>
 
           <aside className="mt-12 rounded-2xl border border-border bg-surface px-5 py-6">
             <p className="text-base leading-7 text-foreground">{article.excerpt}</p>

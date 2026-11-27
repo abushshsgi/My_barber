@@ -34,7 +34,7 @@ export function useSmartScanner(resultPath: (id: string) => string) {
   const sessionRef = useRef(0);
   const abortRef = useRef<AbortController | null>(null);
 
-  const [phase, setPhase] = useState<ScannerUiPhase>("scanning");
+  const [phase, setPhase] = useState<ScannerUiPhase>("idle");
   const [mode, setMode] = useState<ScannerMode>("barcode");
   const [error, setError] = useState<string | null>(null);
   const [notFoundScan, setNotFoundScan] = useState<HairScan | null>(null);
@@ -260,6 +260,11 @@ export function useSmartScanner(resultPath: (id: string) => string) {
     [afterScanCreated, mode, processBarcode, t],
   );
 
+  const resumeScanning = useCallback(() => {
+    if (lockRef.current) return;
+    setPhase("scanning");
+  }, []);
+
   const resetScanner = useCallback(() => {
     clearSuccessTimer();
     bumpSession();
@@ -268,7 +273,7 @@ export function useSmartScanner(resultPath: (id: string) => string) {
     setNotFoundScan(null);
     setDetectedBarcode(null);
     setError(null);
-    setPhase("scanning");
+    setPhase("idle");
     setCameraOn(true);
   }, []);
 
@@ -276,7 +281,7 @@ export function useSmartScanner(resultPath: (id: string) => string) {
     bumpSession();
     lockRef.current = false;
     lookupInFlightRef.current = false;
-    setPhase("scanning");
+    setPhase("idle");
     setCameraOn(true);
     setError(null);
   }, []);
@@ -302,6 +307,7 @@ export function useSmartScanner(resultPath: (id: string) => string) {
     captureProductImage,
     processGalleryFile,
     resetScanner,
+    resumeScanning,
     cancelLookup,
     statusText,
     statusKey,

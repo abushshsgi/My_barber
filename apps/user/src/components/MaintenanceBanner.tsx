@@ -107,7 +107,7 @@ export function MaintenanceBanner() {
     <div
       ref={setBar}
       role="status"
-      className="fixed inset-x-0 top-0 z-[250] bg-red-600 text-white"
+      className="fixed inset-x-0 top-0 z-[250] border-b border-border bg-surface text-foreground shadow-sm"
       style={{ paddingTop: "env(safe-area-inset-top, 0px)", ...BANNER_FONT }}
     >
       <div className="grid grid-cols-[40px_minmax(0,1fr)_40px] items-center px-2 py-2">

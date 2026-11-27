@@ -63,6 +63,8 @@ export function nextPhaseAfterScan(scan: HairScan): "pick" | "resolve" | "not_fo
 export type ScannerUiPhase =
   | "idle"
   | "requesting_permission"
+  | "permission_denied"
+  | "camera_unavailable"
   | "scanning"
   | "barcode_detected"
   | "looking_up"
@@ -71,21 +73,70 @@ export type ScannerUiPhase =
   | "not_found"
   | "error";
 
+/** Shared camera lifecycle — one gate for every scanner UI surface. */
+export type ScannerCameraGate =
+  | "idle"
+  | "requesting_permission"
+  | "permission_denied"
+  | "camera_unavailable"
+  | "initializing"
+  | "ready";
+
 const LEGACY_STATUS_KEYS: Record<ScannerUiPhase, string> = {
-  idle: "scanner.status.autoScanActive",
+  idle: "scanner.status.cameraReady",
   requesting_permission: "scanner.status.requestingPermission",
+  permission_denied: "scanner.status.permissionDenied",
+  camera_unavailable: "scanner.status.cameraUnavailable",
   scanning: "scanner.status.autoScanActive",
   barcode_detected: "scanner.status.barcodeDetected",
   looking_up: "scanner.status.lookingUpProduct",
   analyzing: "scanner.status.analyzing",
   completed: "scanner.status.complete",
   not_found: "",
-  error: "",
+  error: "scanner.status.error",
 };
 
+export function resolveScannerUiPhase(
+  workflowPhase: ScannerUiPhase,
+  cameraGate: ScannerCameraGate,
+): ScannerUiPhase {
+  if (cameraGate === "permission_denied") return "permission_denied";
+  if (cameraGate === "camera_unavailable") return "camera_unavailable";
+  if (cameraGate === "requesting_permission" || cameraGate === "initializing") {
+    return "requesting_permission";
+  }
+  if (cameraGate !== "ready") {
+    if (workflowPhase === "scanning" || workflowPhase === "idle") return "idle";
+  }
+  return workflowPhase;
+}
+
+export type ScannerSessionContext = {
+  cameraGate: ScannerCameraGate;
+  cameraStreamReady: boolean;
+  mode: ScannerMode;
+  workflowPhase: ScannerUiPhase;
+  decodeEnabled: boolean;
+  sessionLocked: boolean;
+};
+
+export function canShowActiveScanAnimation(ctx: ScannerSessionContext): boolean {
+  if (ctx.sessionLocked) return false;
+  if (ctx.cameraGate !== "ready" || !ctx.cameraStreamReady) return false;
+  if (ctx.mode !== "barcode" || !ctx.decodeEnabled) return false;
+  const phase = resolveScannerUiPhase(ctx.workflowPhase, ctx.cameraGate);
+  return phase === "scanning" || phase === "idle";
+}
+
 export function statusI18nKey(phase: ScannerUiPhase, mode: ScannerMode): string {
-  if (phase === "scanning" || phase === "idle") {
+  if (phase === "permission_denied" || phase === "camera_unavailable" || phase === "requesting_permission") {
+    return LEGACY_STATUS_KEYS[phase];
+  }
+  if (phase === "scanning") {
     return mode === "product_image" ? "scanner.status.aimProduct" : "scanner.status.autoScanActive";
+  }
+  if (phase === "idle") {
+    return mode === "product_image" ? "scanner.status.aimProduct" : "scanner.status.cameraReady";
   }
   if (phase === "looking_up" && mode === "product_image") {
     return "scanner.status.recognizingProduct";
@@ -96,6 +147,10 @@ export function statusI18nKey(phase: ScannerUiPhase, mode: ScannerMode): string 
 /** @deprecated Prefer statusI18nKey + t(); kept for tests / fallbacks. */
 export function statusForPhase(phase: ScannerUiPhase, mode: ScannerMode): string {
   switch (phase) {
+    case "permission_denied":
+      return "Kameraga ruxsat berilmadi";
+    case "camera_unavailable":
+      return "Kamera mavjud emas";
     case "requesting_permission":
       return "Kameraga ruxsat so‘ralmoqda…";
     case "barcode_detected":

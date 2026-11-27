@@ -6,7 +6,7 @@ import {
   useMotionValue,
   type PanInfo,
 } from "framer-motion";
-import { Check, ChevronLeft, ChevronRight, Clock, Loader2, X } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, Clock, Images, Loader2, X } from "lucide-react";
 import { Fragment, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { FaceAnalysisSummarySheet } from "@/components/ai-style/FaceAnalysisSummarySheet";
@@ -145,16 +145,6 @@ function FaceScanMark({ className }: { className?: string }) {
   );
 }
 
-function GalleryStackMark({ className }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 28 28" className={className} aria-hidden>
-      <rect x="4.2" y="7.2" width="13" height="15.5" rx="3" fill="#D4D4D4" transform="rotate(-16 10.7 15)" />
-      <rect x="11" y="6.2" width="13" height="15.5" rx="3" fill="#B0B0B0" transform="rotate(12 17.5 14)" />
-      <rect x="7.5" y="6" width="13" height="16" rx="3.2" fill="currentColor" />
-    </svg>
-  );
-}
-
 function UploadActions({
   onOpenCamera,
   onOpenGallery,
@@ -185,7 +175,7 @@ function UploadActions({
         onPointerDown={(event) => event.stopPropagation()}
         className="inline-flex min-h-[56px] min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-[20px] border-[1.5px] border-dashed border-foreground/25 bg-transparent px-2 py-2 text-[12px] font-bold leading-tight text-foreground active:scale-[0.98] disabled:opacity-60"
       >
-        <GalleryStackMark className="h-7 w-7 text-foreground" />
+        <Images className="h-7 w-7" strokeWidth={1.75} aria-hidden />
         {t("aiStylePage.pickFromGallery")}
       </button>
     </div>

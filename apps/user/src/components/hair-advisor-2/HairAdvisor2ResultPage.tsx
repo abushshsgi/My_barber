@@ -1,6 +1,7 @@
-import { useRouter } from "@tanstack/react-router";
+import { Link, useRouter } from "@tanstack/react-router";
 import { Bookmark, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import {
   addHairRoutineProduct,
@@ -25,6 +26,7 @@ type Props = {
 
 export function HairAdvisor2ResultPage({ scanId, inciListPath, scanPath }: Props) {
   const router = useRouter();
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(true);
   const [payload, setPayload] = useState<HairScanDetail | null>(null);
   const [analysis, setAnalysis] = useState<HairAnalysis | null>(null);
@@ -34,13 +36,14 @@ export function HairAdvisor2ResultPage({ scanId, inciListPath, scanPath }: Props
   const [saved, setSaved] = useState(false);
   const profileQ = useHairCareProfile();
   const currentProductId = payload?.care_product?.id;
+  const isDemo = isHairAdvisorResultDemoScanId(scanId);
   const catalogQ = useCareProducts({
     exclude_ids: currentProductId ? [currentProductId] : undefined,
-    enabled: compareOpen,
+    enabled: compareOpen && !isDemo,
   });
 
   const load = useCallback(async () => {
-    if (isHairAdvisorResultDemoScanId(scanId)) {
+    if (isDemo) {
       setPayload(HAIR_ADVISOR_RESULT_DEMO);
       setAnalysis(HAIR_ADVISOR_RESULT_DEMO.analysis ?? null);
       setLoading(false);
@@ -53,22 +56,22 @@ export function HairAdvisor2ResultPage({ scanId, inciListPath, scanPath }: Props
       setPayload(detail);
       setAnalysis(detail.analysis ?? null);
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Yuklanmadi");
+      toast.error(e instanceof Error ? e.message : t("hairAdvisor.loadFail"));
     } finally {
       setLoading(false);
     }
-  }, [scanId]);
+  }, [isDemo, scanId, t]);
 
   useEffect(() => {
     void load();
   }, [load]);
 
   useEffect(() => {
-    if (!currentProductId) return;
+    if (!currentProductId || isDemo) return;
     void fetchMyCareProducts()
       .then((rows) => setSaved(rows.some((r) => r.id === currentProductId)))
       .catch(() => undefined);
-  }, [currentProductId]);
+  }, [currentProductId, isDemo]);
 
   if (loading) {
     return (
@@ -80,7 +83,9 @@ export function HairAdvisor2ResultPage({ scanId, inciListPath, scanPath }: Props
 
   if (!payload) {
     return (
-      <div className="min-h-[100dvh] bg-white px-5 pt-16 text-center text-sm text-[#71717A]">Skan topilmadi</div>
+      <div className="min-h-[100dvh] bg-white px-5 pt-16 text-center text-sm text-[#71717A]">
+        {t("hairAdvisor.scanNotFound")}
+      </div>
     );
   }
 
@@ -113,22 +118,27 @@ export function HairAdvisor2ResultPage({ scanId, inciListPath, scanPath }: Props
         className="flex items-center justify-between px-5 py-3"
         style={{ paddingTop: "max(0.75rem, env(safe-area-inset-top))" }}
       >
-        <button type="button" aria-label="Orqaga" onClick={() => navigateBack(router, scanPath)} className="size-11">
+        <button
+          type="button"
+          aria-label={t("common.back")}
+          onClick={() => navigateBack(router, scanPath)}
+          className="size-11"
+        >
           <ChevronLeft className="size-6" />
         </button>
         <button
           type="button"
-          aria-label="Saqlash"
-          disabled={!product?.id}
+          aria-label={t("common.save")}
+          disabled={!product?.id || isDemo}
           onClick={async () => {
             if (!product?.id) return;
             try {
               await addMyCareProduct({ product_id: product.id, source: "scan" });
               await addHairRoutineProduct({ care_product_id: product.id, slot: "shampoo" }).catch(() => undefined);
               setSaved(true);
-              toast.success("Mahsulot saqlandi");
+              toast.success(t("hairAdvisor.addedToRoutine"));
             } catch (e) {
-              toast.error(e instanceof Error ? e.message : "Saqlanmadi");
+              toast.error(e instanceof Error ? e.message : t("hairAdvisor.errorGeneric"));
             }
           }}
           className="size-11 text-[#71717A]"
@@ -137,7 +147,16 @@ export function HairAdvisor2ResultPage({ scanId, inciListPath, scanPath }: Props
         </button>
       </header>
 
-      <main className="mx-auto max-w-lg space-y-4 px-5 pb-28">
+      <main className="mx-auto max-w-lg space-y-4 px-5 pb-10">
+        {isDemo ? (
+          <p
+            className="rounded-2xl border border-[#FCD34D] bg-[#FFFBEB] px-4 py-3 text-sm font-medium text-[#92400E]"
+            role="status"
+          >
+            {t("hairAdvisor.demoNotice")}
+          </p>
+        ) : null}
+
         <HairAdvisor2ProductHeader
           product={product}
           barcode={payload.barcode}
@@ -145,7 +164,7 @@ export function HairAdvisor2ResultPage({ scanId, inciListPath, scanPath }: Props
         />
 
         <section className="rounded-[20px] bg-[#F7F7F8] p-4 ring-1 ring-[#E8E8EB]">
-          <p className="text-[16px] font-semibold">Sochingizga mosligi</p>
+          <p className="text-[16px] font-semibold">{t("hairAdvisor.resultCompatibility")}</p>
           <p className={`mt-2 inline-flex rounded-full px-3 py-1 text-sm font-semibold ${fitTone}`}>{fitLabel}</p>
           {!analysis || !profileQ.data?.complete ? (
             <button
@@ -153,18 +172,18 @@ export function HairAdvisor2ResultPage({ scanId, inciListPath, scanPath }: Props
               className="mt-2 text-left text-sm font-medium text-[#111111] underline"
               onClick={() => void router.navigate({ to: `/ai-style/care/ingredient/recover/${scanId}` as never })}
             >
-              Aniq tavsiya uchun soch profilingizni to'ldiring
+              {t("hairAdvisor.fillProfileCta")}
             </button>
           ) : null}
         </section>
 
         <section className="grid gap-3 sm:grid-cols-2">
-          <Card title="Asosiy foydasi">
+          <Card title={t("hairAdvisor.resultBenefits")}>
             {benefits.length ? benefits.map((b) => <p key={b} className="text-sm leading-snug text-[#111111]/85">{b}</p>) : (
               <p className="text-sm text-[#71717A]">—</p>
             )}
           </Card>
-          <Card title="E'tibor bering">
+          <Card title={t("hairAdvisor.resultCautions")}>
             {concerns.length ? concerns.map((b) => <p key={b} className="text-sm leading-snug text-[#111111]/85">{b}</p>) : (
               <p className="text-sm text-[#71717A]">—</p>
             )}
@@ -177,8 +196,8 @@ export function HairAdvisor2ResultPage({ scanId, inciListPath, scanPath }: Props
           className="flex w-full items-center justify-between rounded-[20px] bg-[#F7F7F8] px-4 py-4 text-left ring-1 ring-[#E8E8EB]"
         >
           <div>
-            <p className="text-[16px] font-semibold">Tarkibi (INCI)</p>
-            <p className="mt-1 text-sm text-[#71717A]">{ingredients.length} ta ingredient</p>
+            <p className="text-[16px] font-semibold">{t("hairAdvisor.resultInci")}</p>
+            <p className="mt-1 text-sm text-[#71717A]">{t("hairAdvisor.ingredientCount", { count: ingredients.length })}</p>
             <div className="mt-2 flex flex-wrap gap-1.5">
               {(keyIng.length ? keyIng.map((k) => String(k.inci ?? "")) : ingredients.slice(0, 3)).map((chip) => (
                 <span key={chip} className="rounded-full bg-white px-2 py-0.5 text-xs text-[#111111]/80 ring-1 ring-[#E8E8EB]">
@@ -191,39 +210,53 @@ export function HairAdvisor2ResultPage({ scanId, inciListPath, scanPath }: Props
         </button>
 
         <section className="rounded-[20px] bg-[#F7F7F8] p-4 ring-1 ring-[#E8E8EB]">
-          <p className="text-[16px] font-semibold">MySaloon tavsiyasi</p>
+          <p className="text-[16px] font-semibold">{t("hairAdvisor.resultRecommendation")}</p>
           <p className="mt-2 text-[15px] leading-relaxed text-[#111111]/85">
             {expandedAi ? analysis?.explanation_uz : (analysis?.explanation_uz ?? "").slice(0, 160)}
             {(analysis?.explanation_uz?.length ?? 0) > 160 ? "…" : ""}
           </p>
           {(analysis?.explanation_uz?.length ?? 0) > 160 ? (
             <button type="button" className="mt-2 text-sm font-semibold text-[#111111]" onClick={() => setExpandedAi((v) => !v)}>
-              {expandedAi ? "Yig'ish" : "Batafsil"}
+              {expandedAi ? t("hairAdvisor.collapse") : t("hairAdvisor.expand")}
+            </button>
+          ) : null}
+        </section>
+
+        <section
+          className="space-y-2 border-t border-[#E8E8EB] pt-6"
+          style={{ paddingBottom: "max(0.5rem, env(safe-area-inset-bottom))" }}
+        >
+          <Link
+            to="/ai-style"
+            className="flex h-12 w-full items-center justify-center rounded-[18px] bg-[#111111] text-[15px] font-semibold text-white"
+          >
+            {t("hairAdvisor.continueMorf")}
+          </Link>
+          <Link
+            to={scanPath as never}
+            className="flex h-12 w-full items-center justify-center rounded-[18px] border border-[#E8E8EB] text-[15px] font-semibold text-[#111111]"
+          >
+            {t("hairAdvisor.scanAnother")}
+          </Link>
+          {!isDemo && product?.id ? (
+            <button
+              type="button"
+              onClick={() => setCompareOpen(true)}
+              className="flex h-12 w-full items-center justify-center rounded-[18px] border border-[#E8E8EB] text-[15px] font-semibold text-[#111111]"
+            >
+              {t("hairAdvisor.compareTitle")}
             </button>
           ) : null}
         </section>
       </main>
 
-      <div
-        className="fixed bottom-0 left-0 right-0 border-t border-[#E8E8EB] bg-white px-5 py-4"
-        style={{ paddingBottom: "max(1rem, env(safe-area-inset-bottom))" }}
-      >
-        <button
-          type="button"
-          onClick={() => setCompareOpen(true)}
-          className="h-14 w-full rounded-[18px] bg-[#111111] text-[16px] font-semibold text-white"
-        >
-          Taqqoslash
-        </button>
-      </div>
-
       {compareOpen ? (
         <dialog open className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-4 sm:items-center">
           <div className="w-full max-w-md rounded-[20px] bg-white p-5 text-[#111111]">
-            <p className="text-lg font-bold">Taqqoslash</p>
+            <p className="text-lg font-bold">{t("hairAdvisor.compareTitle")}</p>
             <input
               className="mt-3 w-full rounded-xl border border-[#E8E8EB] px-3 py-2 text-sm"
-              placeholder="Mahsulot ID yoki qidiruv"
+              placeholder={t("hairAdvisor.comparePlaceholder")}
               value={compareId}
               onChange={(e) => setCompareId(e.target.value)}
               list="ha2-compare-list"
@@ -248,17 +281,17 @@ export function HairAdvisor2ResultPage({ scanId, inciListPath, scanPath }: Props
                 try {
                   const out = await compareHairProducts([mine, other]);
                   const summary = (out.result as { summary_uz?: string }).summary_uz;
-                  toast.message(summary ?? "Solishtirish tayyor");
+                  toast.message(summary ?? t("hairAdvisor.compareRun"));
                   setCompareOpen(false);
                 } catch (e) {
-                  toast.error(e instanceof Error ? e.message : "Xatolik");
+                  toast.error(e instanceof Error ? e.message : t("hairAdvisor.compareFail"));
                 }
               }}
             >
-              Solishtirish
+              {t("hairAdvisor.compareRun")}
             </button>
             <button type="button" className="mt-2 w-full py-2 text-sm text-[#71717A]" onClick={() => setCompareOpen(false)}>
-              Bekor
+              {t("common.cancel")}
             </button>
           </div>
         </dialog>

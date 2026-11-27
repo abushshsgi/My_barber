@@ -31,6 +31,12 @@
     "torch": "Фонарик",
     "torchOff": "Фонарик выкл.",
     "history": "История",
+    "historyEmptyTitle": "Пока нет отсканированных продуктов",
+    "historyEmptyDescription": "Здесь сохраняются отсканированные продукты и анализы.",
+    "historyEmptyCta": "Сканировать продукт",
+    "historyLoading": "Загрузка истории…",
+    "historyLoadError": "Не удалось загрузить историю",
+    "historyUnauthorized": "Войдите, чтобы видеть историю",
     "rescan": "Сканировать снова",
     "cancel": "Отмена",
     "analyzeWithAdvisor": "Анализ с AI Advisor",
@@ -44,6 +50,7 @@
     "status": {
       "requestingPermission": "Запрос доступа к камере…",
       "permissionDenied": "Нет доступа к камере",
+      "cameraUnavailable": "Камера недоступна или занята",
       "initializingCamera": "Запуск камеры…",
       "cameraReady": "Камера готова",
       "autoScanActive": "Автоматическое сканирование активно",
@@ -145,7 +152,21 @@
     "ocrEmpty": "Состав не распознан — введите вручную.",
     "analyzeFail": "Ошибка анализа",
     "errorGeneric": "Ошибка",
-    "closeDetail": "Закрыть"
+    "closeDetail": "Закрыть",
+    "demoNotice": "Демо-результат. Это не реальный отсканированный продукт.",
+    "resultCompatibility": "Совместимость с вашими волосами",
+    "resultBenefits": "Основная польза",
+    "resultCautions": "На что обратить внимание",
+    "resultInci": "Состав (INCI)",
+    "resultRecommendation": "Рекомендация MySaloon",
+    "continueMorf": "Продолжить с Morf AI",
+    "scanAnother": "Сканировать другой продукт",
+    "openScanHistory": "История сканов",
+    "fillProfileCta": "Заполните профиль волос для точной рекомендации",
+    "ingredientCount": "{{count}} ингредиентов",
+    "expand": "Подробнее",
+    "collapse": "Свернуть",
+    "scanNotFound": "Скан не найден"
   },
   "comingSoon": {
     "title": "Салоны скоро появятся",
@@ -1307,7 +1328,8 @@
   },
   "explorePage": {
     "title": "Трендовые стили",
-    "subtitle": "4 AI-модели — 12+ образцов стилей на каждой.",
+    "subtitle": "{{count}} AI-модели — 12+ образцов стилей на каждой.",
+    "subtitleModelNote": "Показано {{shown}} превью · всего {{count}}",
     "desktopDesc": "Выберите модель, просмотрите стили и примерьте на селфи.",
     "styleCount": "{{count}} стилей",
     "aiStyleCtaTitle": "Примерить на селфи",
@@ -1326,7 +1348,14 @@
     "relatedGuides": "Об этой стрижке",
     "browseLength": "Стрижки этой длины",
     "tryOnTitle": "{{style}}",
-    "tryOnDesc": "Загрузите селфи — AI покажет этот стиль на вашем лице."
+    "tryOnDesc": "Загрузите селфи — AI покажет этот стиль на вашем лице.",
+    "ageGroups": {
+      "kids": "Дети (10–12)",
+      "teen": "Подростки (13–17)",
+      "young": "Молодёжь (18–29)",
+      "adult": "30+",
+      "mature": "Зрелый возраст (45+)"
+    }
   },
   "styleTryOnPage": {
     "loadingTitle": "Примерка стиля",

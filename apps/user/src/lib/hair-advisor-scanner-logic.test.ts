@@ -1,9 +1,12 @@
 import { describe, expect, it } from "vitest";
 import {
+  canShowActiveScanAnimation,
   isDuplicateBarcodeSubmit,
   nextPhaseAfterScan,
+  resolveScannerUiPhase,
   shouldOpenProductPick,
   statusForPhase,
+  statusI18nKey,
 } from "./hair-advisor-scanner-logic";
 import type { HairScan } from "@/lib/api/hair-advisor";
 import { validateRetailBarcodeChecksum } from "./hair-advisor-barcode-decode";
@@ -82,5 +85,25 @@ describe("statusForPhase", () => {
   });
   it("clears helper text on error", () => {
     expect(statusForPhase("error", "barcode")).toBe("");
+  });
+});
+
+describe("scanner camera gate", () => {
+  it("maps permission denied over active scanning copy", () => {
+    expect(resolveScannerUiPhase("scanning", "permission_denied")).toBe("permission_denied");
+    expect(statusI18nKey("permission_denied", "barcode")).toBe("scanner.status.permissionDenied");
+  });
+
+  it("does not show active scan animation when camera is denied", () => {
+    expect(
+      canShowActiveScanAnimation({
+        cameraGate: "permission_denied",
+        cameraStreamReady: false,
+        mode: "barcode",
+        workflowPhase: "scanning",
+        decodeEnabled: true,
+        sessionLocked: false,
+      }),
+    ).toBe(false);
   });
 });

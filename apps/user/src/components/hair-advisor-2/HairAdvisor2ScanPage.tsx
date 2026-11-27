@@ -12,6 +12,12 @@ import { captureVideoFrameJpeg } from "@/lib/capture-video-frame";
 import { removeMorphLcpStatic } from "@/lib/morph-lcp-static";
 import { fetchHairScanHistory, type HairScan } from "@/lib/api/hair-advisor";
 import { useSmartScanner } from "@/hooks/use-smart-scanner";
+import {
+  canShowActiveScanAnimation,
+  resolveScannerUiPhase,
+  statusI18nKey,
+  type ScannerCameraGate,
+} from "@/lib/hair-advisor-scanner-logic";
 import { navigateBack } from "@/lib/mobile-back";
 import { cn } from "@/lib/utils";
 
@@ -24,9 +30,15 @@ export function HairAdvisor2ScanPage({ resultPath }: Props) {
   const { t } = useTranslation();
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const [cameraBlocked, setCameraBlocked] = useState(() => diagnoseCameraAccess() !== "ok");
+  const [cameraGate, setCameraGate] = useState<ScannerCameraGate>(() =>
+    diagnoseCameraAccess() !== "ok" ? "permission_denied" : "idle",
+  );
+  const [cameraStreamReady, setCameraStreamReady] = useState(false);
   const [torch, setTorch] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [history, setHistory] = useState<HairScan[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [historyError, setHistoryError] = useState<"load" | "unauthorized" | null>(null);
   const [manualOpen, setManualOpen] = useState(false);
   const [manualCode, setManualCode] = useState("");
 
@@ -45,18 +57,30 @@ export function HairAdvisor2ScanPage({ resultPath }: Props) {
     captureProductImage,
     processGalleryFile,
     resetScanner,
+    resumeScanning,
     cancelLookup,
-    statusText,
     lockRef,
   } = scanner;
 
+  const displayPhase = resolveScannerUiPhase(phase, cameraGate);
+  const statusKey = statusI18nKey(displayPhase, mode);
+  const statusText = statusKey ? t(statusKey) : "";
   const lookingUp = phase === "looking_up" || phase === "analyzing";
+  const sessionLocked = lookingUp || phase === "barcode_detected" || Boolean(lockRef.current);
+
+  useEffect(() => {
+    if (cameraGate === "ready" && cameraStreamReady && phase === "idle" && !sessionLocked) {
+      resumeScanning();
+    }
+  }, [cameraGate, cameraStreamReady, phase, resumeScanning, sessionLocked]);
 
   useEffect(() => {
     removeMorphLcpStatic();
     const ok = diagnoseCameraAccess() === "ok";
     setCameraOn(ok);
     setCameraBlocked(!ok);
+    setCameraGate(ok ? "idle" : "permission_denied");
+    setCameraStreamReady(false);
     resetScanner();
     return () => {
       lockRef.current = false;
@@ -84,17 +108,38 @@ export function HairAdvisor2ScanPage({ resultPath }: Props) {
   }, [captureProductImage, lookingUp, mode, t]);
 
   const openHistory = async () => {
+    setHistoryOpen(true);
+    setHistoryLoading(true);
+    setHistoryError(null);
     try {
       const rows = await fetchHairScanHistory();
       setHistory(rows);
-      setHistoryOpen(true);
-    } catch {
-      toast.error(t("scanner.errors.generic"));
+    } catch (e) {
+      const message = e instanceof Error ? e.message.toLowerCase() : "";
+      if (message.includes("401") || message.includes("unauthorized") || message.includes("kirish")) {
+        setHistoryError("unauthorized");
+      } else {
+        setHistoryError("load");
+      }
+      setHistory([]);
+    } finally {
+      setHistoryLoading(false);
     }
   };
 
   const overlayVisible =
-    !notFoundScan && phase !== "not_found" && cameraOn && !cameraBlocked && !lookingUp && phase !== "error";
+    !notFoundScan &&
+    phase !== "not_found" &&
+    phase !== "error" &&
+    !lookingUp &&
+    canShowActiveScanAnimation({
+      cameraGate,
+      cameraStreamReady,
+      mode,
+      workflowPhase: phase,
+      decodeEnabled: mode === "barcode",
+      sessionLocked,
+    });
 
   return (
     <div
@@ -108,6 +153,8 @@ export function HairAdvisor2ScanPage({ resultPath }: Props) {
               onEnable={() => {
                 setCameraBlocked(false);
                 setCameraOn(true);
+                setCameraGate("requesting_permission");
+                setCameraStreamReady(false);
                 resetScanner();
               }}
             />
@@ -126,10 +173,37 @@ export function HairAdvisor2ScanPage({ resultPath }: Props) {
               onClose={() => {
                 setCameraOn(false);
                 setCameraBlocked(true);
+                setCameraStreamReady(false);
+                if (cameraGate !== "unavailable") setCameraGate("permission_denied");
+              }}
+              onCameraLifecycle={(state) => {
+                if (state === "ready") {
+                  setCameraGate("ready");
+                  setCameraStreamReady(true);
+                  setCameraBlocked(false);
+                } else if (state === "requesting") {
+                  setCameraGate("initializing");
+                  setCameraStreamReady(false);
+                } else if (state === "denied") {
+                  setCameraGate("permission_denied");
+                  setCameraStreamReady(false);
+                  setCameraBlocked(true);
+                  setCameraOn(false);
+                } else {
+                  setCameraGate("camera_unavailable");
+                  setCameraStreamReady(false);
+                  setCameraBlocked(true);
+                  setCameraOn(false);
+                }
               }}
             />
           )}
-          <HairAdvisorScannerOverlay phase={phase} statusText={statusText} mode={mode} visible={overlayVisible} />
+          <HairAdvisorScannerOverlay
+            phase={displayPhase}
+            statusText={statusText}
+            mode={mode}
+            visible={overlayVisible}
+          />
           {lookingUp ? (
             <div className="absolute inset-0 z-[3] flex flex-col items-center justify-center gap-3 bg-black/55" role="status">
               <Loader2 className="size-9 animate-spin text-white" aria-hidden />
@@ -227,8 +301,9 @@ export function HairAdvisor2ScanPage({ resultPath }: Props) {
             <button
               type="button"
               aria-label={torch ? t("scanner.torchOff") : t("scanner.torch")}
+              disabled={cameraGate !== "ready" || !cameraStreamReady}
               onClick={() => setTorch((v) => !v)}
-              className="inline-flex flex-col items-center gap-1"
+              className="inline-flex flex-col items-center gap-1 disabled:opacity-40"
             >
               <span
                 className={cn(
@@ -261,7 +336,10 @@ export function HairAdvisor2ScanPage({ resultPath }: Props) {
         <h2 className="text-lg font-semibold">{t("scanner.title")}</h2>
         <p className="text-sm text-[#71717A]">{t("scanner.subtitle")}</p>
         <p className="text-sm font-medium" role="status">
-          {statusText || t("scanner.status.cameraReady")}
+          {statusText ||
+            (cameraGate === "permission_denied"
+              ? t("scanner.status.permissionDenied")
+              : t("scanner.status.cameraReady"))}
         </p>
         {detectedBarcode ? (
           <p className="rounded-xl bg-[#F7F7F8] px-3 py-2 font-mono text-sm">{detectedBarcode}</p>
@@ -297,7 +375,19 @@ export function HairAdvisor2ScanPage({ resultPath }: Props) {
         </div>
       ) : null}
 
-      {historyOpen ? <HistoryModal history={history} onClose={() => setHistoryOpen(false)} onPick={goResult} /> : null}
+      {historyOpen ? (
+        <HistoryModal
+          history={history}
+          loading={historyLoading}
+          error={historyError}
+          onClose={() => setHistoryOpen(false)}
+          onPick={goResult}
+          onScan={() => {
+            setHistoryOpen(false);
+            resetScanner();
+          }}
+        />
+      ) : null}
     </div>
   );
 }
@@ -360,36 +450,61 @@ function PermissionBlock({ onEnable }: { onEnable: () => void }) {
 
 function HistoryModal({
   history,
+  loading,
+  error,
   onClose,
   onPick,
+  onScan,
 }: {
   history: HairScan[];
+  loading: boolean;
+  error: "load" | "unauthorized" | null;
   onClose: () => void;
   onPick: (id: string) => void;
+  onScan: () => void;
 }) {
   const { t } = useTranslation();
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 sm:items-center" role="dialog" aria-modal>
       <div className="max-h-[70vh] w-full max-w-md overflow-y-auto rounded-t-[20px] bg-white p-5 text-[#111] sm:rounded-[20px]">
         <h3 className="text-lg font-bold">{t("scanner.history")}</h3>
-        <ul className="mt-3 space-y-2">
-          {history.map((h) => (
-            <li key={h.id}>
-              <button
-                type="button"
-                className="w-full rounded-xl bg-[#F7F7F8] px-3 py-2 text-left text-sm"
-                onClick={() => {
-                  onClose();
-                  onPick(h.id);
-                }}
-              >
-                {h.barcode || h.care_product?.name || h.id.slice(0, 8)}
-                <span className="ml-2 text-xs text-[#71717A]">{h.status}</span>
-              </button>
-            </li>
-          ))}
-          {history.length === 0 ? <li className="text-sm text-[#71717A]">—</li> : null}
-        </ul>
+        {loading ? (
+          <p className="mt-6 text-sm text-[#71717A]">{t("scanner.historyLoading")}</p>
+        ) : error === "unauthorized" ? (
+          <p className="mt-6 text-sm text-[#71717A]">{t("scanner.historyUnauthorized")}</p>
+        ) : error === "load" ? (
+          <p className="mt-6 text-sm text-[#71717A]">{t("scanner.historyLoadError")}</p>
+        ) : history.length === 0 ? (
+          <div className="mt-6 space-y-3 text-center">
+            <p className="text-base font-semibold text-[#111]">{t("scanner.historyEmptyTitle")}</p>
+            <p className="text-sm text-[#71717A]">{t("scanner.historyEmptyDescription")}</p>
+            <button
+              type="button"
+              className="mt-2 w-full rounded-2xl bg-[#111] py-3 text-sm font-semibold text-white"
+              onClick={onScan}
+            >
+              {t("scanner.historyEmptyCta")}
+            </button>
+          </div>
+        ) : (
+          <ul className="mt-3 space-y-2">
+            {history.map((h) => (
+              <li key={h.id}>
+                <button
+                  type="button"
+                  className="w-full rounded-xl bg-[#F7F7F8] px-3 py-2 text-left text-sm"
+                  onClick={() => {
+                    onClose();
+                    onPick(h.id);
+                  }}
+                >
+                  {h.barcode || h.care_product?.name || h.id.slice(0, 8)}
+                  <span className="ml-2 text-xs text-[#71717A]">{h.status}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
         <button type="button" className="mt-4 w-full rounded-xl border py-2 text-sm font-semibold" onClick={onClose}>
           {t("scanner.cancel")}
         </button>

@@ -7,6 +7,8 @@ import { ExplorePageToolbar } from "@/components/explore/ExplorePageToolbar";
 import { PersonaPicker } from "@/components/PersonaPicker";
 import { WomenPersonaPicker } from "@/components/WomenPersonaPicker";
 import { useExplorePageData } from "@/hooks/use-explore-page-data";
+import { useExplorePersonaList } from "@/hooks/use-explore-personas";
+import { listReadyExplorePersonas } from "@/lib/explore-personas";
 import { DESKTOP_BAZAAR_INSET } from "@/lib/desktop-bazaar-layout";
 import { cn } from "@/lib/utils";
 
@@ -28,9 +30,12 @@ export function ExploreDesktopPage() {
     isRetrying,
     retry,
   } = useExplorePageData();
+  const personaList = useExplorePersonaList();
+  const readyCount = personaList.personas.length || listReadyExplorePersonas().length;
+  const catalogModelCount = listReadyExplorePersonas().length;
 
   return (
-    <div className={cn("w-full min-w-0 pb-8", DESKTOP_BAZAAR_INSET)}>
+    <div className={cn("w-full min-w-0 pb-8 max-lg:pb-[var(--mobile-dock)]", DESKTOP_BAZAAR_INSET)}>
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(280px,340px)] lg:items-start xl:gap-8">
         <div className="min-w-0">
           <div className="flex items-center gap-2 text-muted-foreground">
@@ -56,7 +61,16 @@ export function ExploreDesktopPage() {
                 onChange={setWomenPersonaId}
               />
             ) : null}
-            <ExplorePageToolbar styleCount={visibleList.length} ageGroup={ageGroup} />
+            <ExplorePageToolbar
+              styleCount={visibleList.length}
+              modelCount={catalogModelCount}
+              ageGroup={ageGroup}
+            />
+            {catalogModelCount !== readyCount ? (
+              <p className="text-xs text-muted-foreground">
+                {t("explorePage.subtitleModelNote", { shown: readyCount, count: catalogModelCount })}
+              </p>
+            ) : null}
           </div>
         </div>
 

@@ -36,7 +36,7 @@ export const Route = createFileRoute("/explore_/$styleId")({
 });
 
 const ctaPrimaryClass =
-  "inline-flex min-h-12 min-w-0 flex-1 items-center justify-center gap-1.5 rounded-full bg-foreground px-3 py-3 text-[13px] font-bold text-background transition-opacity active:opacity-90 sm:gap-2 sm:text-sm";
+  "inline-flex min-h-12 min-w-0 flex-1 items-center justify-center gap-2 rounded-full bg-foreground px-4 py-3 text-sm font-bold leading-tight text-background transition-opacity active:opacity-90";
 const ctaSecondaryClass =
   "inline-flex min-h-12 min-w-0 flex-1 items-center justify-center gap-1.5 rounded-full border border-border bg-surface px-3 py-3 text-[13px] font-bold text-foreground transition-opacity active:opacity-90 sm:gap-2 sm:text-sm";
 const ctaDesktopPrimaryClass =
@@ -337,7 +337,7 @@ function ExploreStyleDetailPage() {
             }
           >
             <ScanFace className="h-4 w-4 shrink-0" strokeWidth={2.25} />
-            <span className="min-w-0 truncate">{t("explorePage.tryOnMe")}</span>
+            <span className="min-w-0 text-center leading-tight">{t("explorePage.tryOnMe")}</span>
           </Link>
           <Link to="/map" className={ctaSecondaryClass}>
             <MapPin className="h-4 w-4 shrink-0" strokeWidth={2.25} />

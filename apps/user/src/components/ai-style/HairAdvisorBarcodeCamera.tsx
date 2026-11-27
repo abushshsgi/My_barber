@@ -28,6 +28,7 @@ type Props = {
   /** false = faqat kamera ko‘rinishi (rasm rejimi). */
   enableDecode?: boolean;
   onVideoElement?: (video: HTMLVideoElement | null) => void;
+  onCameraLifecycle?: (state: "requesting" | "ready" | "denied" | "unavailable") => void;
 };
 
 const NATIVE_FORMATS = ["ean_13", "ean_8", "upc_a", "upc_e", "code_128"] as const;
@@ -56,6 +57,7 @@ export function HairAdvisorBarcodeCamera({
   stableReadCount = 2,
   enableDecode = true,
   onVideoElement,
+  onCameraLifecycle,
 }: Props) {
   const { t } = useTranslation();
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -175,10 +177,12 @@ export function HairAdvisorBarcodeCamera({
 
     const start = async () => {
       setStarting(true);
+      onCameraLifecycle?.("requesting");
       try {
         const { ensureCameraPermission } = await import("@/lib/native-camera");
         const allowed = await ensureCameraPermission();
         if (!allowed) {
+          onCameraLifecycle?.("denied");
           toast.error(t("hairAdvisor.cameraDenied", { defaultValue: "Kameraga ruxsat berilmadi." }));
           onClose();
           return;
@@ -194,6 +198,7 @@ export function HairAdvisorBarcodeCamera({
           videoRef.current.srcObject = stream;
           await videoRef.current.play();
         }
+        onCameraLifecycle?.("ready");
         setStarting(false);
 
         if (!enableDecode) return;
@@ -214,6 +219,11 @@ export function HairAdvisorBarcodeCamera({
         }
       } catch (err) {
         const key = mapGetUserMediaError(err);
+        onCameraLifecycle?.(
+          key === "hairAdvisor.cameraNotFound" || key === "hairAdvisor.cameraBusy"
+            ? "unavailable"
+            : "denied",
+        );
         toast.error(
           t(key, {
             defaultValue:

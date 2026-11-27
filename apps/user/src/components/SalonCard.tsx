@@ -1,5 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { Star, MapPin, Heart } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import type { Salon } from "@/lib/mock-data";
 import { shortPrice } from "@/lib/mock-data";
 import { SalonImageCarousel } from "@/components/salon/SalonImageCarousel";
@@ -7,18 +8,19 @@ import { useFavorites } from "@/hooks/use-favorites";
 import { prefetchSalonDetail } from "@/lib/prefetch-salon";
 import { cn } from "@/lib/utils";
 
-const AUDIENCE_LABEL: Record<Salon["audience"], string> = {
-  men: "Erkaklar",
-  women: "Ayollar",
-  unisex: "Universal",
-};
-
 type Props = {
   salon: Salon;
 };
 
 export function SalonCard({ salon }: Props) {
+  const { t } = useTranslation();
   const { isFav, toggle } = useFavorites();
+  const audienceKey =
+    salon.audience === "men"
+      ? "audience.men"
+      : salon.audience === "women"
+        ? "audience.women"
+        : "audience.all";
   const fav = isFav(salon.id);
 
   return (
@@ -50,7 +52,7 @@ export function SalonCard({ salon }: Props) {
               {salon.category}
             </span>
             <span className="rounded-full bg-foreground/85 px-2 py-1 text-[9px] font-bold uppercase tracking-[0.12em] text-background">
-              {AUDIENCE_LABEL[salon.audience]}
+              {t(audienceKey)}
             </span>
           </div>
         </div>

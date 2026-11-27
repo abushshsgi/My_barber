@@ -14,7 +14,12 @@ export function HairAdvisorScannerOverlay({ phase, statusText, mode, visible }: 
   if (!visible) return null;
 
   const success = phase === "barcode_detected";
-  const showLine = mode === "barcode" && (phase === "scanning" || phase === "idle");
+  const showLine =
+    mode === "barcode" &&
+    (phase === "scanning" || phase === "idle") &&
+    phase !== "permission_denied" &&
+    phase !== "camera_unavailable" &&
+    phase !== "requesting_permission";
   const accent = success ? HA_SCANNER.success : HA_SCANNER.frame;
 
   return (

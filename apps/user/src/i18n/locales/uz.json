@@ -32,6 +32,12 @@
     "torch": "Chiroq",
     "torchOff": "Chiroq o‘chiq",
     "history": "Tarix",
+    "historyEmptyTitle": "Hali mahsulot skanerlanmagan",
+    "historyEmptyDescription": "Skanerlangan mahsulotlar va tahlillar shu yerda saqlanadi.",
+    "historyEmptyCta": "Mahsulotni skanerlash",
+    "historyLoading": "Tarix yuklanmoqda…",
+    "historyLoadError": "Tarixni yuklab bo‘lmadi",
+    "historyUnauthorized": "Tarixni ko‘rish uchun kiring",
     "rescan": "Qayta skanerlash",
     "cancel": "Bekor qilish",
     "analyzeWithAdvisor": "AI Advisor bilan tahlil qilish",
@@ -45,6 +51,7 @@
     "status": {
       "requestingPermission": "Kameraga ruxsat so‘ralmoqda…",
       "permissionDenied": "Kameraga ruxsat berilmadi",
+      "cameraUnavailable": "Kamera mavjud emas yoki band",
       "initializingCamera": "Kamera ishga tushirilmoqda…",
       "cameraReady": "Kamera tayyor",
       "autoScanActive": "Avtomatik skanerlash faol",
@@ -146,7 +153,21 @@
     "ocrEmpty": "Rasmdan tarkib o'qilmadi — qo'lda kiriting.",
     "analyzeFail": "Tahlil xatosi",
     "errorGeneric": "Xatolik",
-    "closeDetail": "Yopish"
+    "closeDetail": "Yopish",
+    "demoNotice": "Namuna natija. Bu haqiqiy skanerlangan mahsulot emas.",
+    "resultCompatibility": "Sochingizga mosligi",
+    "resultBenefits": "Asosiy foydasi",
+    "resultCautions": "E'tibor bering",
+    "resultInci": "Tarkibi (INCI)",
+    "resultRecommendation": "MySaloon tavsiyasi",
+    "continueMorf": "Morf AI bilan davom etish",
+    "scanAnother": "Boshqa mahsulotni skanerlash",
+    "openScanHistory": "Skanerlash tarixi",
+    "fillProfileCta": "Aniq tavsiya uchun soch profilingizni to'ldiring",
+    "ingredientCount": "{{count}} ta ingredient",
+    "expand": "Batafsil",
+    "collapse": "Yig'ish",
+    "scanNotFound": "Skan topilmadi"
   },
   "comingSoon": {
     "title": "Tez orada salonlar qo'shiladi",
@@ -1306,7 +1327,8 @@
   },
   "explorePage": {
     "title": "Trend uslublar",
-    "subtitle": "4 ta AI model — har birida 12+ trend uslub namunalari.",
+    "subtitle": "{{count}} ta AI model — har birida 12+ trend uslub namunalari.",
+    "subtitleModelNote": "Ko‘rsatilgan {{shown}} ta model · jami {{count}} ta mavjud",
     "desktopDesc": "Model tanlang, uslubni ko'ring va selfieda sinab ko'ring.",
     "styleCount": "{{count}} ta uslub",
     "aiStyleCtaTitle": "Selfieda sinab ko'ring",
@@ -1325,7 +1347,14 @@
     "relatedGuides": "Shu turmag haqida",
     "browseLength": "Shu uzunlikdagi turmaglar",
     "tryOnTitle": "{{style}}",
-    "tryOnDesc": "Selfie yuklang — AI tanlangan uslubni yuzingizda ko'rsatadi."
+    "tryOnDesc": "Selfie yuklang — AI tanlangan uslubni yuzingizda ko'rsatadi.",
+    "ageGroups": {
+      "kids": "Bolalar (10–12)",
+      "teen": "O'smirlar (13–17)",
+      "young": "Yosh (18–29)",
+      "adult": "30+",
+      "mature": "Katta yosh (45+)"
+    }
   },
   "styleTryOnPage": {
     "loadingTitle": "Uslubni sinash",

@@ -41,4 +41,11 @@ describe("guide hreflang", () => {
       "https://mysaloon.uz/en/guides/textured-crop-soch-turmagi",
     );
   });
+
+  it("emits one alternate per published locale", () => {
+    const links = guideAlternates("virtual-soch-turmagini-sinab-korish", ["uz", "ru", "en"]);
+    const langs = links.map((link) => link.hrefLang);
+    expect(new Set(langs).size).toBe(langs.length);
+    expect(langs.sort()).toEqual(["en", "ru", "uz", "x-default"]);
+  });
 });
