@@ -27,7 +27,7 @@ import { useHideTabBar } from "../../../hooks/useHideTabBar";
 import { pickProductLabelFromGallery } from "../../../lib/product-label";
 import { playBarcodeBeep, primeBarcodeBeep } from "../../../lib/barcode-beep";
 import { toDataUrl } from "../../../lib/selfie";
-import { resolveScanToAnalysis } from "../../../lib/hair-advisor-2/scan-flow";
+import { resolveScanToAnalysis, shouldOpenProductPick } from "../../../lib/hair-advisor-2/scan-flow";
 import { isOnline, subscribeNetwork } from "../../../lib/network-status";
 import type { MorphIngredientStackParamList } from "../../../navigation/MorphIngredientStack";
 import { morphFont } from "../../../theme/morph-font";
@@ -45,6 +45,7 @@ export function HairAdvisor2ScanScreen({ navigation }: Props) {
   const [camPerm, requestCamPerm] = useCameraPermissions();
   const barcodeLock = useRef(false);
   const sessionRef = useRef(0);
+  const abortRef = useRef<AbortController | null>(null);
   const lastBarcodeRef = useRef<{ code: string; at: number } | null>(null);
   const scanLine = useRef(new Animated.Value(0)).current;
   const [busy, setBusy] = useState(false);
@@ -111,8 +112,14 @@ export function HairAdvisor2ScanScreen({ navigation }: Props) {
 
   const bumpSession = () => {
     sessionRef.current += 1;
+    abortRef.current?.abort();
+    abortRef.current = new AbortController();
     return sessionRef.current;
   };
+
+  const isAbortError = (e: unknown) =>
+    (e instanceof Error && e.name === "AbortError") ||
+    (typeof DOMException !== "undefined" && e instanceof DOMException && e.name === "AbortError");
 
   const afterScan = useCallback(
     async (scan: HairScan, session: number) => {
@@ -125,6 +132,12 @@ export function HairAdvisor2ScanScreen({ navigation }: Props) {
       }
       if (scan.status === "product_not_found") {
         navigation.navigate("HairAdvisorRecover", { scanId: scan.id });
+        barcodeLock.current = false;
+        setBusy(false);
+        return;
+      }
+      if (shouldOpenProductPick(scan)) {
+        navigation.navigate("HairAdvisorProductPick", { scanId: scan.id });
         barcodeLock.current = false;
         setBusy(false);
         return;
@@ -171,15 +184,18 @@ export function HairAdvisor2ScanScreen({ navigation }: Props) {
       setError(null);
       setStatus(t("scanner.status.lookingUpProduct", { defaultValue: "Mahsulot ma’lumotlari qidirilmoqda" }));
       try {
-        const scan = await createHairScan({
-          input_method: "barcode",
-          barcode: checksum.normalized,
-          idempotency_key: `ha2-${checksum.normalized}`,
-        });
+        const scan = await createHairScan(
+          {
+            input_method: "barcode",
+            barcode: checksum.normalized,
+            idempotency_key: `ha2-${checksum.normalized}`,
+          },
+          { signal: abortRef.current?.signal },
+        );
         if (session !== sessionRef.current) return;
         await afterScan(scan, session);
-      } catch {
-        if (session !== sessionRef.current) return;
+      } catch (e) {
+        if (session !== sessionRef.current || isAbortError(e)) return;
         setError(t("scanner.errors.network", { defaultValue: "Internet aloqasini tekshiring" }));
         barcodeLock.current = false;
         setBusy(false);
@@ -211,15 +227,18 @@ export function HairAdvisor2ScanScreen({ navigation }: Props) {
     setDetectedCode(checksum.normalized);
     setError(null);
     try {
-      const scan = await createHairScan({
-        input_method: "manual_barcode",
-        barcode: checksum.normalized,
-        idempotency_key: `ha2-manual-${checksum.normalized}`,
-      });
+      const scan = await createHairScan(
+        {
+          input_method: "manual_barcode",
+          barcode: checksum.normalized,
+          idempotency_key: `ha2-manual-${checksum.normalized}`,
+        },
+        { signal: abortRef.current?.signal },
+      );
       if (session !== sessionRef.current) return;
       await afterScan(scan, session);
-    } catch {
-      if (session !== sessionRef.current) return;
+    } catch (e) {
+      if (session !== sessionRef.current || isAbortError(e)) return;
       setError(t("scanner.errors.network", { defaultValue: "Internet aloqasini tekshiring" }));
       barcodeLock.current = false;
       setBusy(false);
@@ -237,18 +256,28 @@ export function HairAdvisor2ScanScreen({ navigation }: Props) {
     const session = bumpSession();
     setBusy(true);
     setError(null);
-    setStatus(t("scanner.status.recognizingProduct", { defaultValue: "Mahsulot aniqlanmoqda…" }));
+    // Mobile has no client ZXing path yet — gallery always uploads image for server OCR/lookup.
+    setStatus(
+      mode === "barcode"
+        ? t("scanner.status.galleryBarcodeFallback", {
+            defaultValue: "Rasm yuborilmoqda (mijozda barcode decode yo‘q)…",
+          })
+        : t("scanner.status.recognizingProduct", { defaultValue: "Mahsulot aniqlanmoqda…" }),
+    );
     try {
       const dataUrl = uri.startsWith("data:") ? uri : await toDataUrl(uri);
       if (!dataUrl) throw new Error("fail");
-      const scan = await createHairScan({
-        input_method: mode === "barcode" ? "gallery" : "camera_label",
-        image: dataUrl,
-      });
+      const scan = await createHairScan(
+        {
+          input_method: mode === "barcode" ? "gallery" : "camera_label",
+          image: dataUrl,
+        },
+        { signal: abortRef.current?.signal },
+      );
       if (session !== sessionRef.current) return;
       await afterScan(scan, session);
-    } catch {
-      if (session !== sessionRef.current) return;
+    } catch (e) {
+      if (session !== sessionRef.current || isAbortError(e)) return;
       setError(t("scanner.errors.imageFailed", { defaultValue: "Rasm o'qilmadi" }));
       setBusy(false);
     }
@@ -271,14 +300,26 @@ export function HairAdvisor2ScanScreen({ navigation }: Props) {
       const dataUrl = `data:image/jpeg;base64,${photo.base64}`;
       setBusy(true);
       setError(null);
-      const scan = await createHairScan({ input_method: "camera_label", image: dataUrl });
+      const scan = await createHairScan(
+        { input_method: "camera_label", image: dataUrl },
+        { signal: abortRef.current?.signal },
+      );
       if (session !== sessionRef.current) return;
       await afterScan(scan, session);
-    } catch {
+    } catch (e) {
+      if (isAbortError(e)) return;
       setError(t("scanner.errors.imageFailed", { defaultValue: "Rasm o'qilmadi" }));
       setBusy(false);
     }
   }, [afterScan, busy, mode, t]);
+
+  const cancelLookup = useCallback(() => {
+    bumpSession();
+    barcodeLock.current = false;
+    setBusy(false);
+    setError(null);
+    setDetectedCode(null);
+  }, []);
 
   return (
     <View style={styles.root}>
@@ -367,14 +408,7 @@ export function HairAdvisor2ScanScreen({ navigation }: Props) {
             <ActivityIndicator color="#fff" />
             <Text style={styles.lookup}>{status}</Text>
             {detectedCode ? <Text style={styles.code}>{detectedCode}</Text> : null}
-            <Pressable
-              onPress={() => {
-                bumpSession();
-                barcodeLock.current = false;
-                setBusy(false);
-                setError(null);
-              }}
-            >
+            <Pressable onPress={cancelLookup}>
               <Text style={styles.cancelTxt}>{t("scanner.cancel", { defaultValue: "Bekor qilish" })}</Text>
             </Pressable>
           </View>

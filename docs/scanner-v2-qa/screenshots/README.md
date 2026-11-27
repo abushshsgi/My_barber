@@ -4,15 +4,30 @@
 
 Screenshots are produced only when Playwright e2e can reach a running `apps/user` server.
 
-- **Simulated** screenshots (mocked auth / demo route): saved by `apps/user/e2e/hair-advisor-scanner.spec.ts` when `npm run test:e2e -w user-web` runs successfully against a live base URL.
-- **Physical device** screenshots: not automated. Capture manually during real-camera QA and place files here with clear names (`android-chrome-ean13.png`, `ios-safari-permission.png`, etc.).
+### Simulated (web Playwright) — expected files
+
+| File | State |
+|------|--------|
+| `demo-result-simulated.png` | Demo result page |
+| `scanner-chrome-simulated.png` | Authenticated scanner chrome |
+| `manual-entry-simulated.png` | Manual barcode dialog |
+| `offline-mobile-viewport-simulated.png` | Offline + mobile viewport |
+| `result-sources-desktop-simulated.png` | Result sources / sections |
+| `mode-image-simulated.png` | Image mode selected |
+
+### Not captured (native / physical)
+
+| Surface | Status |
+|---------|--------|
+| Expo Android permission / live scan / torch | **Missing** — owner physical QA |
+| Expo iOS permission / live scan | **Missing** — owner physical QA + Apple credentials |
+| Real Android Chrome / iOS Safari camera LED | **Missing** — owner physical QA |
+| Live “detected / resolving / found / not-found” with real barcode | **Missing** — requires device + API |
 
 ## Why screenshots may be missing
 
-If this folder only contains this README:
-
-1. Playwright was not run in the QA session, or
-2. The user-web app server was not available at the Playwright `baseURL`, or
-3. Camera / HTTPS secure-context prevents real live-preview capture in CI.
+1. Playwright was not run, or user-web server unavailable at Playwright `baseURL`.
+2. Camera / HTTPS secure-context prevents real live-preview capture in CI.
+3. Native builds / EAS not executed in this RC session.
 
 Do not invent product UI screenshots. Prefer demo-route and chrome-only captures labeled **simulated**.

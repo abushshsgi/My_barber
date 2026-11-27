@@ -83,7 +83,51 @@ test.describe("Universal Smart Scanner (mocked / simulated)", () => {
     await expect(enter).toBeVisible({ timeout: 15_000 });
     await enter.click();
     await expect(page.getByPlaceholder(/EAN|UPC/i)).toBeVisible();
+    await page.screenshot({
+      path: path.join(SCREENSHOT_DIR, "manual-entry-simulated.png"),
+      fullPage: false,
+    });
+  });
+
+  test("offline + mobile viewport chrome (simulated)", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await seedAuth(page);
+    await page.addInitScript(() => {
+      Object.defineProperty(navigator, "onLine", { configurable: true, get: () => false });
+    });
+    await page.goto("/ai-style/care/ingredient", { waitUntil: "domcontentloaded" });
+    await expect(page.getByText(/Offline|Офлайн|masofaviy/i).first()).toBeVisible({
+      timeout: 15_000,
+    });
+    await page.screenshot({
+      path: path.join(SCREENSHOT_DIR, "offline-mobile-viewport-simulated.png"),
+      fullPage: false,
+    });
+  });
+
+  test("demo result missing-info / sources sections (desktop)", async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await page.goto("/ai-style/care/ingredient/result/demo", { waitUntil: "domcontentloaded" });
+    await expect(page.getByText(/Manbalar/i).first()).toBeVisible({ timeout: 15_000 });
+    await page.screenshot({
+      path: path.join(SCREENSHOT_DIR, "result-sources-desktop-simulated.png"),
+      fullPage: true,
+    });
+  });
+
+  test("mode image selected chrome (simulated)", async ({ page }) => {
+    await seedAuth(page);
+    await page.goto("/ai-style/care/ingredient", { waitUntil: "domcontentloaded" });
+    const imageBtn = page.getByRole("button", { name: /Image|Rasm|Фото/i }).first();
+    await expect(imageBtn).toBeVisible({ timeout: 15_000 });
+    await imageBtn.click();
+    await page.screenshot({
+      path: path.join(SCREENSHOT_DIR, "mode-image-simulated.png"),
+      fullPage: false,
+    });
   });
 });
 
-/** Physical device / real camera QA is documented separately — not covered here. */
+/** Physical device / real camera QA is documented separately — not covered here.
+ *  Native Expo screenshots: NOT captured in this suite (no device / emulator in CI).
+ */

@@ -86,11 +86,12 @@ export type HairRoutine = {
   }>;
 };
 
-async function postJson<T>(path: string, body: unknown): Promise<T> {
+async function postJson<T>(path: string, body: unknown, signal?: AbortSignal): Promise<T> {
   const res = await apiFetch(path, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
+    signal,
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
@@ -99,14 +100,17 @@ async function postJson<T>(path: string, body: unknown): Promise<T> {
   return res.json() as Promise<T>;
 }
 
-export async function createHairScan(body: {
-  input_method: string;
-  barcode?: string;
-  search_query?: string;
-  image?: string;
-  idempotency_key?: string;
-}): Promise<HairScan> {
-  return postJson("/api/v1/hair-advisor/scans/", body);
+export async function createHairScan(
+  body: {
+    input_method: string;
+    barcode?: string;
+    search_query?: string;
+    image?: string;
+    idempotency_key?: string;
+  },
+  opts?: { signal?: AbortSignal },
+): Promise<HairScan> {
+  return postJson("/api/v1/hair-advisor/scans/", body, opts?.signal);
 }
 
 export async function confirmHairScanIngredients(

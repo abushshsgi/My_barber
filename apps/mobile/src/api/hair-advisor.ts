@@ -34,6 +34,22 @@ export type HairScan = {
   message_uz?: string;
   submission_allowed?: boolean;
   verified_at?: string | null;
+  recognition_meta?: {
+    recognition_status?: "none" | "exact" | "ambiguous" | "probable_match" | string;
+    candidate_ids?: number[];
+    ocr_brand?: string;
+    ocr_product_name?: string;
+    [key: string]: unknown;
+  };
+  product_candidates?: Array<{
+    id: number;
+    name: string;
+    brand: string;
+    image_url?: string | null;
+    volume_ml?: number | null;
+    is_verified?: boolean;
+    barcode?: string | null;
+  }>;
 };
 
 export type HairAnalysisRecommendation = "POTENTIAL_MATCH" | "CAUTION" | "INSUFFICIENT_DATA";
@@ -89,23 +105,33 @@ export type HairRoutine = {
   }>;
 };
 
-async function postJson<T>(path: string, body: unknown): Promise<T> {
+async function postJson<T>(path: string, body: unknown, signal?: AbortSignal): Promise<T> {
   return apiJson(path, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
+    signal,
   });
 }
 
-export async function createHairScan(body: {
-  input_method: string;
-  barcode?: string;
-  search_query?: string;
-  ingredients?: string[];
-  image?: string;
-  idempotency_key?: string;
-}): Promise<HairScan> {
-  return postJson("/api/v1/hair-advisor/scans/", body);
+export async function createHairScan(
+  body: {
+    input_method: string;
+    barcode?: string;
+    search_query?: string;
+    ingredients?: string[];
+    image?: string;
+    idempotency_key?: string;
+  },
+  opts?: { signal?: AbortSignal },
+): Promise<HairScan> {
+  return postJson("/api/v1/hair-advisor/scans/", body, opts?.signal);
+}
+
+export async function confirmHairScanProduct(scanId: string, careProductId: number): Promise<HairScan> {
+  return postJson(`/api/v1/hair-advisor/scans/${scanId}/confirm-product/`, {
+    care_product_id: careProductId,
+  });
 }
 
 export async function fetchHairScan(scanId: string): Promise<HairScanDetail> {

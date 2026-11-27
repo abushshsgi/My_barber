@@ -17,7 +17,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { addHairRoutineProduct, compareHairProducts, fetchHairScan, type HairAnalysis, type HairScanDetail } from "../../../api/hair-advisor";
 import { addMyCareProductApi, fetchMyCareProducts } from "../../../api/care";
-import { compatibilityLabel } from "../../../lib/hair-advisor-2/scan-flow";
+import { compatibilityLabel, compatibilityState } from "../../../lib/hair-advisor-2/scan-flow";
 import type { MorphIngredientStackParamList } from "../../../navigation/MorphIngredientStack";
 import { morphFont } from "../../../theme/morph-font";
 import { fontSize, moderateScale, scale, verticalScale } from "../../../utils/responsive";
@@ -71,6 +71,7 @@ export function HairAdvisor2ResultScreen({ navigation, route }: Props) {
   const concerns = (cautions.length ? cautions : bullets).slice(0, 2);
   const keyIng = (analysis?.result?.key_ingredients ?? []).slice(0, 3);
   const fit = compatibilityLabel(analysis?.recommendation);
+  const fitState = compatibilityState(analysis?.recommendation);
 
   return (
     <View style={styles.root}>
@@ -146,6 +147,29 @@ export function HairAdvisor2ResultScreen({ navigation, route }: Props) {
 
         <Card title="MySaloon tavsiyasi">
           <Text style={styles.body}>{analysis?.explanation_uz ?? "—"}</Text>
+        </Card>
+
+        {fitState === "insufficient_information" || !ingredients.length ? (
+          <Card title="Yetishmayotgan ma’lumot">
+            {!ingredients.length ? <Text style={styles.body}>INCI / ingredient ro‘yxati yo‘q</Text> : null}
+            {!analysis ? <Text style={styles.body}>Advisor tahlili hali mavjud emas</Text> : null}
+            {fitState === "insufficient_information" && analysis ? (
+              <Text style={styles.body}>Moslikni aniq baholash uchun ma’lumot yetarli emas</Text>
+            ) : null}
+          </Card>
+        ) : null}
+
+        <Card title="Manbalar">
+          <Text style={styles.body}>
+            Katalog:{" "}
+            {product?.is_verified || detail?.catalog_tier === "verified"
+              ? "Tasdiqlangan MySaloon katalogi"
+              : detail?.catalog_tier
+                ? String(detail.catalog_tier)
+                : "Noma’lum / tasdiqlanmagan"}
+          </Text>
+          <Text style={styles.body}>Tahlil: Hair Advisor (scanner → analyze)</Text>
+          <Text style={styles.metaLine}>Foizli match ballari ko‘rsatilmaydi.</Text>
         </Card>
       </ScrollView>
 

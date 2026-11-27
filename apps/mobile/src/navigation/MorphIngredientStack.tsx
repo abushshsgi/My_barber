@@ -1,6 +1,7 @@
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import { MorphCareProductDetailScreen } from "../screens/morph/MorphCareProductDetailScreen";
 import { HairAdvisor2IngredientDetailScreen } from "../screens/morph/hair-advisor/HairAdvisor2IngredientDetailScreen";
+import { HairAdvisor2ProductPickScreen } from "../screens/morph/hair-advisor/HairAdvisor2ProductPickScreen";
 import { HairAdvisor2RecoverScreen } from "../screens/morph/hair-advisor/HairAdvisor2RecoverScreen";
 import { HairAdvisor2IngredientsScreen } from "../screens/morph/hair-advisor/HairAdvisor2IngredientsScreen";
 import { HairAdvisor2ResultScreen } from "../screens/morph/hair-advisor/HairAdvisor2ResultScreen";
@@ -11,6 +12,7 @@ export type MorphIngredientStackParamList = {
   HairAdvisorResult: { scanId: string };
   HairAdvisorIngredients: { scanId: string };
   HairAdvisorRecover: { scanId: string };
+  HairAdvisorProductPick: { scanId: string };
   HairAdvisorIngredientDetail: { scanId: string; inci: string };
   CareProductDetail: { productId: number };
 };
@@ -31,6 +33,11 @@ export function MorphIngredientStack() {
       <Stack.Screen name="HairAdvisorResult" component={HairAdvisor2ResultScreen} options={{ contentStyle: { backgroundColor: "#FFFFFF" } }} />
       <Stack.Screen name="HairAdvisorIngredients" component={HairAdvisor2IngredientsScreen} options={{ contentStyle: { backgroundColor: "#FFFFFF" } }} />
       <Stack.Screen name="HairAdvisorRecover" component={HairAdvisor2RecoverScreen} options={{ contentStyle: { backgroundColor: "#FFFFFF" } }} />
+      <Stack.Screen
+        name="HairAdvisorProductPick"
+        component={HairAdvisor2ProductPickScreen}
+        options={{ contentStyle: { backgroundColor: "#FAFAFA" } }}
+      />
       <Stack.Screen
         name="HairAdvisorIngredientDetail"
         component={HairAdvisor2IngredientDetailScreen}

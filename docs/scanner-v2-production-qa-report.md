@@ -2,8 +2,9 @@
 
 **Date:** 2026-11-27  
 **Base commit:** `f0573e39` — *Implement Universal Smart Scanner V2 on the Hair Advisor pipeline*  
-**Branch:** `main` (local fixes **not pushed**)  
-**Scope:** Production hardening & deep QA of existing Universal Smart Scanner V2 — no full rebuild
+**Branch:** `feat/scanner-v2-release-candidate` (RC pushed; **not** merged to `main`)  
+**Scope:** Production hardening & deep QA of existing Universal Smart Scanner V2 — no full rebuild  
+**RC report:** `docs/scanner-v2-release-candidate-report.md`
 
 ---
 
@@ -11,7 +12,7 @@
 
 **Production readiness: NOT READY**
 
-Critical real-device camera QA (Android Chrome, iOS Safari, Expo Android/iOS physical devices) was **not** executed in this session. Automated unit + simulated Playwright coverage passes. Safe in-repo fixes were applied and left **unpushed** for user approval before deploy.
+Critical real-device camera QA (Android Chrome, iOS Safari, Expo Android/iOS physical devices) was **not** executed. Automated unit + simulated Playwright coverage passes. Hardening is on the feature branch only — awaiting owner physical QA before any merge/production deploy.
 
 ---
 
@@ -30,38 +31,38 @@ Statuses: `IMPLEMENTED AND VERIFIED` | `IMPLEMENTED BUT UNTESTED` | `PARTIALLY I
 | 7 | Mobile Expo live scan (EAN/UPC), no barcode shutter | **IMPLEMENTED BUT UNTESTED** (device) | `HairAdvisor2ScanScreen.tsx`; shutter only in `product_image`; `expo-camera ~57.0.4`; permissions in `app.config.ts` |
 | 8 | Mobile checksum + dedup + session cancel | **IMPLEMENTED BUT UNTESTED** (device) | `@mybarber/scanner` validators; `sessionRef` + cancel bump added this session |
 | 9 | Mode selector Barcode \| Image (web + mobile) | **IMPLEMENTED AND VERIFIED** (UI e2e web) | Playwright mode selector; mobile chips present in code |
-| 10 | Gallery + manual barcode | **PARTIALLY IMPLEMENTED** | Web: gallery may ZXing-decode barcode first then lookup (e2e covers manual UI). Mobile: gallery always uploads image — **no client barcode-from-image decode** ([Audit mobile scanner](d519c40e-d80d-45bd-8c20-4e4203837aef)) |
+| 10 | Gallery + manual barcode | **PARTIALLY IMPLEMENTED** | Web: ZXing-decode then lookup. Mobile: gallery still server image path (status copy documents fallback); no client barcode-from-image decode |
 | 11 | Product resolver staged providers | **IMPLEMENTED AND VERIFIED** (mocked) | `test_scanner_product_resolver.py` **7 passed** — chain order, invalid, not-found, inflight cache, neg-cache |
 | 12 | Verified-first; external never auto-verified | **IMPLEMENTED AND VERIFIED** (code + unit) | `chain.py` early exit on verified; external `found=False` |
 | 13 | Negative / hint cache | **IMPLEMENTED AND VERIFIED** (mocked) | `external.py` NEG/HINT TTL; unit asserts network skip |
 | 14 | Country prefix as metadata only (no product gate) | **IMPLEMENTED AND VERIFIED** (code review) | `barcode_country.py` used for display fields in lookup parsers; resolver does not filter by country |
 | 15 | Advisor integration (no second Advisor) | **IMPLEMENTED AND VERIFIED** (code + demo e2e) | `advisor-integration.ts` → `resolveScanToAnalysis` → confirm/analyze; qualitative labels only |
 | 16 | No fake % match scores in scanner UI | **IMPLEMENTED AND VERIFIED** (UI) / note | Result UI uses qualitative labels only (e2e). Backend `care_match` still computes heuristic `safety_score` / `match_percent` in analysis JSON — not shown on V2 result page ([Audit backend scanner](ed48fa15-4922-4cf8-9781-69e939965410)) |
-| 17 | Result UI: compatibility, missing info, sources | **PARTIALLY IMPLEMENTED** → improved | Compatibility existed; **Missing info** + **Sources** sections added this session |
+| 17 | Result UI: compatibility, missing info, sources | **IMPLEMENTED AND VERIFIED** (UI e2e / code) | Web + mobile Missing info + Sources; e2e asserts qualitative labels / Manbalar |
 | 18 | Theme: no arbitrary purple | **IMPLEMENTED AND VERIFIED** | `#8B5CF6` removed from pick page; scanner theme tokens; grep clean under hair-advisor-2 / mobile scan |
 | 19 | QR/URL never auto-navigate | **IMPLEMENTED AND VERIFIED** (unit + emit guard) | URL → invalid retail; Digital Link extracts GTIN; camera `emitCode` rejects `url` |
 | 20 | Offline UX (not i18n-only) | **IMPLEMENTED AND VERIFIED** (simulated e2e) | Was i18n-only; now `navigator.onLine` + mobile `subscribeNetwork`; Playwright offline test passed |
 | 21 | Duplicate API prevention | **IMPLEMENTED AND VERIFIED** (code) | Client dedup window + idempotency keys; backend short inflight cache |
-| 22 | Extended formats (DataMatrix, CODE-*, QR live) | **PARTIALLY IMPLEMENTED** | Matrix documents Partial† / image; mobile primary EAN/UPC only |
+| 22 | Extended formats (DataMatrix, CODE-*, QR live) | **PARTIALLY IMPLEMENTED** | Capability matrix aligned to code truth; primary EAN/UPC (+ web CODE-128 BD) |
 | 23 | Paid Barcode Lookup / GS1 APIs | **BLOCKED BY EXTERNAL REQUIREMENTS** | Keys unset; OBF + UPCitemdb trial only |
 | 24 | Global product coverage | **BLOCKED BY EXTERNAL REQUIREMENTS** | Coverage = verified DB + free/trial providers; many SKUs → not-found → image/OCR |
 | 25 | Physical Android/iOS / Safari camera matrix | **NOT IMPLEMENTED** (this session) | Device QA not run; commands documented below |
 | 26 | Legacy screen removal / no broken imports | **IMPLEMENTED AND VERIFIED** (repo state) | Legacy Morph/Web scan pages removed in `f0573e39`; no `#8B5CF6` leftovers in pick |
-| 27 | Mobile ambiguous product-pick parity | **NOT IMPLEMENTED** | Web routes to `/ingredient/pick/`; mobile stack has **no** pick screen / `product_candidates` handling — ambiguous OCR goes through recover/analyze path only ([Audit mobile scanner](d519c40e-d80d-45bd-8c20-4e4203837aef)) |
-| 28 | Abort in-flight HTTP on cancel | **PARTIALLY IMPLEMENTED** | Session ignore works; `abortRef` not passed into `createHairScan` fetch ([Audit web scanner](4e1e1749-eee6-43e8-b670-f530b2214487)) |
+| 27 | Mobile ambiguous product-pick parity | **IMPLEMENTED BUT UNTESTED** (device) | `HairAdvisor2ProductPickScreen` + stack route + `shouldOpenProductPick` |
+| 28 | Abort in-flight HTTP on cancel | **IMPLEMENTED AND VERIFIED** (code) | `AbortSignal` wired through `createHairScan` (web + mobile); cancel aborts controller |
 
 ### Coverage counts
 
 | Status | Count |
 |--------|------:|
-| IMPLEMENTED AND VERIFIED | 15 |
-| IMPLEMENTED BUT UNTESTED | 4 |
-| PARTIALLY IMPLEMENTED | 4 |
-| NOT IMPLEMENTED | 2 |
+| IMPLEMENTED AND VERIFIED | 17 |
+| IMPLEMENTED BUT UNTESTED | 5 |
+| PARTIALLY IMPLEMENTED | 2 |
+| NOT IMPLEMENTED | 1 (#25 physical matrix) |
 | BROKEN | 0 |
 | BLOCKED BY EXTERNAL REQUIREMENTS | 2 |
 
-*Counts recalibrated after parallel audits ([Audit web scanner](4e1e1749-eee6-43e8-b670-f530b2214487), [Audit mobile scanner](d519c40e-d80d-45bd-8c20-4e4203837aef), [Audit backend scanner](ed48fa15-4922-4cf8-9781-69e939965410)) plus this session’s fixes.*
+*Updated on RC branch after gap-closure commit. See `docs/scanner-v2-release-candidate-report.md`.*
 
 ---
 
@@ -197,8 +198,8 @@ Physical-device screenshots: **none** (devices unavailable).
 
 ## Push / deploy note
 
-Local hardening changes are **present in the working tree only**.  
-**Not pushed** to `origin/main`. Awaiting **user approval** before commit/push/deploy.
+Hardening lives on **`origin/feat/scanner-v2-release-candidate` only**.  
+**Not** merged to `main`. **Not** production deployed. Awaiting owner physical QA (`docs/scanner-v2-qa/physical-device-qa.md`).
 
 ---
 

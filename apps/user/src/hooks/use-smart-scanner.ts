@@ -189,15 +189,19 @@ export function useSmartScanner(resultPath: (id: string) => string) {
           if (lookupInFlightRef.current) return;
           lookupInFlightRef.current = true;
           try {
-            const scan = await createHairScan({
-              input_method: "barcode",
-              barcode: checksum.normalized,
-              idempotency_key: `ha2-${checksum.normalized}`,
-            });
+            const scan = await createHairScan(
+              {
+                input_method: "barcode",
+                barcode: checksum.normalized,
+                idempotency_key: `ha2-${checksum.normalized}`,
+              },
+              { signal: abortRef.current?.signal },
+            );
             if (session !== sessionRef.current) return;
             await afterScanCreated(scan, session);
           } catch (e) {
             if (session !== sessionRef.current) return;
+            if (e instanceof DOMException && e.name === "AbortError") return;
             setPhase("error");
             setError(e instanceof Error ? e.message : t("scanner.errors.network"));
             lockRef.current = false;
@@ -229,13 +233,19 @@ export function useSmartScanner(resultPath: (id: string) => string) {
       setCameraOn(false);
       setError(null);
       try {
-        const scan = await createHairScan({
-          input_method: "manual_barcode",
-          barcode: checksum.normalized,
-          idempotency_key: `ha2-manual-${checksum.normalized}`,
-        });
+        const scan = await createHairScan(
+          {
+            input_method: "manual_barcode",
+            barcode: checksum.normalized,
+            idempotency_key: `ha2-manual-${checksum.normalized}`,
+          },
+          { signal: abortRef.current?.signal },
+        );
+        if (session !== sessionRef.current) return;
         await afterScanCreated(scan, session);
       } catch (e) {
+        if (session !== sessionRef.current) return;
+        if (e instanceof DOMException && e.name === "AbortError") return;
         setPhase("error");
         setError(e instanceof Error ? e.message : t("scanner.errors.generic"));
         lockRef.current = false;
@@ -255,9 +265,15 @@ export function useSmartScanner(resultPath: (id: string) => string) {
       setCameraOn(false);
       setError(null);
       try {
-        const scan = await createHairScan({ input_method: "camera_label", image: dataUrl });
+        const scan = await createHairScan(
+          { input_method: "camera_label", image: dataUrl },
+          { signal: abortRef.current?.signal },
+        );
+        if (session !== sessionRef.current) return;
         await afterScanCreated(scan, session);
       } catch (e) {
+        if (session !== sessionRef.current) return;
+        if (e instanceof DOMException && e.name === "AbortError") return;
         setPhase("error");
         setError(e instanceof Error ? e.message : t("scanner.errors.imageFailed"));
         lockRef.current = false;
@@ -285,12 +301,18 @@ export function useSmartScanner(resultPath: (id: string) => string) {
       setCameraOn(false);
       try {
         const dataUrl = await prepareSelfieFromFile(file);
-        const scan = await createHairScan({
-          input_method: mode === "product_image" ? "camera_label" : "gallery",
-          image: dataUrl,
-        });
+        const scan = await createHairScan(
+          {
+            input_method: mode === "product_image" ? "camera_label" : "gallery",
+            image: dataUrl,
+          },
+          { signal: abortRef.current?.signal },
+        );
+        if (session !== sessionRef.current) return;
         await afterScanCreated(scan, session);
       } catch (e) {
+        if (session !== sessionRef.current) return;
+        if (e instanceof DOMException && e.name === "AbortError") return;
         setPhase("error");
         setError(e instanceof Error ? e.message : t("scanner.errors.imageFailed"));
         lockRef.current = false;
