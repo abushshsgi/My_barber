@@ -1321,6 +1321,9 @@
     "tryAiStyle": "Morf AI da sinash",
     "tryOnMe": "O'zingizda ko'ring",
     "findSalon": "Salon topish",
+    "relatedStyles": "O'xshash turmaglar",
+    "relatedGuides": "Shu turmag haqida",
+    "browseLength": "Shu uzunlikdagi turmaglar",
     "tryOnTitle": "{{style}}",
     "tryOnDesc": "Selfie yuklang — AI tanlangan uslubni yuzingizda ko'rsatadi."
   },

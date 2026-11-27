@@ -23,6 +23,7 @@ class SeoArticleCardSerializer(serializers.ModelSerializer):
             "published_at",
             "reading_minutes",
             "published_locales",
+            "related_style_ids",
         )
         read_only_fields = fields
 

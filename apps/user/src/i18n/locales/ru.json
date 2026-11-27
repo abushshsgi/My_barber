@@ -1322,6 +1322,9 @@
     "tryAiStyle": "Примерить в Morf AI",
     "tryOnMe": "Примерить на себе",
     "findSalon": "Найти салон",
+    "relatedStyles": "Похожие стрижки",
+    "relatedGuides": "Об этой стрижке",
+    "browseLength": "Стрижки этой длины",
     "tryOnTitle": "{{style}}",
     "tryOnDesc": "Загрузите селфи — AI покажет этот стиль на вашем лице."
   },

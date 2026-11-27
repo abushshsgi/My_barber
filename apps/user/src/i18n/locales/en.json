@@ -1321,6 +1321,9 @@
     "tryAiStyle": "Try in Morf AI",
     "tryOnMe": "See on yourself",
     "findSalon": "Find a salon",
+    "relatedStyles": "Similar haircuts",
+    "relatedGuides": "About this haircut",
+    "browseLength": "Haircuts of this length",
     "tryOnTitle": "{{style}}",
     "tryOnDesc": "Upload a selfie — AI will show this style on your face."
   },

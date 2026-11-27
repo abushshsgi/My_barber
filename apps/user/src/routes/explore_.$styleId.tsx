@@ -1,15 +1,19 @@
 import { Link, createFileRoute, notFound } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
 import { MapPin, ScanFace } from "lucide-react";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { trackEvent } from "@/lib/analytics";
-import { DesktopPageSplit } from "@/components/desktop/DesktopPageSplit";
+import { resolveFetchBase } from "@/lib/api/base-url";
 import { ExploreStyleGallery } from "@/components/explore/ExploreStyleGallery";
 import { HairstylePreviewFrame } from "@/components/hairstyles/HairstylePreviewImage";
 import { MobileStickyActionBar } from "@/components/mobile/MobileStickyActionBar";
 import { PageHeader } from "@/components/PageHeader";
 import { useExplorePersona } from "@/hooks/use-explore-persona";
-import { useHairstyle } from "@/hooks/use-hairstyles";
+import { useHairstyle, useHairstyles } from "@/hooks/use-hairstyles";
+import { lengthCategoryPath, rankRelatedHairstyles } from "@/lib/related-hairstyles";
+import { localizedPath } from "@/seo/url";
+import type { SeoLocale } from "@/seo/constants";
 import { MOBILE_STICKY_CONTENT_PADDING_NO_DOCK_CLASS } from "@/lib/layout-constants";
 import {
   getHairstyleDisplayUrl,
@@ -120,6 +124,13 @@ function ExploreStyleDesktop({ entry, galleryItems, imageAlt }: StyleProps) {
             to="/explore/$styleId/try"
             params={{ styleId: entry.id }}
             className={ctaDesktopPrimaryClass}
+            onClick={() =>
+              trackEvent(
+                "tryon_cta_click",
+                { style_id: entry.id, surface: "explore_detail" },
+                { dedupeKey: `tryon-${entry.id}` },
+              )
+            }
           >
             <ScanFace className="h-4 w-4 shrink-0" strokeWidth={2.25} />
             {t("explorePage.tryOnMe")}
@@ -134,11 +145,51 @@ function ExploreStyleDesktop({ entry, galleryItems, imageAlt }: StyleProps) {
   );
 }
 
+function useIsMdUp() {
+  const [isMdUp, setIsMdUp] = useState(false);
+  useEffect(() => {
+    const mql = window.matchMedia("(min-width: 768px)");
+    const onChange = () => setIsMdUp(mql.matches);
+    mql.addEventListener("change", onChange);
+    setIsMdUp(mql.matches);
+    return () => mql.removeEventListener("change", onChange);
+  }, []);
+  return isMdUp;
+}
+
+function articleLocale(language: string): SeoLocale {
+  if (language.startsWith("ru")) return "ru";
+  if (language.startsWith("en")) return "en";
+  return "uz";
+}
+
 function ExploreStyleDetailPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { styleId } = Route.useParams();
   const { personaId } = useExplorePersona();
+  const isMdUp = useIsMdUp();
   const { data: entry, isLoading, isError } = useHairstyle(styleId, personaId);
+  const catalog = useHairstyles(entry?.audience, personaId, {
+    ignoreAgeGroup: true,
+    enabled: Boolean(entry),
+  });
+  const locale = articleLocale(i18n.language || "uz");
+  const guides = useQuery({
+    queryKey: ["guides", locale, "published", "style-links"],
+    enabled: Boolean(entry),
+    queryFn: async () => {
+      const res = await fetch(`${resolveFetchBase("")}/api/v1/content/articles/?locale=${locale}`, {
+        headers: { Accept: "application/json" },
+      });
+      if (!res.ok) return [];
+      return (await res.json()) as Array<{
+        slug: string;
+        title: string;
+        related_style_ids?: string[];
+      }>;
+    },
+    staleTime: 60_000,
+  });
 
   useEffect(() => {
     if (!entry) return;
@@ -177,45 +228,123 @@ function ExploreStyleDetailPage() {
   const imageUrl = getHairstyleDisplayUrl(entry);
   const galleryItems =
     entry.gallery.length > 0 ? entry.gallery : [{ view: "front", label: "Old", url: imageUrl }];
+  const related = rankRelatedHairstyles(
+    {
+      id: entry.id,
+      category: entry.category,
+      hairLength: entry.hairLength,
+      audience: entry.audience,
+      tags: entry.tags,
+    },
+    (catalog.data ?? []).map((item) => ({
+      id: item.id,
+      category: item.category,
+      hairLength: item.hairLength,
+      audience: item.audience,
+      tags: item.tags,
+      entry: item,
+    })),
+  ).map((item) => item.entry);
+  const lengthPath = lengthCategoryPath(entry.hairLength);
+  const relatedGuides = (guides.data ?? []).filter((row) =>
+    (row.related_style_ids ?? []).includes(entry.id),
+  );
 
   return (
     <>
-      <div className={cn(MOBILE_STICKY_CONTENT_PADDING_NO_DOCK_CLASS, "min-w-0 lg:px-6 lg:pb-10")}>
-        <DesktopPageSplit
-          mobile={
-            <ExploreStyleMobile
-              entry={entry}
-              galleryItems={galleryItems}
-              imageAlt={imageSeo.alt.uz}
-            />
-          }
-          desktop={
-            <ExploreStyleDesktop
-              entry={entry}
-              galleryItems={galleryItems}
-              imageAlt={imageSeo.alt.uz}
-            />
-          }
-        />
+      <div className={cn(MOBILE_STICKY_CONTENT_PADDING_NO_DOCK_CLASS, "min-w-0 md:px-6 md:pb-10")}>
+        {isMdUp ? (
+          <ExploreStyleDesktop
+            entry={entry}
+            galleryItems={galleryItems}
+            imageAlt={imageSeo.alt.uz}
+          />
+        ) : (
+          <ExploreStyleMobile
+            entry={entry}
+            galleryItems={galleryItems}
+            imageAlt={imageSeo.alt.uz}
+          />
+        )}
+        {related.length || lengthPath || relatedGuides.length ? (
+          <section className="mt-8 px-4 md:px-0">
+            {lengthPath ? (
+              <a
+                href={lengthPath}
+                className="text-sm text-muted-foreground underline-offset-4 hover:underline"
+              >
+                {t("explorePage.browseLength")}
+              </a>
+            ) : null}
+            {related.length ? (
+              <>
+                <h2 className="mt-4 font-display text-xl font-semibold">
+                  {t("explorePage.relatedStyles")}
+                </h2>
+                <ul className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
+                  {related.map((item) => (
+                    <li key={item.id}>
+                      <Link to="/explore/$styleId" params={{ styleId: item.id }} className="block">
+                        {item.imageUrl ? (
+                          <img
+                            src={item.imageUrl}
+                            alt={item.titleUz}
+                            width={768}
+                            height={1024}
+                            loading="lazy"
+                            decoding="async"
+                            className="aspect-[3/4] w-full rounded-2xl object-cover"
+                          />
+                        ) : null}
+                        <span className="mt-2 block text-sm font-semibold">{item.titleUz}</span>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </>
+            ) : null}
+            {relatedGuides.length ? (
+              <>
+                <h2 className="mt-8 font-display text-xl font-semibold">
+                  {t("explorePage.relatedGuides")}
+                </h2>
+                <ul className="mt-3 space-y-2">
+                  {relatedGuides.map((row) => (
+                    <li key={row.slug}>
+                      <a
+                        href={localizedPath(`/guides/${row.slug}`, locale)}
+                        className="text-sm underline-offset-4 hover:underline"
+                      >
+                        {row.title}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </>
+            ) : null}
+          </section>
+        ) : null}
       </div>
 
-      <MobileStickyActionBar>
-        <Link
-          to="/explore/$styleId/try"
-          params={{ styleId: entry.id }}
-          className={ctaPrimaryClass}
-          onClick={() =>
-            trackEvent("tryon_cta_click", { style_id: entry.id, surface: "explore_detail" })
-          }
-        >
-          <ScanFace className="h-4 w-4 shrink-0" strokeWidth={2.25} />
-          <span className="min-w-0 truncate">{t("explorePage.tryOnMe")}</span>
-        </Link>
-        <Link to="/map" className={ctaSecondaryClass}>
-          <MapPin className="h-4 w-4 shrink-0" strokeWidth={2.25} />
-          <span className="min-w-0 truncate">{t("explorePage.findSalon")}</span>
-        </Link>
-      </MobileStickyActionBar>
+      {isMdUp ? null : (
+        <MobileStickyActionBar>
+          <Link
+            to="/explore/$styleId/try"
+            params={{ styleId: entry.id }}
+            className={ctaPrimaryClass}
+            onClick={() =>
+              trackEvent("tryon_cta_click", { style_id: entry.id, surface: "explore_detail" })
+            }
+          >
+            <ScanFace className="h-4 w-4 shrink-0" strokeWidth={2.25} />
+            <span className="min-w-0 truncate">{t("explorePage.tryOnMe")}</span>
+          </Link>
+          <Link to="/map" className={ctaSecondaryClass}>
+            <MapPin className="h-4 w-4 shrink-0" strokeWidth={2.25} />
+            <span className="min-w-0 truncate">{t("explorePage.findSalon")}</span>
+          </Link>
+        </MobileStickyActionBar>
+      )}
     </>
   );
 }

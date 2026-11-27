@@ -11,6 +11,7 @@ import {
 } from "@/lib/article-markdown";
 import { resolveFetchBase } from "@/lib/api/base-url";
 import { SITE_ORIGIN, type SeoLocale } from "@/seo/constants";
+import { lengthCategoryPath } from "@/lib/related-hairstyles";
 import { localizedPath } from "@/seo/url";
 
 type Source = { title?: string; url?: string };
@@ -44,6 +45,7 @@ type StyleCard = {
   id: string;
   title: string;
   image: string;
+  hairLength: string;
 };
 
 const RELATED_TITLE: Record<string, Record<SeoLocale, string>> = {
@@ -77,6 +79,7 @@ const CHROME: Record<
     articles: string;
     tryOn: string;
     missing: string;
+    browseLength: string;
   }
 > = {
   uz: {
@@ -90,6 +93,7 @@ const CHROME: Record<
     articles: "Bog'liq maqolalar",
     tryOn: "Sinash",
     missing: "Maqola topilmadi",
+    browseLength: "Shu uzunlikdagi turmaglar",
   },
   ru: {
     guides: "Руководства",
@@ -102,6 +106,7 @@ const CHROME: Record<
     articles: "Другие статьи",
     tryOn: "Примерить",
     missing: "Статья не найдена",
+    browseLength: "Стрижки этой длины",
   },
   en: {
     guides: "Guides",
@@ -114,6 +119,7 @@ const CHROME: Record<
     articles: "Related articles",
     tryOn: "Try on",
     missing: "Article not found",
+    browseLength: "Haircuts of this length",
   },
 };
 
@@ -202,18 +208,20 @@ async function fetchStyleCard(id: string): Promise<StyleCard | null> {
   const res = await fetch(`${resolveFetchBase("")}/api/v1/hairstyles/${encodeURIComponent(id)}/`, {
     headers: { Accept: "application/json" },
   });
-  if (!res.ok) return { id, title: id, image: "" };
+  if (!res.ok) return { id, title: id, image: "", hairLength: "" };
   const row = (await res.json()) as {
     id?: string;
     title?: string;
     title_uz?: string;
     image_url?: string;
+    hair_length?: string;
   };
   const image = row.image_url?.trim() || "";
   return {
     id: row.id || id,
     title: row.title_uz?.trim() || row.title?.trim() || id,
     image: image.startsWith("http") ? image : image,
+    hairLength: row.hair_length?.trim() || "",
   };
 }
 
@@ -503,6 +511,20 @@ export function GuideArticlePage({ slug, locale }: { slug: string; locale: SeoLo
       {styleQuery.data?.length ? (
         <section className="mt-14">
           <h2 className="font-display text-2xl font-semibold">{chrome.styles}</h2>
+          {lengthCategoryPath(
+            styleQuery.data.find((style) => style.hairLength)?.hairLength || "",
+          ) ? (
+            <a
+              href={
+                lengthCategoryPath(
+                  styleQuery.data.find((style) => style.hairLength)?.hairLength || "",
+                ) || "/explore"
+              }
+              className="mt-2 inline-block text-sm text-muted-foreground underline-offset-4 hover:underline"
+            >
+              {chrome.browseLength}
+            </a>
+          ) : null}
           <ul className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3">
             {styleQuery.data.map((style) => (
               <li key={style.id} className="overflow-hidden rounded-2xl border border-border">

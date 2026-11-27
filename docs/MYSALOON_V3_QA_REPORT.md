@@ -28,13 +28,27 @@ Measured in the browser at 860px on the try-on article: main about 845px, H1 and
 
 Explore at the same width reported 53 images and did not contain the "Tez orada" paused copy.
 
+## Later the same day
+
+| File | Review |
+| --- | --- |
+| `v3-article-desktop.png` | Article at an emulated 1440px. Title wraps once. Reading column measured at about 874px. The picture crops the right edge of the shell. |
+| `v3-article-mobile.png` | Article at 390px. Two-line title, full-width hero inside the gutter. |
+| `v3-detail-desktop.png` | Textured Crop at 1024px. Image and sidebar. Try-on and salon actions. Link to short haircuts. |
+| `v3-detail-mobile.png` | Same style at 390px. Sticky try-on label truncates. Existing gallery. |
+| `v3-explore-mobile.png` | Catalog at 390px with the bottom dock. |
+| `v3-morf-860.png` | Public Morf landing. Not restyled. |
+| `v3-scanner-auth.png` | Scanner route sent the logged-out browser to auth. Scanner UI was not opened. |
+
+`/privacy-policy` at 860px stayed in a column near 450–490px.
+
+A first render of the detail page crashed on `imageUrl` because related cards were unwrapped twice. That is fixed. The reloaded page showed the try-on href and the short-haircuts link.
+
 ## Not visually approved
 
-These screens were not captured in this pass, so they are not marked approved:
-
-- Guides desktop at 1440 with published cards (there are zero published articles).
-- Article at 320, 768, 1280, and 1920.
-- Explore at 390 and 1440.
-- Hairstyle detail, Morf, scanner, product-found, and advisor result.
+- Guides with published cards. There are still zero published articles.
+- Article at 320, 375, 768, 1280, and 1920 as pictures. 1440 and 390 were measured or pictured.
+- Signed-in scanner, product-found, and advisor result.
+- Explore at 1440 as a full uncropped picture.
 
 The red maintenance banner is the existing site banner.

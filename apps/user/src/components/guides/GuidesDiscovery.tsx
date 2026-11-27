@@ -20,6 +20,7 @@ const COPY: Record<
     none: string;
     error: string;
     minutes: string;
+    feature: string;
     categories: Record<string, string>;
   }
 > = {
@@ -34,6 +35,7 @@ const COPY: Record<
     none: "Bu so'rov bo'yicha maqola topilmadi.",
     error: "Maqolalar hozir yuklanmadi. Birozdan keyin qayta urinib ko'ring.",
     minutes: "daqiqa",
+    feature: "Shu mavzudagi xizmat",
     categories: {
       "morf-ai": "Morf AI",
       styles: "Soch turmagi",
@@ -51,6 +53,7 @@ const COPY: Record<
     none: "По этому запросу статей нет.",
     error: "Статьи сейчас не загрузились. Попробуйте ещё раз чуть позже.",
     minutes: "мин",
+    feature: "Сервис по этой теме",
     categories: {
       "morf-ai": "Morf AI",
       styles: "Стрижки",
@@ -68,6 +71,7 @@ const COPY: Record<
     none: "No articles match this search.",
     error: "Articles could not be loaded. Try again in a moment.",
     minutes: "min",
+    feature: "Feature for this topic",
     categories: {
       "morf-ai": "Morf AI",
       styles: "Haircuts",
@@ -84,6 +88,13 @@ async function fetchPublishedGuides(locale: SeoLocale): Promise<GuideCard[]> {
   if (!res.ok) throw new Error(`guides ${res.status}`);
   const rows = (await res.json()) as GuideCard[];
   return rows.filter((row) => row.slug && row.title);
+}
+
+function featureHref(category: string): string | null {
+  if (category === "styles") return "/explore";
+  if (category === "hair-advisor") return "/ai-style/care/ingredient";
+  if (category === "morf-ai") return "/ai-style";
+  return null;
 }
 
 function categoryLabel(locale: SeoLocale, category: string): string {
@@ -201,6 +212,14 @@ export function GuidesDiscovery({ locale }: { locale: SeoLocale }) {
           </div>
         ) : null}
       </div>
+      {featureHref(category) ? (
+        <a
+          href={featureHref(category) || "/explore"}
+          className="mt-3 inline-block text-sm text-muted-foreground underline-offset-4 hover:underline"
+        >
+          {copy.feature}
+        </a>
+      ) : null}
 
       {isLoading ? (
         <div className="mt-8 h-40 max-w-3xl animate-pulse rounded-2xl bg-surface" />
