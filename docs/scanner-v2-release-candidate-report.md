@@ -204,7 +204,13 @@ Not captured: native Expo scanner, gallery decode of a real photo, product-not-f
 
 ## 12. Commit
 
-Recorded after the commit on `feat/scanner-v2-release-candidate`. Not merged. Not production-deployed.
+| Item | Value |
+|------|--------|
+| Branch | `feat/scanner-v2-release-candidate` |
+| Implementation | `af6e565dd3bd7f97dc97756e099499b67542796f` |
+| Subject | `fix(scanner): decode gallery barcodes before the existing scan API` |
+| Merged to main | **No** |
+| Production deploy | **No** |
 
 ---
 
