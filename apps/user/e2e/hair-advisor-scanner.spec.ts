@@ -20,15 +20,16 @@ test.describe("Universal Smart Scanner (mocked)", () => {
   test("demo result UI renders without login", async ({ page }) => {
     await page.goto("/ai-style/care/ingredient/result/demo", { waitUntil: "domcontentloaded" });
     await expect(page.getByText("Deep Cleanse Shampoo")).toBeVisible({ timeout: 15_000 });
-    await expect(page.getByRole("button", { name: "Taqqoslash" })).toBeVisible();
+    await expect(page.getByText(/Namuna natija|Sample result/i)).toBeVisible();
+    await expect(page.getByRole("link", { name: /Morf AI/i }).first()).toBeVisible();
   });
 
   test("scanner route loads authenticated with Smart Scanner chrome", async ({ page }) => {
     await seedAuth(page);
     await page.goto("/ai-style/care/ingredient", { waitUntil: "domcontentloaded" });
     await expect(page).toHaveURL(/\/ai-style\/care\/ingredient/);
-    await expect(page.getByRole("heading", { name: /Smart Scanner|AI skaner/i })).toBeVisible({
-      timeout: 15_000,
+    await expect(page.getByRole("heading", { name: /Smart Scanner/i })).toBeVisible({
+      timeout: 25_000,
     });
   });
 

@@ -238,6 +238,13 @@ export function HairAdvisor2ResultPage({ scanId, inciListPath, scanPath }: Props
           >
             {t("hairAdvisor.scanAnother")}
           </Link>
+          <Link
+            to={scanPath as never}
+            search={{ history: "1" }}
+            className="flex h-12 w-full items-center justify-center rounded-[18px] border border-[#E8E8EB] text-[15px] font-semibold text-[#111111]"
+          >
+            {t("hairAdvisor.openScanHistory")}
+          </Link>
           {!isDemo && product?.id ? (
             <button
               type="button"

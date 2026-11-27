@@ -1,4 +1,5 @@
 import { ShieldCheck } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 
 type ProductShape = {
@@ -29,7 +30,8 @@ export function HairAdvisor2ProductHeader({
   verified,
   className,
 }: Props) {
-  const name = product?.name || product?.title || fallbackName || "Mahsulot";
+  const { t } = useTranslation();
+  const name = product?.name || product?.title || fallbackName || t("hairAdvisor.productFallback");
   const brand = product?.brand || fallbackBrand || "";
   const img = product?.image_url;
   const isVerified = verified ?? Boolean(product?.is_verified);
@@ -54,16 +56,21 @@ export function HairAdvisor2ProductHeader({
         {isVerified ? (
           <span className="inline-flex items-center gap-1 rounded-full bg-[#EAF7ED] px-2.5 py-1 text-xs font-semibold text-[#16803C]">
             <ShieldCheck className="size-3.5" aria-hidden />
-            Tasdiqlangan mahsulot
+            {t("hairAdvisor.badgeVerified")}
           </span>
         ) : (
           <span className="inline-flex rounded-full bg-[#F7F7F8] px-2.5 py-1 text-xs font-semibold text-[#71717A]">
-            Tasdiqlanmagan
+            {t("hairAdvisor.badgeUnverified")}
           </span>
         )}
-        <MetaRow label="Ishlab chiqarilgan mamlakat" value={country?.trim() ? country : "Noma'lum"} />
-        {volume ? <MetaRow label="Hajm" value={`${volume} ml`} /> : null}
-        <MetaRow label="Shtrix-kod" value={code} />
+        <MetaRow
+          label={t("hairAdvisor.metaCountry")}
+          value={country?.trim() ? country : t("hairAdvisor.metaUnknown")}
+        />
+        {volume ? (
+          <MetaRow label={t("hairAdvisor.metaVolume")} value={t("hairAdvisor.metaVolumeMl", { volume })} />
+        ) : null}
+        <MetaRow label={t("hairAdvisor.metaBarcode")} value={code} />
       </div>
     </div>
   );

@@ -107,7 +107,7 @@ export function HairAdvisor2ScanPage({ resultPath }: Props) {
     await captureProductImage(frame);
   }, [captureProductImage, lookingUp, mode, t]);
 
-  const openHistory = async () => {
+  const openHistory = useCallback(async () => {
     setHistoryOpen(true);
     setHistoryLoading(true);
     setHistoryError(null);
@@ -125,7 +125,15 @@ export function HairAdvisor2ScanPage({ resultPath }: Props) {
     } finally {
       setHistoryLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("history") === "1") {
+      void openHistory();
+    }
+  }, [openHistory]);
 
   const overlayVisible =
     !notFoundScan &&
