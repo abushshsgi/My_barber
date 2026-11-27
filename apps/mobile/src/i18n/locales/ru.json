@@ -1,4 +1,30 @@
 {
+  "scanner": {
+    "title": "Smart Scanner",
+    "subtitle": "Определите продукт и получите анализ.",
+    "modeBarcode": "Штрихкод",
+    "modeImage": "Фото",
+    "gallery": "Галерея",
+    "enterCode": "Ввести код",
+    "torch": "Фонарик",
+    "history": "История",
+    "cancel": "Отмена",
+    "lookingUp": "Поиск",
+    "status": {
+      "autoScanActive": "Автоматическое сканирование активно",
+      "aimProduct": "Наведите продукт и сделайте снимок",
+      "barcodeDetected": "Штрихкод обнаружен",
+      "lookingUpProduct": "Поиск информации о продукте",
+      "recognizingProduct": "Распознавание продукта…"
+    },
+    "errors": {
+      "invalidBarcode": "Неверный формат штрихкода",
+      "barcodeMin": "Введите не менее 8 цифр",
+      "network": "Проверьте интернет-соединение",
+      "scanFailed": "Сканирование не удалось",
+      "imageFailed": "Не удалось обработать изображение"
+    }
+  },
   "nav": {
     "home": "Главная",
     "map": "Карта",

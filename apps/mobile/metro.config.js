@@ -4,7 +4,16 @@ const http = require("http");
 const https = require("https");
 
 const projectRoot = __dirname;
+const monorepoRoot = path.resolve(projectRoot, "../..");
 const config = getDefaultConfig(projectRoot);
+
+/** Watch shared monorepo packages (e.g. @mybarber/scanner). */
+config.watchFolders = [...(config.watchFolders || []), path.join(monorepoRoot, "packages")];
+config.resolver.nodeModulesPaths = [
+  path.resolve(projectRoot, "node_modules"),
+  path.resolve(monorepoRoot, "node_modules"),
+];
+config.resolver.disableHierarchicalLookup = false;
 
 /** Native build artifactlari Metro watcher limitini to‘ldiradi (ENOSPC). */
 const prevBlockList = config.resolver.blockList;

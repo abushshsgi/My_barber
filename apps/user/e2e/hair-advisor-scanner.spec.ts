@@ -16,17 +16,29 @@ function seedAuth(page: import("@playwright/test").Page) {
   );
 }
 
-test.describe("Hair Advisor scanner (mocked)", () => {
+test.describe("Universal Smart Scanner (mocked)", () => {
   test("demo result UI renders without login", async ({ page }) => {
     await page.goto("/ai-style/care/ingredient/result/demo", { waitUntil: "domcontentloaded" });
     await expect(page.getByText("Deep Cleanse Shampoo")).toBeVisible({ timeout: 15_000 });
     await expect(page.getByRole("button", { name: "Taqqoslash" })).toBeVisible();
   });
 
-  test("scanner route loads authenticated", async ({ page }) => {
+  test("scanner route loads authenticated with Smart Scanner chrome", async ({ page }) => {
     await seedAuth(page);
     await page.goto("/ai-style/care/ingredient", { waitUntil: "domcontentloaded" });
     await expect(page).toHaveURL(/\/ai-style\/care\/ingredient/);
+    await expect(page.getByRole("heading", { name: /Smart Scanner|AI skaner/i })).toBeVisible({
+      timeout: 15_000,
+    });
+  });
+
+  test("mode selector exposes Barcode and Image options", async ({ page }) => {
+    await seedAuth(page);
+    await page.goto("/ai-style/care/ingredient", { waitUntil: "domcontentloaded" });
+    await expect(page.getByRole("button", { name: /Barcode|Shtrix/i }).first()).toBeVisible({
+      timeout: 15_000,
+    });
+    await expect(page.getByRole("button", { name: /Image|Rasm|Фото/i }).first()).toBeVisible();
   });
 });
 

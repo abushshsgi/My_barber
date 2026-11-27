@@ -813,3 +813,15 @@ html[data-maint-banner] .shell-below-banner.max-h-\[100dvh\] {
     height: calc(100dvh - 6rem - var(--maint-banner-offset, 0px));
   }
 }
+
+@keyframes ha-scan-line {
+  0%,
+  100% {
+    top: 18%;
+    opacity: 0.35;
+  }
+  50% {
+    top: 78%;
+    opacity: 0.95;
+  }
+}

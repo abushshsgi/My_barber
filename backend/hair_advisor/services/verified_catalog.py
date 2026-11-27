@@ -40,7 +40,7 @@ def _care_is_verified(care: CareProduct) -> bool:
     return bool(care.is_published and care.is_verified)
 
 
-def lookup_verified_by_barcode(barcode: str) -> dict[str, Any]:
+def lookup_verified_by_barcode(barcode: str, *, include_external_hint: bool = True) -> dict[str, Any]:
     code = "".join(ch for ch in (barcode or "") if ch.isdigit())
     if not code:
         return {"found": False, "tier": "unknown", "barcode": code}
@@ -87,15 +87,16 @@ def lookup_verified_by_barcode(barcode: str) -> dict[str, Any]:
             hp = care_to_hair_product(care)
 
     if hp is None and care is None:
-        external = lookup_external_product(code)
         payload = None
-        if external:
-            payload = {
-                "source": external.get("source"),
-                "name": external.get("name"),
-                "brand": external.get("brand"),
-                "ingredients_text": external.get("ingredients_text") or "",
-            }
+        if include_external_hint:
+            external = lookup_external_product(code)
+            if external:
+                payload = {
+                    "source": external.get("source"),
+                    "name": external.get("name"),
+                    "brand": external.get("brand"),
+                    "ingredients_text": external.get("ingredients_text") or "",
+                }
         return {
             "found": False,
             "tier": "unknown",

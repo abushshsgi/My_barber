@@ -24,6 +24,7 @@
     "@hookform/resolvers": "^5.2.2",
     "@mediapipe/tasks-vision": "^0.10.14",
     "@mybarber/map-google": "file:../../packages/map-google",
+    "@mybarber/scanner": "file:../../packages/scanner",
     "@mybarber/shared": "file:../../packages/shared",
     "@mybarber/user-ui": "file:../../packages/user-ui",
     "@radix-ui/react-accordion": "^1.2.12",

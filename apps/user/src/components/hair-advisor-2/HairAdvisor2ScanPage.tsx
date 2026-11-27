@@ -1,15 +1,17 @@
 import { useRouter } from "@tanstack/react-router";
-import { ChevronLeft, History, ImageIcon, Loader2, ScanBarcode, Shapes, Zap, ZapOff } from "lucide-react";
+import { ChevronLeft, History, ImageIcon, Keyboard, Loader2, Zap, ZapOff } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 import { HairAdvisorBarcodeCamera } from "@/components/ai-style/HairAdvisorBarcodeCamera";
 import { HairAdvisor2NotFoundPanel } from "@/components/hair-advisor-2/HairAdvisor2NotFoundPanel";
 import { HairAdvisorScannerOverlay } from "@/components/hair-advisor-2/HairAdvisorScannerOverlay";
+import { HA_SCANNER } from "@/components/hair-advisor-2/hair-advisor-scanner-theme";
 import { diagnoseCameraAccess } from "@/lib/barcode-camera";
 import { captureVideoFrameJpeg } from "@/lib/capture-video-frame";
 import { removeMorphLcpStatic } from "@/lib/morph-lcp-static";
 import { fetchHairScanHistory, type HairScan } from "@/lib/api/hair-advisor";
-import { useHairAdvisorScanner } from "@/hooks/use-hair-advisor-scanner";
+import { useSmartScanner } from "@/hooks/use-smart-scanner";
 import { navigateBack } from "@/lib/mobile-back";
 import { cn } from "@/lib/utils";
 
@@ -19,6 +21,7 @@ type Props = {
 
 export function HairAdvisor2ScanPage({ resultPath }: Props) {
   const router = useRouter();
+  const { t } = useTranslation();
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const [cameraBlocked, setCameraBlocked] = useState(() => diagnoseCameraAccess() !== "ok");
   const [torch, setTorch] = useState(false);
@@ -27,7 +30,7 @@ export function HairAdvisor2ScanPage({ resultPath }: Props) {
   const [manualOpen, setManualOpen] = useState(false);
   const [manualCode, setManualCode] = useState("");
 
-  const scanner = useHairAdvisorScanner(resultPath);
+  const scanner = useSmartScanner(resultPath);
   const {
     phase,
     mode,
@@ -36,11 +39,13 @@ export function HairAdvisor2ScanPage({ resultPath }: Props) {
     notFoundScan,
     cameraOn,
     setCameraOn,
+    detectedBarcode,
     processBarcode,
     submitManualBarcode,
     captureProductImage,
     processGalleryFile,
     resetScanner,
+    cancelLookup,
     statusText,
     lockRef,
   } = scanner;
@@ -66,21 +71,17 @@ export function HairAdvisor2ScanPage({ resultPath }: Props) {
     [resultPath, router],
   );
 
-  const onShutter = useCallback(async () => {
-    if (lookingUp) return;
-    if (mode === "product_image") {
-      const video = videoRef.current;
-      if (!video) return;
-      const frame = await captureVideoFrameJpeg(video);
-      if (!frame) {
-        toast.error("Kadr olinmadi");
-        return;
-      }
-      await captureProductImage(frame);
+  const onCaptureImage = useCallback(async () => {
+    if (lookingUp || mode !== "product_image") return;
+    const video = videoRef.current;
+    if (!video) return;
+    const frame = await captureVideoFrameJpeg(video);
+    if (!frame) {
+      toast.error(t("scanner.errors.imageFailed"));
       return;
     }
-    resetScanner();
-  }, [captureProductImage, lookingUp, mode, resetScanner]);
+    await captureProductImage(frame);
+  }, [captureProductImage, lookingUp, mode, t]);
 
   const openHistory = async () => {
     try {
@@ -88,7 +89,7 @@ export function HairAdvisor2ScanPage({ resultPath }: Props) {
       setHistory(rows);
       setHistoryOpen(true);
     } catch {
-      toast.error("Tarix yuklanmadi");
+      toast.error(t("scanner.errors.generic"));
     }
   };
 
@@ -96,119 +97,181 @@ export function HairAdvisor2ScanPage({ resultPath }: Props) {
     !notFoundScan && phase !== "not_found" && cameraOn && !cameraBlocked && !lookingUp && phase !== "error";
 
   return (
-    <div className="relative isolate h-[100dvh] max-h-[100dvh] w-full overflow-hidden bg-[#080808] text-white">
-      <div className="absolute inset-0">
-        {cameraBlocked && !cameraOn ? (
-          <PermissionBlock
-            onEnable={() => {
-              setCameraBlocked(false);
-              setCameraOn(true);
-              resetScanner();
-            }}
-          />
-        ) : (
-          <HairAdvisorBarcodeCamera
-            active={cameraOn && !lookingUp && phase !== "barcode_detected"}
-            embedded
-            fullScreen
-            torch={torch}
-            stableReadCount={3}
-            enableDecode={mode === "barcode"}
-            onVideoElement={(v) => {
-              videoRef.current = v;
-            }}
-            onDetected={(code) => void processBarcode(code)}
-            onClose={() => {
-              setCameraOn(false);
-              setCameraBlocked(true);
-            }}
-          />
-        )}
-        <HairAdvisorScannerOverlay phase={phase} statusText={statusText} mode={mode} visible={overlayVisible} />
-        {lookingUp ? (
-          <div className="absolute inset-0 z-[3] flex flex-col items-center justify-center gap-2 bg-black/50" role="status">
-            <Loader2 className="size-9 animate-spin text-[#8B5CF6]" aria-hidden />
-            <span className="text-sm font-semibold text-white">{statusText}</span>
-          </div>
-        ) : null}
-      </div>
-
-      <div className="pointer-events-none absolute inset-x-0 top-0 z-10 bg-gradient-to-b from-black/85 via-black/50 to-transparent pb-8 pt-[max(0.75rem,env(safe-area-inset-top))]">
-        <header className="flex items-center justify-between px-4">
-          <IconBtn label="Orqaga" onClick={() => navigateBack(router, "/ai-style/care")}>
-            <ChevronLeft className="size-6" />
-          </IconBtn>
-          <h1 className="text-[17px] font-semibold tracking-tight">AI skaner</h1>
-          <IconBtn label="Tarix" onClick={() => void openHistory()}>
-            <History className="size-5" />
-          </IconBtn>
-        </header>
-        <div className="mt-2 flex justify-center gap-2 px-4">
-          <ModeChip active={mode === "barcode"} onClick={() => setMode("barcode")} icon={ScanBarcode} label="Shtrix-kod" />
-          <ModeChip active={mode === "product_image"} onClick={() => setMode("product_image")} icon={Shapes} label="Rasm" />
-        </div>
-        {error ? (
-          <p className="mt-3 px-5 text-center text-sm font-medium text-[#FCA5A5]" role="alert">
-            {error}
-          </p>
-        ) : null}
-      </div>
-
-      <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t from-black/90 via-black/55 to-transparent pt-16">
-        <footer className="pointer-events-auto flex items-center justify-center gap-10 px-5 pb-[max(1.75rem,env(safe-area-inset-bottom))] pt-3">
-          <label className="inline-flex size-12 cursor-pointer items-center justify-center rounded-full bg-white/15 text-white backdrop-blur-sm">
-            <ImageIcon className="size-5" />
-            <input
-              type="file"
-              accept="image/*"
-              className="sr-only"
-              onChange={(e) => {
-                const f = e.target.files?.[0];
-                if (f) void processGalleryFile(f);
+    <div
+      className="relative isolate mx-auto flex h-[100dvh] max-h-[100dvh] w-full max-w-6xl overflow-hidden text-white md:gap-6 md:px-6 md:py-4"
+      style={{ backgroundColor: HA_SCANNER.bg }}
+    >
+      <div className="relative min-h-0 flex-1 overflow-hidden md:rounded-3xl md:ring-1 md:ring-white/10">
+        <div className="absolute inset-0">
+          {cameraBlocked && !cameraOn ? (
+            <PermissionBlock
+              onEnable={() => {
+                setCameraBlocked(false);
+                setCameraOn(true);
+                resetScanner();
               }}
             />
-          </label>
-          <button
-            type="button"
-            aria-label={mode === "product_image" ? "Suratga olish" : "Skanerni tiklash"}
-            disabled={lookingUp}
-            onClick={() => void onShutter()}
-            className="inline-flex size-[58px] items-center justify-center rounded-full bg-white text-[#080808] shadow-lg ring-4 ring-[#8B5CF6]/40 disabled:opacity-60"
-          >
-            <span className="size-4 rounded-full border-2 border-[#080808]" />
-          </button>
-          <button
-            type="button"
-            aria-label="Chiroq"
-            onClick={() => setTorch((v) => !v)}
-            className={cn(
-              "inline-flex size-12 items-center justify-center rounded-full backdrop-blur-sm",
-              torch ? "bg-white text-[#080808]" : "bg-white/15 text-white",
+          ) : (
+            <HairAdvisorBarcodeCamera
+              active={cameraOn && !lookingUp && phase !== "barcode_detected"}
+              embedded
+              fullScreen
+              torch={torch}
+              stableReadCount={3}
+              enableDecode={mode === "barcode"}
+              onVideoElement={(v) => {
+                videoRef.current = v;
+              }}
+              onDetected={(code) => void processBarcode(code)}
+              onClose={() => {
+                setCameraOn(false);
+                setCameraBlocked(true);
+              }}
+            />
+          )}
+          <HairAdvisorScannerOverlay phase={phase} statusText={statusText} mode={mode} visible={overlayVisible} />
+          {lookingUp ? (
+            <div className="absolute inset-0 z-[3] flex flex-col items-center justify-center gap-3 bg-black/55" role="status">
+              <Loader2 className="size-9 animate-spin text-white" aria-hidden />
+              <span className="text-sm font-semibold text-white">{statusText}</span>
+              {detectedBarcode ? (
+                <span className="font-mono text-xs text-white/70">{detectedBarcode}</span>
+              ) : null}
+              <button
+                type="button"
+                className="mt-2 rounded-full border border-white/30 px-4 py-1.5 text-xs font-medium text-white"
+                onClick={cancelLookup}
+              >
+                {t("scanner.cancel")}
+              </button>
+            </div>
+          ) : null}
+        </div>
+
+        <div className="pointer-events-none absolute inset-x-0 top-0 z-10 bg-gradient-to-b from-black/85 via-black/45 to-transparent pb-8 pt-[max(0.75rem,env(safe-area-inset-top))]">
+          <header className="flex items-center justify-between px-4">
+            <IconBtn label={t("hairAdvisor.back")} onClick={() => navigateBack(router, "/ai-style/care")}>
+              <ChevronLeft className="size-6" />
+            </IconBtn>
+            <div className="text-center">
+              <h1 className="text-[17px] font-semibold tracking-tight">{t("scanner.title")}</h1>
+              <p className="mt-0.5 text-[11px] text-white/70">{t("scanner.subtitle")}</p>
+            </div>
+            <IconBtn label={t("scanner.history")} onClick={() => void openHistory()}>
+              <History className="size-5" />
+            </IconBtn>
+          </header>
+          <div className="mt-3 flex justify-center px-4">
+            <div className="pointer-events-auto inline-flex rounded-full bg-white/10 p-1 backdrop-blur-sm">
+              <ModeChip
+                active={mode === "barcode"}
+                onClick={() => setMode("barcode")}
+                label={t("scanner.modeBarcode")}
+              />
+              <ModeChip
+                active={mode === "product_image"}
+                onClick={() => setMode("product_image")}
+                label={t("scanner.modeImage")}
+              />
+            </div>
+          </div>
+          {error ? (
+            <p className="mt-3 px-5 text-center text-sm font-medium text-[#FCA5A5]" role="alert">
+              {error}
+            </p>
+          ) : null}
+        </div>
+
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t from-black/90 via-black/50 to-transparent pt-16">
+          <footer className="pointer-events-auto flex items-center justify-center gap-8 px-5 pb-[max(1.75rem,env(safe-area-inset-bottom))] pt-3">
+            <label className="inline-flex flex-col items-center gap-1">
+              <span className="inline-flex size-12 cursor-pointer items-center justify-center rounded-full bg-white/15 text-white backdrop-blur-sm">
+                <ImageIcon className="size-5" />
+              </span>
+              <span className="text-[10px] text-white/80">{t("scanner.gallery")}</span>
+              <input
+                type="file"
+                accept="image/*"
+                className="sr-only"
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f) void processGalleryFile(f);
+                }}
+              />
+            </label>
+
+            {mode === "product_image" ? (
+              <button
+                type="button"
+                aria-label={t("scanner.captureProduct")}
+                disabled={lookingUp}
+                onClick={() => void onCaptureImage()}
+                className="inline-flex size-[58px] items-center justify-center rounded-full bg-white text-[#111] shadow-lg ring-4 ring-white/25 disabled:opacity-60"
+              >
+                <span className="size-4 rounded-full border-2 border-[#111]" />
+              </button>
+            ) : (
+              <button
+                type="button"
+                aria-label={t("scanner.enterCode")}
+                onClick={() => setManualOpen(true)}
+                className="inline-flex flex-col items-center gap-1"
+              >
+                <span className="inline-flex size-12 items-center justify-center rounded-full bg-white/15 text-white backdrop-blur-sm">
+                  <Keyboard className="size-5" />
+                </span>
+                <span className="text-[10px] text-white/80">{t("scanner.enterCode")}</span>
+              </button>
             )}
-          >
-            {torch ? <Zap className="size-5" /> : <ZapOff className="size-5" />}
-          </button>
-        </footer>
+
+            <button
+              type="button"
+              aria-label={torch ? t("scanner.torchOff") : t("scanner.torch")}
+              onClick={() => setTorch((v) => !v)}
+              className="inline-flex flex-col items-center gap-1"
+            >
+              <span
+                className={cn(
+                  "inline-flex size-12 items-center justify-center rounded-full backdrop-blur-sm",
+                  torch ? "bg-white text-[#111]" : "bg-white/15 text-white",
+                )}
+              >
+                {torch ? <Zap className="size-5" /> : <ZapOff className="size-5" />}
+              </span>
+              <span className="text-[10px] text-white/80">{t("scanner.torch")}</span>
+            </button>
+          </footer>
+        </div>
+
+        {notFoundScan || phase === "not_found" ? (
+          <HairAdvisor2NotFoundPanel
+            message={notFoundScan?.message_uz || t("scanner.productNotFoundBody")}
+            onRescan={resetScanner}
+            onImageSearch={() => {
+              setMode("product_image");
+              resetScanner();
+            }}
+            onManualCode={() => setManualOpen(true)}
+          />
+        ) : null}
       </div>
 
-      {notFoundScan || phase === "not_found" ? (
-        <HairAdvisor2NotFoundPanel
-          message={notFoundScan?.message_uz}
-          onRescan={resetScanner}
-          onImageSearch={() => {
-            setMode("product_image");
-            resetScanner();
-          }}
-          onManualCode={() => {
-            setManualOpen(true);
-          }}
-        />
-      ) : null}
+      {/* Desktop side panel */}
+      <aside className="hidden w-[320px] shrink-0 flex-col justify-center gap-4 rounded-3xl bg-white p-6 text-[#111] md:flex">
+        <h2 className="text-lg font-semibold">{t("scanner.title")}</h2>
+        <p className="text-sm text-[#71717A]">{t("scanner.subtitle")}</p>
+        <p className="text-sm font-medium" role="status">
+          {statusText || t("scanner.status.cameraReady")}
+        </p>
+        {detectedBarcode ? (
+          <p className="rounded-xl bg-[#F7F7F8] px-3 py-2 font-mono text-sm">{detectedBarcode}</p>
+        ) : null}
+      </aside>
 
       {manualOpen ? (
         <div className="fixed inset-0 z-30 flex items-end justify-center bg-black/50 p-4 sm:items-center" role="dialog" aria-modal>
           <div className="w-full max-w-md rounded-[20px] bg-white p-5 text-[#111]">
-            <h3 className="text-lg font-bold">Kodni qo‘lda kiritish</h3>
+            <h3 className="text-lg font-bold">{t("scanner.enterCode")}</h3>
             <input
               inputMode="numeric"
               className="mt-3 w-full rounded-xl border border-[#E4E4E7] px-3 py-3 text-lg tracking-wide"
@@ -225,10 +288,10 @@ export function HairAdvisor2ScanPage({ resultPath }: Props) {
                 setManualCode("");
               }}
             >
-              Qidirish
+              {t("scanner.lookingUp")}
             </button>
             <button type="button" className="mt-2 w-full py-2 text-sm text-[#71717A]" onClick={() => setManualOpen(false)}>
-              Bekor
+              {t("scanner.cancel")}
             </button>
           </div>
         </div>
@@ -263,12 +326,10 @@ function IconBtn({
 function ModeChip({
   active,
   onClick,
-  icon: Icon,
   label,
 }: {
   active: boolean;
   onClick: () => void;
-  icon: typeof ScanBarcode;
   label: string;
 }) {
   return (
@@ -276,23 +337,22 @@ function ModeChip({
       type="button"
       onClick={onClick}
       className={cn(
-        "pointer-events-auto inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-xs font-semibold backdrop-blur-sm",
-        active ? "bg-[#8B5CF6] text-white" : "bg-white/15 text-white/90",
+        "rounded-full px-4 py-1.5 text-xs font-semibold transition-colors",
+        active ? "bg-white text-[#111]" : "bg-transparent text-white/85",
       )}
     >
-      <Icon className="size-3.5" />
       {label}
     </button>
   );
 }
 
 function PermissionBlock({ onEnable }: { onEnable: () => void }) {
+  const { t } = useTranslation();
   return (
     <div className="flex h-full flex-col items-center justify-center gap-3 bg-[#0a0a0a] px-8 text-center">
-      <p className="text-[17px] font-semibold">Kamera kerak</p>
-      <p className="max-w-sm text-[15px] text-[#A3A3A3]">Ruxsat bering yoki galereyadan rasm yuklang.</p>
-      <button type="button" onClick={onEnable} className="mt-2 rounded-2xl bg-[#8B5CF6] px-5 py-3 text-sm font-bold text-white">
-        Kamerani yoqish
+      <p className="text-[17px] font-semibold">{t("hairAdvisor.cameraDenied")}</p>
+      <button type="button" onClick={onEnable} className="mt-2 rounded-2xl bg-white px-5 py-3 text-sm font-bold text-[#111]">
+        {t("hairAdvisor.openBarcodeCamera")}
       </button>
     </div>
   );
@@ -307,10 +367,11 @@ function HistoryModal({
   onClose: () => void;
   onPick: (id: string) => void;
 }) {
+  const { t } = useTranslation();
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 sm:items-center" role="dialog" aria-modal>
       <div className="max-h-[70vh] w-full max-w-md overflow-y-auto rounded-t-[20px] bg-white p-5 text-[#111] sm:rounded-[20px]">
-        <h3 className="text-lg font-bold">Skanlar tarixi</h3>
+        <h3 className="text-lg font-bold">{t("scanner.history")}</h3>
         <ul className="mt-3 space-y-2">
           {history.map((h) => (
             <li key={h.id}>
@@ -327,10 +388,10 @@ function HistoryModal({
               </button>
             </li>
           ))}
-          {history.length === 0 ? <li className="text-sm text-[#71717A]">Tarix bo&apos;sh</li> : null}
+          {history.length === 0 ? <li className="text-sm text-[#71717A]">—</li> : null}
         </ul>
         <button type="button" className="mt-4 w-full rounded-xl border py-2 text-sm font-semibold" onClick={onClose}>
-          Yopish
+          {t("scanner.cancel")}
         </button>
       </div>
     </div>

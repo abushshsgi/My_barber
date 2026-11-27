@@ -11,12 +11,12 @@ from hair_advisor.services.catalog_sync import care_to_hair_product  # noqa: F40
 
 def lookup_by_barcode(barcode: str) -> dict[str, Any]:
     """Verified catalog first; external catalogs are hints only (no auto HairProduct)."""
-    from hair_advisor.services.verified_catalog import lookup_verified_by_barcode
+    from hair_advisor.services.scanner.product_resolver import resolve_product_by_barcode
 
-    verified = lookup_verified_by_barcode(barcode)
-    if verified.get("found"):
-        hp = verified.get("hair_product")
-        care = verified.get("care_product")
+    resolved = resolve_product_by_barcode(barcode)
+    if resolved.get("found"):
+        hp = resolved.get("hair_product")
+        care = resolved.get("care_product")
         if hp and care:
             ProductSource.objects.get_or_create(
                 product=hp,
@@ -26,21 +26,21 @@ def lookup_by_barcode(barcode: str) -> dict[str, Any]:
             )
         return {
             "found": True,
-            "source": "verified",
-            "tier": "verified",
+            "source": resolved.get("source") or "verified",
+            "tier": resolved.get("tier") or "verified",
             "care_product": care,
             "hair_product": hp,
-            "ingredients": verified.get("ingredients") or [],
-            "ingredients_text": verified.get("ingredients_text") or "",
-            "verified_at": verified.get("verified_at"),
+            "ingredients": resolved.get("ingredients") or [],
+            "ingredients_text": resolved.get("ingredients_text") or "",
+            "verified_at": resolved.get("verified_at"),
         }
 
-    code = verified.get("barcode") or "".join(ch for ch in barcode if ch.isdigit())
-    hint = verified.get("external_hint")
+    code = resolved.get("barcode") or "".join(ch for ch in barcode if ch.isdigit())
+    hint = resolved.get("external_hint")
     return {
         "found": False,
-        "source": None,
-        "tier": "unknown",
+        "source": resolved.get("source"),
+        "tier": resolved.get("tier") or "unknown",
         "barcode": code,
         "external_hint": hint,
     }

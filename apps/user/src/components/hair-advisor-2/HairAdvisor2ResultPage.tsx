@@ -15,7 +15,7 @@ import { useCareProducts } from "@/hooks/use-care-products";
 import { navigateBack } from "@/lib/mobile-back";
 import { HAIR_ADVISOR_RESULT_DEMO, isHairAdvisorResultDemoScanId } from "./hair-advisor-result-demo";
 import { HairAdvisor2ProductHeader } from "./HairAdvisor2ProductHeader";
-import { compatibilityLabel } from "./scan-flow";
+import { compatibilityLabel, compatibilityState } from "./scan-flow";
 
 type Props = {
   scanId: string;
@@ -96,13 +96,16 @@ export function HairAdvisor2ResultPage({ scanId, inciListPath, scanPath }: Props
   const benefits = bullets.slice(0, 2);
   const concerns = (cautions.length ? cautions : bullets.filter((b) => /ehtiyot|noqulay|ta'sir/i.test(b))).slice(0, 2);
   const keyIng = (analysis?.result?.key_ingredients ?? []).slice(0, 3);
+  const fitState = compatibilityState(analysis?.recommendation);
   const fitLabel = compatibilityLabel(analysis?.recommendation);
   const fitTone =
-    analysis?.recommendation === "POTENTIAL_MATCH"
+    fitState === "potentially_suitable"
       ? "bg-[#EAF7ED] text-[#16803C]"
-      : analysis?.recommendation === "CAUTION"
+      : fitState === "mixed"
         ? "bg-[#FFF7E8] text-[#B7791F]"
-        : "bg-[#F7F7F8] text-[#71717A]";
+        : fitState === "potentially_unsuitable"
+          ? "bg-[#FEF2F2] text-[#B91C1C]"
+          : "bg-[#F7F7F8] text-[#71717A]";
 
   return (
     <div className="min-h-[100dvh] bg-white text-[#111111]">

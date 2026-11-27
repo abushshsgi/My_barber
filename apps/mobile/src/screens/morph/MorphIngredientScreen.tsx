@@ -1,2 +1,2 @@
-/** AI Hair Advisor scanner (Hair Advisor 2.0). Legacy implementation: MorphIngredientScreen.legacy.tsx */
+/** AI Hair Advisor / Universal Smart Scanner entry (Hair Advisor 2.0). */
 export { HairAdvisorScannerScreen as MorphIngredientScreen } from "./HairAdvisorScannerScreen";

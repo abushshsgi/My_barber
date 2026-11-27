@@ -1,33 +1,12 @@
 import { BarcodeFormat, DecodeHintType } from "@zxing/library";
+import {
+  normalizeBarcode,
+  normalizeRetailBarcode,
+  validateRetailBarcodeChecksum,
+} from "@mybarber/scanner";
 
+export { normalizeBarcode, normalizeRetailBarcode, validateRetailBarcodeChecksum };
 export const HA_BARCODE_MIN_DIGITS = 8;
-
-/** EAN-8 / EAN-13 / UPC-A checksum (server bilan mos). */
-export function validateRetailBarcodeChecksum(code: string): { valid: boolean; normalized: string } {
-  const digits = code.replace(/\D/g, "");
-  if (!digits) return { valid: false, normalized: "" };
-  const length = digits.length;
-  if (length !== 8 && length !== 12 && length !== 13) return { valid: false, normalized: digits };
-
-  const body = digits.slice(0, -1);
-  const check = Number(digits.slice(-1));
-  let total = 0;
-  const reversed = body.split("").reverse();
-  for (let i = 0; i < reversed.length; i += 1) {
-    const weight = i % 2 === 0 ? 3 : 1;
-    total += Number(reversed[i]) * weight;
-  }
-  const calc = (10 - (total % 10)) % 10;
-  return { valid: calc === check, normalized: digits };
-}
-
-/** Keep retail product codes (EAN/UPC family). */
-export function normalizeRetailBarcode(raw: string): string | null {
-  const digits = raw.replace(/\D/g, "");
-  if (digits.length < HA_BARCODE_MIN_DIGITS) return null;
-  if (digits.length > 14) return digits.slice(0, 14);
-  return digits;
-}
 
 export function retailBarcodeHints(): Map<DecodeHintType, unknown> {
   return new Map<DecodeHintType, unknown>([
@@ -65,9 +44,11 @@ export async function decodeRetailBarcodeFromImage(
 
     const result = await reader.decodeFromImageUrl(dataUrl);
     reader.reset();
-    const normalized = normalizeRetailBarcode(result.getText());
-    if (!normalized) return { ok: false, reason: "empty" };
-    return { ok: true, barcode: normalized };
+    const normalized = normalizeBarcode(result.getText());
+    if (!normalized.normalizedValue || normalized.normalizedValue.length < HA_BARCODE_MIN_DIGITS) {
+      return { ok: false, reason: "empty" };
+    }
+    return { ok: true, barcode: normalized.normalizedValue };
   } catch (e) {
     if (e && typeof e === "object" && "name" in e && (e as { name: string }).name === "NotFoundException") {
       return { ok: false, reason: "not_found" };

@@ -1,4 +1,30 @@
 {
+  "scanner": {
+    "title": "Smart Scanner",
+    "subtitle": "Identify and analyze the product.",
+    "modeBarcode": "Barcode",
+    "modeImage": "Image",
+    "gallery": "Gallery",
+    "enterCode": "Enter code",
+    "torch": "Torch",
+    "history": "History",
+    "cancel": "Cancel",
+    "lookingUp": "Search",
+    "status": {
+      "autoScanActive": "Automatic scanning active",
+      "aimProduct": "Frame the product and capture",
+      "barcodeDetected": "Barcode detected",
+      "lookingUpProduct": "Looking up product information",
+      "recognizingProduct": "Recognizing product…"
+    },
+    "errors": {
+      "invalidBarcode": "Invalid barcode format",
+      "barcodeMin": "Enter at least 8 digits",
+      "network": "Check your internet connection",
+      "scanFailed": "Scan failed",
+      "imageFailed": "Could not process the image"
+    }
+  },
   "nav": {
     "home": "Home",
     "map": "Map",

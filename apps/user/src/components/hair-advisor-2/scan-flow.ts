@@ -24,10 +24,26 @@ export async function resolveScanToAnalysis(
   return { scan, needIngredients: true };
 }
 
+export type CompatibilityState =
+  | "potentially_suitable"
+  | "mixed"
+  | "potentially_unsuitable"
+  | "insufficient_information";
+
+/** Map Advisor recommendation codes to qualitative states (no fake %). */
+export function compatibilityState(recommendation: string | undefined): CompatibilityState {
+  if (recommendation === "POTENTIAL_MATCH") return "potentially_suitable";
+  if (recommendation === "CAUTION") return "mixed";
+  if (recommendation === "AVOID" || recommendation === "NOT_RECOMMENDED") return "potentially_unsuitable";
+  return "insufficient_information";
+}
+
 export function compatibilityLabel(recommendation: string | undefined): string {
-  if (recommendation === "POTENTIAL_MATCH") return "Mos";
-  if (recommendation === "CAUTION") return "Ehtiyotkorlik bilan";
-  return "Mosligi aniqlanmagan";
+  const state = compatibilityState(recommendation);
+  if (state === "potentially_suitable") return "Mos kelishi mumkin";
+  if (state === "mixed") return "Qisman mos";
+  if (state === "potentially_unsuitable") return "Mos kelmasligi mumkin";
+  return "Ma’lumot yetarli emas";
 }
 
 export function countryLabel(country?: string | null): string {

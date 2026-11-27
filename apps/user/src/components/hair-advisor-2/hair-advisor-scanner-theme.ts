@@ -1,9 +1,12 @@
-/** Hair Advisor V2 skaner — MySaloon binafsha aksent */
+/** Smart Scanner — MySaloon morph / semantic tokens (no arbitrary purple). */
 export const HA_SCANNER = {
-  purple: "#8B5CF6",
-  purpleDim: "rgba(139, 92, 246, 0.55)",
-  purpleGlow: "rgba(139, 92, 246, 0.35)",
-  success: "#22C55E",
-  successGlow: "rgba(34, 197, 94, 0.45)",
-  bg: "#080808",
+  accent: "var(--morph-fg, #111111)",
+  accentSolid: "#111111",
+  accentMuted: "rgba(17, 17, 17, 0.55)",
+  success: "#16A34A",
+  successGlow: "rgba(22, 163, 74, 0.35)",
+  bg: "#0A0A0A",
+  surface: "#FFFFFF",
+  textMuted: "#A3A3A3",
+  frame: "rgba(255, 255, 255, 0.92)",
 } as const;

@@ -10,7 +10,7 @@ import {
   supportsBarcodeDetector,
 } from "@/lib/barcode-camera";
 import { currentLang } from "@/i18n/config";
-import { normalizeRetailBarcode, retailBarcodeHints } from "@/lib/hair-advisor-barcode-decode";
+import { normalizeBarcode, retailBarcodeHints } from "@/lib/hair-advisor-barcode-decode";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -98,8 +98,9 @@ export function HairAdvisorBarcodeCamera({
     let zxingReader: { reset: () => void } | null = null;
 
     const emitCode = (raw: string) => {
-      const normalized = normalizeRetailBarcode(raw);
-      if (!normalized || lockedRef.current) return;
+      const parsed = normalizeBarcode(raw);
+      const normalized = parsed.normalizedValue;
+      if (!normalized || normalized.length < 8 || lockedRef.current) return;
       if (lastNormalizedRef.current === normalized) {
         stableHitsRef.current += 1;
       } else {

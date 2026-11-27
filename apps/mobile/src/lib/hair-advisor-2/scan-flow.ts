@@ -16,7 +16,8 @@ export async function resolveScanToAnalysis(
 }
 
 export function compatibilityLabel(recommendation: string | undefined): string {
-  if (recommendation === "POTENTIAL_MATCH") return "Mos";
-  if (recommendation === "CAUTION") return "Ehtiyotkorlik bilan";
-  return "Mosligi aniqlanmagan";
+  if (recommendation === "POTENTIAL_MATCH") return "Mos kelishi mumkin";
+  if (recommendation === "CAUTION") return "Qisman mos";
+  if (recommendation === "AVOID" || recommendation === "NOT_RECOMMENDED") return "Mos kelmasligi mumkin";
+  return "Ma’lumot yetarli emas";
 }

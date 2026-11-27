@@ -1,4 +1,30 @@
 {
+  "scanner": {
+    "title": "Smart Scanner",
+    "subtitle": "Mahsulotni aniqlang va tahlil qiling.",
+    "modeBarcode": "Barcode",
+    "modeImage": "Rasm",
+    "gallery": "Galereya",
+    "enterCode": "Kod kiritish",
+    "torch": "Chiroq",
+    "history": "Tarix",
+    "cancel": "Bekor qilish",
+    "lookingUp": "Qidirish",
+    "status": {
+      "autoScanActive": "Avtomatik skanerlash faol",
+      "aimProduct": "Mahsulotni ramkaga joylashtiring",
+      "barcodeDetected": "Shtrixkod aniqlandi",
+      "lookingUpProduct": "Mahsulot ma’lumotlari qidirilmoqda",
+      "recognizingProduct": "Mahsulot aniqlanmoqda…"
+    },
+    "errors": {
+      "invalidBarcode": "Shtrix-kod formati noto‘g‘ri",
+      "barcodeMin": "Kamida 8 raqamli kod kiriting",
+      "network": "Internet aloqasini tekshiring",
+      "scanFailed": "Skan muvaffaqiyatsiz",
+      "imageFailed": "Rasm o‘qilmadi"
+    }
+  },
   "nav": {
     "home": "Asosiy",
     "map": "Xarita",
