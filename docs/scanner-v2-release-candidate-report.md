@@ -133,7 +133,21 @@ There is no country allowlist. Checksum-valid GTINs are accepted regardless of G
 
 Development builds show a **QA** button on the scanner. The copied report has platform, permission, camera readiness, decoder readiness, formats, redacted barcode, validation, lock, lookup, provider, advisor, latency, decode path, and a redacted error. Production builds hide it (`__DEV__` is false and `EXPO_PUBLIC_SCANNER_DIAGNOSTICS` is not set on the production EAS profiles).
 
-**Physical-device QA: not completed.** No phone or emulator was attached.
+**Physical-device QA: not completed.** No phone or emulator was attached. The device acceptance list is recorded as **NOT VERIFIED** in `docs/scanner-v2-qa/real-product-qa.md`:
+
+- Kamera avtomatik ochildi
+- Shampun barcode'i tugmasiz o‘qildi
+- Koreya mahsuloti o‘qildi
+- AQSH mahsuloti o‘qildi
+- Mahsulot nomi to‘g‘ri topildi
+- Mahsulot rasmi to‘g‘ri chiqdi
+- Tarkibi to‘g‘ri olindi
+- Hair Advisor tahlil qildi
+- Natija UI to‘g‘ri ko‘rindi
+- Galereyadan barcode o‘qildi
+- Internet o‘chirilganda scanner ishladi
+- Qayta skanerlash ishladi
+- Scan history saqlandi
 
 ---
 
@@ -146,7 +160,7 @@ Development builds show a **QA** button on the scanner. The copied report has pl
 | Android APK / iOS IPA | Not built. EAS logged out. No Android SDK. No Apple toolchain on this PC. |
 | Paid Barcode Lookup / GS1 | Not wired. No purchase. Scanner works without them. See `docs/scanner-v2-qa/product-providers.md`. |
 | Global SKU coverage | Limited to the verified catalog plus Open Beauty Facts and the UPCitemdb trial. |
-| Real product matrix | Blank on purpose. |
+| Real product matrix | Blank on purpose. All 13 device checks in section 8 are **NOT VERIFIED**. |
 
 ---
 

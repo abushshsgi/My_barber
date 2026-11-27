@@ -27,6 +27,26 @@ Copy one block per physical item. Do not invent the results.
 
 Identity “correct” means the name and brand on the pack match the screen. Ingredients “available” means the result shows an ingredient list, not that every INCI token was audited.
 
+## Device acceptance (2026-11-27)
+
+No phone or emulator run produced these results. Local browser screenshots and unit tests do not count. Every row stays **NOT VERIFIED** until a physical device pass is written down with evidence.
+
+| Check | Status |
+| --- | --- |
+| Kamera avtomatik ochildi | NOT VERIFIED |
+| Shampun barcode'i tugmasiz o‘qildi | NOT VERIFIED |
+| Koreya mahsuloti o‘qildi | NOT VERIFIED |
+| AQSH mahsuloti o‘qildi | NOT VERIFIED |
+| Mahsulot nomi to‘g‘ri topildi | NOT VERIFIED |
+| Mahsulot rasmi to‘g‘ri chiqdi | NOT VERIFIED |
+| Tarkibi to‘g‘ri olindi | NOT VERIFIED |
+| Hair Advisor tahlil qildi | NOT VERIFIED |
+| Natija UI to‘g‘ri ko‘rindi | NOT VERIFIED |
+| Galereyadan barcode o‘qildi | NOT VERIFIED |
+| Internet o‘chirilganda scanner ishladi | NOT VERIFIED |
+| Qayta skanerlash ishladi | NOT VERIFIED |
+| Scan history saqlandi | NOT VERIFIED |
+
 ## Dev diagnostics
 
 In a development build, open the scanner and tap **QA**. Copy the report. It includes platform, permission, decoder, formats, redacted barcode, validation, lock, lookup, provider, advisor, latency, and the error line. It does not include tokens or the full barcode. Production builds hide this panel.
