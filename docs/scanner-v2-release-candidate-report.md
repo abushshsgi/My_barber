@@ -3,7 +3,9 @@
 **Date:** 2026-11-27  
 **Branch:** `feat/scanner-v2-release-candidate`  
 **Base:** `f0573e39` (Universal Smart Scanner V2 on Hair Advisor)  
-**RC commits:** see git log on branch (hardening + gap closure + docs)  
+**RC commits:**
+- `20fd4275` — `fix(scanner): harden universal scanner v2 and advisor integration`
+- `be29ed88` — `fix(scanner): close RC gaps for abort, mobile pick, and QA docs`  
 **Verdict:** **NOT production-ready** — awaiting owner physical-device QA approval.  
 **Explicit:** **NOT** merged to `main`. **NOT** deployed to production.
 
