@@ -1,12 +1,12 @@
 # MySaloon V3 — release readiness report
 
-Date: 2026-11-27  
+Date: 2026-11-27 (release-blocker pass)  
 Branch: `feat/mysaloon-v3-ecosystem`  
 Parent SEO branch: `feat/seo-phase1-content` @ `1daecf14`  
 Merge-base with `main`: `f0573e39`  
 Scanner V2 RC: `feat/scanner-v2-release-candidate` (not merged)
 
-**Scope:** Verification and evidence only. No production deploy, no `main` merge, no article publish, port **8000** Django left running.
+**Scope:** Verification and evidence only. No production deploy, no `main` merge, no article publish, port **8000** Django left running for Expo.
 
 ---
 
@@ -14,60 +14,26 @@ Scanner V2 RC: `feat/scanner-v2-release-candidate` (not merged)
 
 | Category | Result |
 | --- | --- |
-| Targeted UI polish (prior pass) | 9/10 visual checks captured via Playwright; scan history empty **after** shot blocked on mock auth |
-| Localization | **FIXED AND VERIFIED** for `HairAdvisor2ProductHeader` (this pass) |
-| Runtime article serializer | **FIXED AND VERIFIED** on isolated SQLite (`qa_verify_8001.sqlite3`), port **8001** |
-| SEO automated | Vitest + Playwright `seo.spec.ts` passed; hreflang dedupe unit-verified |
-| Lighthouse | **Lab only** on Vite dev `/explore` (not production build) |
-| Physical camera / signed-in scanner | **BLOCKED** (simulated permission only) |
+| Production build + Nitro SSR | **RUN** — `npm run build`, `node dist/server/index.mjs` on **:3002**, `API_UPSTREAM_URL=http://127.0.0.1:8001` |
+| Lighthouse (lab) | **MEASURED** — mobile/desktop medians; **targets not met** on key mobile routes (see §16) |
+| Dev LCP 79.5s | **EXPLAINED** — Vite dev `/explore`; prod Nitro explore mobile LCP **~6.7s** median |
+| Scanner Playwright auth | **FIXED AND VERIFIED** — isolated user on `qa_verify_8001.sqlite3`, real JWT via `playwright_auth_json` + password-login on :8001 |
+| Scan history empty screenshot | **CAPTURED** — `after-history-empty.png` (10/10 index) |
+| Hreflang (fixture) | **VERIFIED** — server HTML + hydrated DOM, one alternate per `uz`/`ru`/`en`/`x-default`; fixtures **removed** after check |
+| Article serializer (:8001) | **VERIFIED (prior pass)** — list 263 B, detail 3018 B — not re-run |
+| Physical camera / signed-in scanner | **BLOCKED** (hardware) |
 
 ---
 
 ## Final Git commit
 
-After this verification pass, see `git log -1 --oneline` on `feat/mysaloon-v3-ecosystem` (includes localization completion, Playwright verification spec, polish index, this report).
-
-Prior polish commit: `f057d1e9`.
+After this pass: see `git log -1 --oneline` on `feat/mysaloon-v3-ecosystem`.
 
 ---
 
-## Evidence: before / after
+## Evidence: polish screenshots
 
-Index: [`docs/mysaloon-v3-qa/screenshots/polish/INDEX.md`](mysaloon-v3-qa/screenshots/polish/INDEX.md)
-
-| Asset | Status |
-| --- | --- |
-| after-scanner-permission-denied.png | Captured (simulated) |
-| after-history-empty.png | **Not captured** — see § Scan history |
-| after-advisor-mobile/desktop.png | Captured |
-| after-morf-gallery.png | Captured |
-| after-guides-ru/en.png | Captured |
-| after-explore-836.png | Captured |
-| after-detail-390.png | Captured |
-| after-article-desktop.png | Captured (draft preview route when API allows) |
-
----
-
-## Issue status matrix
-
-| # | Issue | Status | Evidence |
-| --- | --- | --- | --- |
-| Scanner permission consistency | **FIXED AND VERIFIED** (simulated) | Playwright: no “Avtomatik skanerlash faol” when camera not granted; screenshot |
-| Scan history empty | **FIXED BUT UNVERIFIED** | UI implemented; Playwright blocked by mock JWT vs API session |
-| Advisor result layout / demo | **FIXED AND VERIFIED** | Playwright demo route + screenshots |
-| Advisor badges i18n | **FIXED AND VERIFIED** | `HairAdvisor2ProductHeader` + locale keys |
-| Morf gallery icon | **FIXED AND VERIFIED** | Playwright screenshot |
-| Maintenance banner | **PARTIALLY FIXED** | Token styling; RU/EN copy in JSON — not re-shot per locale |
-| Explore 836px dock | **FIXED AND VERIFIED** | Playwright 836px, no horizontal overflow |
-| Model count | **FIXED AND VERIFIED** | Dynamic `{{count}}` = 3 personas |
-| Try-on CTA truncation | **FIXED AND VERIFIED** | Playwright text assertion, screenshot |
-| Article 70ch body | **FIXED AND VERIFIED** | Playwright bounding box + screenshot |
-| Duplicate hreflang | **FIXED AND VERIFIED** | Vitest uniqueness; manual DOM on draft still recommended before publish |
-| Sitemap env isolation | **FIXED AND VERIFIED** | `base-url.test.ts`; local `sitemap-blog.xml` empty (110 B), no prod URLs |
-| List serializer runtime | **FIXED AND VERIFIED** | Isolated DB HTTP measurement (below); **not** re-run on port 8000 |
-| Hairstyle save on detail | **NOT FIXED** | Documented in polish report |
-| Lighthouse production | **PARTIALLY FIXED** | Dev lab run only |
-| Physical device QA | **BLOCKED** | Not in scope of automation |
+Index: [`docs/mysaloon-v3-qa/screenshots/polish/INDEX.md`](mysaloon-v3-qa/screenshots/polish/INDEX.md) — **10/10** after `after-history-empty.png`.
 
 ---
 
@@ -75,112 +41,102 @@ Index: [`docs/mysaloon-v3-qa/screenshots/polish/INDEX.md`](mysaloon-v3-qa/screen
 
 | Resource | Configuration |
 | --- | --- |
-| Port 8000 | **Untouched** — existing SQLite session for Expo |
-| Port 8001 | New Django with `DATABASE_URL=sqlite:///.../qa_verify_8001.sqlite3`, latest code, migrations applied |
-| Port 3000 | Existing Vite user app (`PLAYWRIGHT_SKIP_WEB_SERVER=1`) |
-| Production API | Not used for serializer proof |
-| Frontend prod build | **Not run** for Lighthouse (dev URL used) |
+| Port **8000** | **Untouched** — Expo / live SQLite |
+| Port **8001** | `DATABASE_URL=sqlite:///qa_verify_8001.sqlite3`, `MYSALOON_QA_ISOLATED=1` (LocMem cache, no Railway Redis) |
+| Port **3000** | Vite dev during Playwright; `DEV_API_TARGET=http://127.0.0.1:8001` |
+| Port **3002** | Production Nitro SSR for Lighthouse + hreflang HTML checks |
+| Temporary SEO rows | `qa-lighthouse-article` (uz/ru/en) — **deleted** via `seed_playwright_isolated --teardown` |
 
-**Teardown:** Delete `backend/qa_verify_8001.sqlite3` after owner review if desired; stop process on 8001 when idle.
-
----
-
-## §04 — Scanner (simulated)
-
-Playwright opens `/ai-style/care/ingredient` with **no camera permission** and mock localStorage tokens.
-
-Observed (automated):
-
-- “Avtomatik skanerlash faol” / “Automatic scanning active” count **0**.
-- Screenshot: `after-scanner-permission-denied.png`.
-
-**Not verified:** real `getUserMedia` on hardware; Expo session on :8000.
+**Playwright auth:** phone `+998900000199` / `PlaywrightIsolated1!`, Care+ subscription + hair profile seeded; tokens via `manage.py playwright_auth_json` or `POST …/password-login/` on :8001.
 
 ---
 
-## §05 — Scan history
-
-Implementation includes loading, empty, error, unauthorized states and CTA `scanner.historyEmptyCta`.
-
-**Automation blocker:** Mock JWT in `e2e/hair-advisor-scanner.spec.ts` does not satisfy backend session validation; scanner chrome (History button) not reachable in Playwright with `seedAuth` alone.
-
-**Manual verification required:** Local Scanner account → open History → confirm empty copy (no em dash).
-
----
-
-## §06 — Hair Advisor
-
-- Demo route: demo notice visible (UZ/RU/EN keys).
-- Actions: **Continue with Morf AI**, **Scan another**, **Open scan history** (`?history=1` on scan path), **Compare** (hidden on demo).
-- Placeholder SVG for missing product image unchanged.
-- Result actions in document flow (no fixed overlap bar).
-
-Screenshots: mobile + desktop demo results.
-
----
-
-## §07 — Localization
-
-Completed this pass:
-
-- `HairAdvisor2ProductHeader`: `badgeVerified`, `metaCountry`, `metaVolume`, `metaBarcode`, etc.
-- Locales: `uz.json`, `en.json`, `ru.json`.
-
-Prior pass: scanner, explore, advisor result strings.
-
----
-
-## §13 — SEO metadata
+## §05 — Scan history authentication
 
 | Check | Result |
 | --- | --- |
-| `seo.spec.ts` | 3/3 passed (robots, sitemap index, morf canonical shell) |
-| Hreflang duplicates | Vitest: unique alternates per published locale set |
-| Draft public list | Django tests: `[]` for RU draft when EN published |
-| Temporary publish fixtures for hreflang HTML | **Not inserted** (avoid DB drift); recommend owner preview publish on staging |
+| `POST /api/v1/auth/phone/password-login/` on :8001 | **200** (with `MYSALOON_QA_ISOLATED=1`) |
+| `GET /api/v1/hair-advisor/history/` with Bearer | **200**, `[]` |
+| Playwright: scanner chrome + History button | **6/6 passed** in `hair-advisor-scanner.spec.ts` |
+| Playwright: empty state UI + screenshot | **passed** in `v3-polish-verification.spec.ts` |
+| Advisor demo → scan URL with `history` search | **passed** (href assertion) |
+| `?history=1` auto-open | **FIXED** — `HairAdvisor2ScanPage` strips stray quotes from search param |
+
+Mock JWT removed for scanner auth tests; API mocks **not** used for history (real session on :8001).
+
+---
+
+## §13 — SEO metadata (fixture pass)
+
+Artifact: [`docs/mysaloon-v3-qa/seo/hreflang-fixture-report.json`](mysaloon-v3-qa/seo/hreflang-fixture-report.json)
+
+While fixture was published (before teardown):
+
+- Initial server HTML: canonical `https://mysaloon.uz/guides/qa-lighthouse-article`, **4** hreflang links (`uz`, `ru`, `en`, `x-default`), exactly one each.
+- Hydrated DOM: same four, **no duplicates**.
+- Draft virtual-soch article: not published; preview remains protected via existing app rules.
+
+`sitemap-blog.xml` on :3002 listed fixture URLs only while seeded; empty after teardown.
 
 ---
 
 ## §14 — Article serializer (runtime, isolated)
 
-Measured via Django test client on **`qa_verify_8001.sqlite3`** after temporary published row `qa-serializer-check`:
+Prior measurement on **`qa_verify_8001.sqlite3`** (unchanged this pass):
 
 | Response | Bytes | `content` field |
 | --- | ---: | --- |
-| List card (`GET /api/v1/content/articles/?locale=uz`) | **263** | **Absent** |
-| Detail (`GET .../qa-serializer-check/?locale=uz`) | **3018** | Present (~400 words) |
-
-Fixture **deleted** after measurement.
-
-**Port 8000:** Not restarted; runtime list payload on the live process may still differ until reload.
+| List (`GET /api/v1/content/articles/?locale=uz`) | **263** | Absent |
+| Detail (`…/qa-serializer-check/?locale=uz`) | **3018** | Present |
 
 ---
 
-## §15 — Sitemap
+## §15 — Port 8000 reload procedure (owner approval only)
 
-`GET http://127.0.0.1:3000/sitemap-blog.xml` → **110 bytes**, empty `urlset` (no published articles). Proxied via Vite to local API (default `DEV_API_TARGET` :8000).
+**Do not execute while the Expo scanner session on :8000 is active.**
 
-No production article URLs observed in this response.
+1. Confirm with owner / mobile QA that the live `:8000` session can pause.
+2. On the host running Django **8000** (not :8001): deploy or pull `feat/mysaloon-v3-ecosystem` backend code **without** merging to `main`.
+3. `python manage.py migrate` against the live DB.
+4. Gracefully restart the **8000** process (runserver, Daphne, or gunicorn — same as today).
+5. Smoke checks:
+   - `GET /api/v1/content/articles/?locale=uz` — list cards **without** `content` body field.
+   - `GET /api/v1/content/articles/<published-slug>/?locale=uz` — detail **with** full `content`.
+6. Resume Expo / mobile QA against the same `host:8000`.
 
 ---
 
-## §16 — Lighthouse (laboratory)
+## §16 — Lighthouse (production Nitro, laboratory)
 
-Target: `http://127.0.0.1:3000/explore` (Vite **dev**, mobile throttling). Raw JSON: `docs/_lighthouse-explore-dev.json`.
+Environment: Windows lab, `http://127.0.0.1:3002`, 2 runs/route, median.  
+Manifest: [`docs/mysaloon-v3-qa/lighthouse/manifest-prod-first-pass.json`](mysaloon-v3-qa/lighthouse/manifest-prod-first-pass.json)  
+Raw per-route: `docs/mysaloon-v3-qa/lighthouse/*-median.json`
 
-| Category | Score (0–100) |
-| --- | ---: |
-| Performance | 30 |
-| Accessibility | 100 |
-| SEO | 100 |
+### Before (dev server — not representative)
 
-| Metric | Value |
-| --- | --- |
-| LCP | 79.5 s (lab) |
-| CLS | 0.028 |
-| TBT | 1310 ms |
+| Target | Perf | LCP | CLS |
+| --- | ---: | ---: | ---: |
+| `/explore` Vite **dev** :3000 | 30 | **79.5 s** | 0.028 |
 
-These numbers reflect **unoptimized dev server**, not a production build or field CWV. A follow-up Lighthouse run on `npm run build && vite preview` is recommended before release.
+Source: `docs/_lighthouse-explore-dev.json` — unminified HMR, no SSR production pipeline.
+
+### After (production build + Nitro SSR)
+
+| Route | Form factor | Perf | LCP (ms) | CLS | SEO |
+| --- | --- | ---: | ---: | ---: | ---: |
+| Home `/` | mobile | 48.5 | 12274 | 0 | 100 |
+| Home `/` | desktop | 56 | 2767 | **1.10** | 100 |
+| Guides | mobile | 48.5 | 9738 | 0.034 | 100 |
+| Article (qa fixture) | mobile | 52 | 9941 | 0.034 | 100 |
+| Explore | mobile | 57 | 6716 | 0.068 | 100 |
+| Explore | desktop | 78.5 | 2991 | 0.043 | 100 |
+| Hairstyle detail | mobile | 56 | 13135 | 0.068 | 100 |
+
+Post-pass sample (lazy MediaPipe split, home mobile, 1 run): perf **56**, LCP **~11800 ms**, CLS **0.068** — `home-mobile-after-build2-run1.json`.
+
+**Target gate (owner):** Performance **90+**, LCP **≤ 2.5s**, CLS **≤ 0.1** — **not met** on mobile home/guides/article/detail in this lab. Bottlenecks evidenced: large JS/CSS initial payloads (`index-*.js` ~444 KB, `styles-*.css` ~290 KB), GA tag download, main-thread JS; desktop home CLS spike from layout shift on root shell hydrate.
+
+**Change applied (demonstrated):** dynamic `import()` for `@mediapipe/tasks-vision` in `useFaceLandmarker.ts` so face ML is not a static dep of unrelated routes.
 
 ---
 
@@ -191,67 +147,23 @@ These numbers reflect **unoptimized dev server**, not a production build or fiel
 | Vitest (`apps/user`) | **94 passed**, 3 skipped |
 | Django `content_seo` | **4 passed** |
 | Playwright `e2e/seo.spec.ts` | **3 passed** |
-| Playwright `e2e/v3-polish-verification.spec.ts` | **8 passed**, 1 failed (history auth) |
-| Playwright `e2e/hair-advisor-scanner.spec.ts` | **1 passed**, 2 failed (auth) |
-| ESLint (spot check) | **66 prettier issues** on pre-existing files (not introduced in this pass) |
-| TypeScript `tsc` | **Not run** (no script in package.json beyond vite) |
-| Production `npm run build` | **Not run** this session |
-
----
-
-## §19 — Branch integration (read-only)
-
-```
-main @ f0573e39
-  └── feat/scanner-v2-release-candidate (diverged; Universal Smart Scanner V2 packaging)
-  └── feat/seo-phase1-content @ 1daecf14
-        └── feat/mysaloon-v3-ecosystem (+5 commits ahead of SEO branch)
-```
-
-| Branch pair | Notes |
-| --- | --- |
-| `main` ← `feat/mysaloon-v3-ecosystem` | ~111 files, guides + explore width + scanner UI + SEO content models; expect conflicts in `apps/user` routes and `content_seo` if `main` moved |
-| `feat/seo-phase1-content` ← V3 | V3 is direct descendant; merge is fast-forward/review only |
-| Scanner V2 RC | Parallel scanner work; **do not merge** without explicit owner plan; overlap in `packages/scanner` and Hair Advisor routes |
-
-**Proposed integration order (owner approval):**
-
-1. Review & approve V3 QA evidence.  
-2. Merge `feat/seo-phase1-content` → `main` **only after** article publish decision.  
-3. Merge `feat/mysaloon-v3-ecosystem` → `main` (or merge V3 into SEO then single PR).  
-4. Keep `feat/scanner-v2-release-candidate` separate until V2 sign-off.  
-5. Deploy backend with `content_seo` migrations before user app that expects card serializer.  
-6. Reload port 8000 / production API workers after backend deploy.
-
-**Rollback:** Revert deploy commits; content_seo migrations are additive; republish articles from `phase1_articles.py` if needed.
-
----
-
-## Deployment prerequisites
-
-- [ ] Owner approves screenshots + this report  
-- [ ] Signed-in scanner + history empty verified manually  
-- [ ] Restart/reload backend on staging to pick up `SeoArticleCardSerializer`  
-- [ ] Lighthouse on production build artifact  
-- [ ] Phase 1 article publish decision  
-- [ ] No Scanner V2 merge unless approved  
+| Playwright `e2e/hair-advisor-scanner.spec.ts` | **6 passed** |
+| Playwright `e2e/v3-polish-verification.spec.ts` | **9 passed**, **1 skipped** (draft article on upstream when fixture absent) |
+| Production `npm run build` | **passed** |
 
 ---
 
 ## Physical-device QA
 
-**BLOCKED** in automation. Expo scanner on `192.168.x.x:8000` unchanged.
+**BLOCKED** in automation (real `getUserMedia`, barcode hardware, signed-in Expo on :8000).
 
 ---
 
-## Remaining defects
+## Remaining owner decisions
 
-1. Playwright cannot drive authenticated scanner without real login or API mock layer.  
-2. Live Django on **8000** may still return `content` on list until process reload.  
-3. Maintenance banner not locale-screenshot per language.  
-4. Performance lab scores on dev server are poor; not release representative.  
-5. Hairstyle save on explore detail still absent.  
-
----
+1. Accept mobile lab performance below 90 or schedule a dedicated perf sprint (CDN, route-level JS budgets, desktop CLS).
+2. Approve port **8000** backend reload when Expo session allows (§15).
+3. Phase 1 article publish / merge-to-main decision unchanged.
+4. Manual device scanner smoke on hardware.
 
 **Stop here.** Await owner release approval before merge, publish, or production deploy.

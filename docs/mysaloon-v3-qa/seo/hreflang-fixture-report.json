@@ -1,0 +1,33 @@
+{
+  "url": "http://127.0.0.1:3002/guides/qa-lighthouse-article",
+  "httpStatus": 200,
+  "serverHtml": {
+    "canonical": "https://mysaloon.uz/guides/qa-lighthouse-article",
+    "robots": null,
+    "hreflang": [
+      "en",
+      "ru",
+      "uz",
+      "x-default"
+    ],
+    "uniqueCount": 4,
+    "onePerLocale": true
+  },
+  "hydratedDom": {
+    "canonical": "https://mysaloon.uz/guides/qa-lighthouse-article",
+    "hreflang": [
+      "en",
+      "ru",
+      "uz",
+      "x-default"
+    ],
+    "uniqueCount": 4,
+    "duplicates": false
+  },
+  "draftProtection": {
+    "previewNoindex": false
+  },
+  "sitemap": {
+    "note": "Check /sitemap-blog.xml includes published fixture only when seeded"
+  }
+}
