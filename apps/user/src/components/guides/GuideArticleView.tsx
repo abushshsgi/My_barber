@@ -318,7 +318,7 @@ export function GuideArticlePage({ slug, locale }: { slug: string; locale: SeoLo
   };
 
   return (
-    <article className="mx-auto w-full max-w-5xl px-4 pb-16 pt-2 md:px-6">
+    <article className="w-full pb-16 pt-2">
       <PageHeader showBack sticky backFallback={localizedPath("/guides", locale)} />
       <nav className="mt-3 text-sm text-muted-foreground" aria-label="Breadcrumb">
         <Link to="/" className="hover:text-foreground">
@@ -337,11 +337,11 @@ export function GuideArticlePage({ slug, locale }: { slug: string; locale: SeoLo
           {article.category}
         </p>
       ) : null}
-      <h1 className="mt-3 max-w-[40rem] font-display text-3xl font-semibold tracking-tight text-foreground md:text-5xl md:leading-tight">
+      <h1 className="mt-3 max-w-[46rem] font-display text-3xl font-semibold tracking-tight text-foreground sm:text-4xl sm:leading-[1.15] lg:text-5xl lg:leading-tight">
         {article.title}
       </h1>
       {article.excerpt ? (
-        <p className="mt-4 max-w-[40rem] text-lg leading-8 text-muted-foreground">
+        <p className="mt-4 max-w-[46rem] text-lg leading-8 text-muted-foreground">
           {article.excerpt}
         </p>
       ) : null}
@@ -356,7 +356,7 @@ export function GuideArticlePage({ slug, locale }: { slug: string; locale: SeoLo
       </p>
 
       {article.cover_image_url ? (
-        <figure className="mt-8 max-w-[40rem] overflow-hidden rounded-2xl bg-surface">
+        <figure className="mt-8 max-w-[46rem] overflow-hidden rounded-2xl bg-surface">
           <img
             src={article.cover_image_url}
             alt={article.cover_alt || article.title}
@@ -370,14 +370,29 @@ export function GuideArticlePage({ slug, locale }: { slug: string; locale: SeoLo
         </figure>
       ) : null}
 
+      {showToc ? (
+        <details className="mt-8 max-w-[46rem] border-y border-border py-3 lg:hidden">
+          <summary className="cursor-pointer text-sm font-semibold">{chrome.toc}</summary>
+          <ol className="mt-3 space-y-2 text-sm">
+            {toc.map((item) => (
+              <li key={item.id} className={item.level === 3 ? "pl-3" : undefined}>
+                <a href={`#${item.id}`} className="text-muted-foreground">
+                  {item.text}
+                </a>
+              </li>
+            ))}
+          </ol>
+        </details>
+      ) : null}
+
       <div
         className={
           showToc
-            ? "mt-10 lg:grid lg:grid-cols-[minmax(0,40rem)_16rem] lg:items-start lg:gap-12"
-            : "mt-10"
+            ? "mt-8 lg:grid lg:grid-cols-[minmax(0,46rem)_16rem] lg:items-start lg:gap-16"
+            : "mt-8"
         }
       >
-        <div className="max-w-[40rem]">
+        <div className="max-w-[46rem]">
           {blocks.map((block, index) => {
             if (block.type === "h2") {
               return (
@@ -468,7 +483,7 @@ export function GuideArticlePage({ slug, locale }: { slug: string; locale: SeoLo
         </div>
 
         {showToc ? (
-          <nav className="md:sticky md:top-24 md:self-start" aria-label={chrome.toc}>
+          <nav className="sticky top-24 hidden self-start lg:block" aria-label={chrome.toc}>
             <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
               {chrome.toc}
             </p>

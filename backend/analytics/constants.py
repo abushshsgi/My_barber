@@ -34,6 +34,8 @@ CLIENT_EVENTS = frozenset(
         "blog_article_view",
         "scan_cta_click",
         "generation_completed",
+        "guides_search",
+        "guides_category_selected",
     }
 )
 
@@ -123,5 +125,7 @@ ENGAGEMENT_EVENTS = frozenset(
         "blog_article_view",
         "scan_cta_click",
         "generation_completed",
+        "guides_search",
+        "guides_category_selected",
     }
 )

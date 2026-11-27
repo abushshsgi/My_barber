@@ -3,12 +3,15 @@ import { isMysaloonPausedPath } from "@/lib/mysaloon-paused";
 /** Ilova docki: faqat asosiy tablar va MySaloon pauza sahifalari.
  *  Natija, sozlama, hamyon, parvarish ichki sahifalari — docksiz.
  */
-const MOBILE_DOCK_ROOTS = new Set([
-  "/",
-  "/profile",
-  "/ai-style",
-  "/ai-style/care",
-]);
+const MOBILE_DOCK_ROOTS = new Set(["/", "/profile", "/ai-style", "/ai-style/care"]);
+
+/** Telefon ustunidan chiqadigan ommaviy sahifalar: qo'llanma va uslub katalogi. */
+export function isWidePublicPath(pathname: string): boolean {
+  const bare = pathname.replace(/\/+$/, "").replace(/^\/(ru|en)(?=\/|$)/, "") || "/";
+  if (bare === "/guides" || bare.startsWith("/guides/")) return true;
+  if (bare === "/explore" || (bare.startsWith("/explore/") && !bare.includes("/try"))) return true;
+  return false;
+}
 
 export function shouldShowMobileDock(pathname: string): boolean {
   if (pathname === "/auth" || pathname === "/onboarding") return false;

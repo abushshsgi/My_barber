@@ -146,7 +146,10 @@ export function UserLayout({ children }: { children: React.ReactNode }) {
         <div
           className={cn(
             "mobile-neo neo-page texture-grid mx-auto flex w-full min-w-0 flex-1 flex-col overflow-x-clip",
-            showMobileDock || pathname === "/onboarding" || flags.isHairAdvisorFlow
+            showMobileDock ||
+              pathname === "/onboarding" ||
+              flags.isHairAdvisorFlow ||
+              flags.isWidePublic
               ? "max-w-none"
               : "max-w-md",
             pathname === "/onboarding" && "lg:pt-3",

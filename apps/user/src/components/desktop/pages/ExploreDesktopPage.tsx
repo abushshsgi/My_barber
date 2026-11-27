@@ -39,7 +39,7 @@ export function ExploreDesktopPage() {
               · {t("nav.explore")}
             </span>
           </div>
-          <h1 className="mt-2 text-[2.35rem] font-extrabold leading-[1.1] tracking-tight xl:text-[2.75rem]">
+          <h1 className="mt-2 text-3xl font-extrabold leading-[1.1] tracking-tight sm:text-4xl xl:text-[2.75rem]">
             {t("explorePage.title")}
           </h1>
           <p className="mt-3 max-w-xl text-[15px] leading-relaxed text-muted-foreground">

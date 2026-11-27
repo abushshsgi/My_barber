@@ -33,7 +33,9 @@ export type AnalyticsEventName =
   | "tryon_cta_click"
   | "blog_article_view"
   | "scan_cta_click"
-  | "generation_completed";
+  | "generation_completed"
+  | "guides_search"
+  | "guides_category_selected";
 
 type Props = Record<string, string | number | boolean>;
 

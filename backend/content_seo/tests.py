@@ -63,3 +63,7 @@ class SeoArticlePublicationTests(APITestCase):
         listed = self.client.get("/api/v1/content/articles/?locale=ru")
         self.assertEqual(listed.status_code, 200)
         self.assertEqual(listed.json(), [])
+        live = self.client.get("/api/v1/content/articles/?locale=en")
+        self.assertEqual(live.status_code, 200)
+        self.assertEqual(live.json()[0]["slug"], "virtual-soch-turmagini-sinab-korish")
+        self.assertNotIn("content", live.json()[0])

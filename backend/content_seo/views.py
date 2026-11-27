@@ -6,7 +6,7 @@ from rest_framework.response import Response
 
 from ai.views import UnthrottledAPIView
 from content_seo.models import SeoArticle
-from content_seo.serializers import SeoArticleSerializer
+from content_seo.serializers import SeoArticleCardSerializer, SeoArticleSerializer
 
 
 def _published():
@@ -26,7 +26,7 @@ class SeoArticleListView(UnthrottledAPIView):
         if locale:
             qs = qs.filter(locale=locale)
         qs = qs.order_by("-published_at", "-updated_at")[:200]
-        data = SeoArticleSerializer(qs, many=True, context={"request": request}).data
+        data = SeoArticleCardSerializer(qs, many=True, context={"request": request}).data
         return Response(data)
 
 

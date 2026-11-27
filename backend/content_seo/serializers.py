@@ -4,6 +4,41 @@ from rest_framework import serializers
 from content_seo.models import SeoArticle
 
 
+class SeoArticleCardSerializer(serializers.ModelSerializer):
+    cover_image_url = serializers.SerializerMethodField()
+    published_locales = serializers.SerializerMethodField()
+    reading_minutes = serializers.SerializerMethodField()
+
+    class Meta:
+        model = SeoArticle
+        fields = (
+            "slug",
+            "locale",
+            "category",
+            "title",
+            "excerpt",
+            "cover_image_url",
+            "cover_alt",
+            "author",
+            "published_at",
+            "reading_minutes",
+            "published_locales",
+        )
+        read_only_fields = fields
+
+    def get_cover_image_url(self, obj: SeoArticle) -> str:
+        return SeoArticleSerializer(obj, context=self.context).get_cover_image_url(obj)
+
+    def get_published_locales(self, obj: SeoArticle) -> list[str]:
+        return SeoArticleSerializer(obj, context=self.context).get_published_locales(obj)
+
+    def get_reading_minutes(self, obj: SeoArticle) -> int:
+        words = len((obj.content or "").split())
+        if words <= 0:
+            return 1
+        return max(1, round(words / 180))
+
+
 class SeoArticleSerializer(serializers.ModelSerializer):
     cover_image_url = serializers.SerializerMethodField()
 
