@@ -1,4 +1,14 @@
 import type { BuiltHead } from "./build-head";
+import type { SeoLocale } from "./constants";
+
+/** Align initial HTML `lang` with URL locale prefix (uz default, no cookie/session). */
+export function applyDocumentLangToHtml(html: string, locale: SeoLocale): string {
+  if (!/<html\b/i.test(html)) return html;
+  return html.replace(/<html\b([^>]*)>/i, (_match, attrs: string) => {
+    const withoutLang = attrs.replace(/\s+lang=(["'])[^"']*\1/i, "");
+    return `<html lang="${locale}"${withoutLang}>`;
+  });
+}
 
 export function escapeHtml(value: string): string {
   return value

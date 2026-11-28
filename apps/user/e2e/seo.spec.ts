@@ -20,6 +20,35 @@ test.describe("SEO assets", () => {
     expect(html).toContain("https://mysaloon.uz/morf-ai/try-on");
   });
 
+  test("localized explore URLs return 200 with hreflang", async ({ request }) => {
+    for (const path of ["/explore", "/en/explore", "/ru/explore"] as const) {
+      const res = await request.get(path);
+      expect(res.status(), path).toBe(200);
+      const html = await res.text();
+      expect(html).toContain('rel="canonical"');
+      expect(html).toContain('hreflang="x-default"');
+      expect(html).toContain('id="seo-prerender"');
+    }
+  });
+
+  test("localized paths set initial html lang from URL prefix", async ({ request }) => {
+    const cases = [
+      ["/explore", "uz"],
+      ["/en/explore", "en"],
+      ["/ru/explore", "ru"],
+      ["/", "uz"],
+      ["/guides", "uz"],
+      ["/en/guides", "en"],
+      ["/ru/guides", "ru"],
+    ] as const;
+    for (const [path, lang] of cases) {
+      const res = await request.get(path);
+      expect(res.status(), path).toBe(200);
+      const html = await res.text();
+      expect(html).toMatch(new RegExp(`<html[^>]*\\blang="${lang}"`, "i"));
+    }
+  });
+
   test("wallet is noindex in head when reachable", async ({ request }) => {
     const res = await request.get("/wallet");
     expect(res.status()).toBeLessThan(500);

@@ -1,35 +1,26 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect } from "react";
-import { DesktopPageSplit } from "@/components/desktop/DesktopPageSplit";
-import { ExploreDesktopPage } from "@/components/desktop/pages/ExploreDesktopPage";
-import { ExploreMobilePage } from "@/components/explore/ExploreMobilePage";
-import { trackEvent } from "@/lib/analytics";
+import { ExploreRoutePage } from "@/components/explore/ExploreRoutePage";
+import { buildRegistryHead } from "@/seo/build-head";
 import { EXPLORE_LCP_HERO_SRC } from "@/lib/explore-lcp-static";
 
 export const Route = createFileRoute("/explore")({
-  head: () => ({
-    meta: [{ title: "Trend uslublar — mysaloon.uz" }],
-    links: [
-      {
-        rel: "preload",
-        href: EXPLORE_LCP_HERO_SRC,
-        as: "image",
-        type: "image/webp",
-        fetchPriority: "high",
-      },
-    ],
-  }),
-  component: ExplorePage,
+  head: () => {
+    const head = buildRegistryHead("explore", "uz");
+    return {
+      ...head,
+      links: [
+        ...(head.links ?? []),
+        {
+          rel: "preload",
+          href: EXPLORE_LCP_HERO_SRC,
+          as: "image",
+          type: "image/webp",
+          fetchPriority: "high",
+        },
+      ],
+    };
+  },
+  component: function ExplorePage() {
+    return <ExploreRoutePage locale="uz" />;
+  },
 });
-
-function ExplorePage() {
-  useEffect(() => {
-    trackEvent("catalog_opened", {}, { dedupeKey: "explore" });
-  }, []);
-  return (
-    <DesktopPageSplit
-      mobile={<ExploreMobilePage />}
-      desktop={<ExploreDesktopPage />}
-    />
-  );
-}

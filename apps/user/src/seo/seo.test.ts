@@ -1,10 +1,24 @@
 import { describe, expect, it } from "vitest";
+import { applyDocumentLangToHtml } from "./html-utils";
 import { buildHreflangAlternates, buildRegistryHead } from "./build-head";
 import { SITE_ORIGIN } from "./constants";
 import { robotsTxtBody } from "./robots";
 import { dedupeSitemapImages, renderUrlSet, staticSitemapUrls, sitemapIndexXml } from "./sitemap";
 import { getCanonicalUrl, localizedPath } from "./url";
 import { isNoindexPath } from "./noindex";
+
+describe("applyDocumentLangToHtml", () => {
+  it("replaces existing lang on the html root", () => {
+    const out = applyDocumentLangToHtml('<html lang="uz"><head></head></html>', "en");
+    expect(out).toContain('<html lang="en">');
+    expect(out).not.toContain('lang="uz"');
+  });
+
+  it("adds lang when missing", () => {
+    const out = applyDocumentLangToHtml("<html><body></body></html>", "ru");
+    expect(out).toContain('<html lang="ru">');
+  });
+});
 
 describe("seo url", () => {
   it("uses apex canonical origin", () => {
@@ -25,6 +39,16 @@ describe("buildRegistryHead", () => {
     expect(alts.length).toBe(4);
     expect(alts.some((l) => l.hrefLang === "x-default")).toBe(true);
   });
+
+  it("emits explore hreflang cluster with locale paths", () => {
+    const uz = buildRegistryHead("explore", "uz");
+    const en = buildRegistryHead("explore", "en");
+    expect(uz.links.some((l) => l.rel === "canonical" && l.href.endsWith("/explore"))).toBe(true);
+    expect(en.links.some((l) => l.rel === "canonical" && l.href.endsWith("/en/explore"))).toBe(true);
+    const alts = buildHreflangAlternates("explore");
+    expect(alts.some((l) => l.href.includes("/ru/explore"))).toBe(true);
+    expect(alts.some((l) => l.hrefLang === "x-default")).toBe(true);
+  });
 });
 
 describe("sitemap", () => {
@@ -38,6 +62,13 @@ describe("sitemap", () => {
     const urls = staticSitemapUrls();
     expect(urls.some((u) => u.loc === `${SITE_ORIGIN}/booking`)).toBe(true);
     expect(urls.some((u) => u.loc.includes("/ru/booking"))).toBe(true);
+  });
+
+  it("static sitemap includes localized explore cluster", () => {
+    const urls = staticSitemapUrls();
+    expect(urls.some((u) => u.loc === `${SITE_ORIGIN}/explore`)).toBe(true);
+    expect(urls.some((u) => u.loc === `${SITE_ORIGIN}/en/explore`)).toBe(true);
+    expect(urls.some((u) => u.loc === `${SITE_ORIGIN}/ru/explore`)).toBe(true);
   });
 
   it("produces valid urlset xml", () => {

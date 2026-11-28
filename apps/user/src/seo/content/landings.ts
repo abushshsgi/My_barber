@@ -130,7 +130,7 @@ export const LANDING_PAGES: LandingPageDef[] = [
   {
     id: "explore",
     uzPath: "/explore",
-    trilingual: false,
+    trilingual: true,
     indexable: true,
     sitemap: true,
     priority: 0.85,
@@ -507,20 +507,22 @@ export const LANDING_COPY: CopyMap = {
       ctaHref: "/explore",
     },
     ru: {
-      title: "Каталог стилей",
-      description: "Мужские и женские причёски.",
+      title: "Каталог стилей — mysaloon.uz",
+      description:
+        "Мужские и женские причёски с try-on Morf AI и бронированием салонов в Узбекистане.",
       h1: "Каталог стилей",
-      intro: "",
-      ctaLabel: "Каталог",
-      ctaHref: "/explore",
+      intro: "62 модели с try-on и подбором салона.",
+      ctaLabel: "Открыть каталог",
+      ctaHref: "/ru/explore",
     },
     en: {
-      title: "Hairstyle catalog",
-      description: "Men's and women's styles.",
+      title: "Hairstyle catalog — mysaloon.uz",
+      description:
+        "Men's and women's styles with Morf AI try-on and salon booking in Uzbekistan.",
       h1: "Style catalog",
-      intro: "",
-      ctaLabel: "Explore",
-      ctaHref: "/explore",
+      intro: "62 styles with try-on and nearby salons.",
+      ctaLabel: "Open catalog",
+      ctaHref: "/en/explore",
     },
   },
   "privacy-policy": {
