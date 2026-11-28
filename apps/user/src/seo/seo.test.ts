@@ -1,10 +1,24 @@
 import { describe, expect, it } from "vitest";
+import { applyDocumentLangToHtml } from "./html-utils";
 import { buildHreflangAlternates, buildRegistryHead } from "./build-head";
 import { SITE_ORIGIN } from "./constants";
 import { robotsTxtBody } from "./robots";
 import { dedupeSitemapImages, renderUrlSet, staticSitemapUrls, sitemapIndexXml } from "./sitemap";
 import { getCanonicalUrl, localizedPath } from "./url";
 import { isNoindexPath } from "./noindex";
+
+describe("applyDocumentLangToHtml", () => {
+  it("replaces existing lang on the html root", () => {
+    const out = applyDocumentLangToHtml('<html lang="uz"><head></head></html>', "en");
+    expect(out).toContain('<html lang="en">');
+    expect(out).not.toContain('lang="uz"');
+  });
+
+  it("adds lang when missing", () => {
+    const out = applyDocumentLangToHtml("<html><body></body></html>", "ru");
+    expect(out).toContain('<html lang="ru">');
+  });
+});
 
 describe("seo url", () => {
   it("uses apex canonical origin", () => {

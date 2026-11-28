@@ -7,6 +7,8 @@ import { injectMorphLcpShell } from "./lib/morph-lcp-shell.server";
 import { injectSeoIntoHtml } from "./lib/seo-html-inject.server";
 import { applyStaticCacheHeaders } from "./lib/static-cache.server";
 import { maybeServeSeoAsset } from "./lib/sitemap-handlers.server";
+import { applyDocumentLangToHtml } from "./seo/html-utils";
+import { parseLocaleFromPath } from "./seo/url";
 
 type ServerEntry = {
   fetch: (request: Request, env: unknown, ctx: unknown) => Promise<Response> | Response;
@@ -56,7 +58,11 @@ export default {
       const { pathname } = new URL(request.url);
       if (request.method === "GET" && response.headers.get("content-type")?.includes("text/html")) {
         response = await injectSeoIntoHtml(response, pathname);
-        const html = injectMorphLcpShell(await response.text(), pathname);
+        const { locale } = parseLocaleFromPath(pathname);
+        const html = applyDocumentLangToHtml(
+          injectMorphLcpShell(await response.text(), pathname),
+          locale,
+        );
         const outHeaders = new Headers(response.headers);
         outHeaders.delete("content-length");
         response = new Response(html, {
