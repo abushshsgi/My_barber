@@ -1,0 +1,14 @@
+{
+  "id": "home",
+  "url": "https://mysaloon.uz/",
+  "formFactor": "mobile",
+  "perf": 57,
+  "a11y": 100,
+  "bp": 96,
+  "seo": 100,
+  "lcp_ms": 7875.766000000004,
+  "fcp_ms": 5242.116000000001,
+  "cls": 0,
+  "tbt_ms": 234,
+  "ttfb_ms": 147
+}

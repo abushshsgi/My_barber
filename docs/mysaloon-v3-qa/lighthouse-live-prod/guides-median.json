@@ -1,0 +1,14 @@
+{
+  "id": "guides",
+  "url": "https://mysaloon.uz/guides",
+  "formFactor": "mobile",
+  "perf": 61,
+  "a11y": 100,
+  "bp": 96,
+  "seo": 100,
+  "lcp_ms": 5074.978000000001,
+  "fcp_ms": 5074.978000000001,
+  "cls": 0,
+  "tbt_ms": 299,
+  "ttfb_ms": 145
+}

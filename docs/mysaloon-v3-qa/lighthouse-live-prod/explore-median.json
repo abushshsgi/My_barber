@@ -1,0 +1,14 @@
+{
+  "id": "explore",
+  "url": "https://mysaloon.uz/explore",
+  "formFactor": "mobile",
+  "perf": 60,
+  "a11y": 100,
+  "bp": 96,
+  "seo": 100,
+  "lcp_ms": 6627.074999999999,
+  "fcp_ms": 5390.768999999999,
+  "cls": 0,
+  "tbt_ms": 179,
+  "ttfb_ms": 154
+}

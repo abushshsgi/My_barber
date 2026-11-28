@@ -1,0 +1,14 @@
+{
+  "id": "morf-scanner-landing-desktop",
+  "url": "https://mysaloon.uz/morf-ai/ingredient-scanner",
+  "formFactor": "desktop",
+  "perf": 69,
+  "a11y": 100,
+  "bp": 96,
+  "seo": 100,
+  "lcp_ms": 2520.8714999999997,
+  "fcp_ms": 2520.8714999999997,
+  "cls": 0.006097601302203068,
+  "tbt_ms": 0,
+  "ttfb_ms": 148
+}
