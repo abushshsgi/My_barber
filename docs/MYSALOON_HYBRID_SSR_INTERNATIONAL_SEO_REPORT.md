@@ -175,3 +175,5 @@ No intentional shared-chunk diet in this pass; explore route remains ~10 kB gzip
   3. Explicit acceptance of LCP posture or follow-up public-root SSR split.
 
 **Stop for owner review** — merge to `main` and VPS deploy require separate approval.
+
+**Final Git commit:** `b91c91d7` on `feat/mysaloon-selective-ssr` (pushed to `origin`).
