@@ -9,8 +9,8 @@
 | Live production (unchanged) | Frontend + backend **`3caad448`** |
 | Release branch | `feat/mysaloon-international-seo-release` |
 | Implementation | `e0b5b309` |
-| QA report tip (this commit) | *(see `git rev-parse HEAD` after push)* |
-| Final candidate SHA for deploy | **`4565eead`** (docs + `e0b5b309` implementation) |
+| QA report tip | **`33fa5c29`** |
+| Final candidate SHA for deploy | **`33fa5c29`** (`e0b5b309` implementation + QA evidence) |
 | Accepted ADR | `feat/mysaloon-split-bootstrap` · `aa111113` — **rendering architecture frozen; performance experiments rejected for production** |
 
 ---
@@ -100,9 +100,9 @@ Compared against `feat/mysaloon-split-bootstrap` (`aa111113` family). **Present 
 
 Truncated head snapshots:
 
-- [`docs/mysaloon-v3-qa/seo-rc-html/-explore.head.html`](mysaloon-v3-qa/seo-rc-html/-explore.head.html)
-- [`docs/mysaloon-v3-qa/seo-rc-html/-en-explore.head.html`](mysaloon-v3-qa/seo-rc-html/-en-explore.head.html)
-- [`docs/mysaloon-v3-qa/seo-rc-html/-ru-explore.head.html`](mysaloon-v3-qa/seo-rc-html/-ru-explore.head.html)
+- [`docs/mysaloon-v3-qa/seo-rc-html/explore.head.html`](mysaloon-v3-qa/seo-rc-html/explore.head.html)
+- [`docs/mysaloon-v3-qa/seo-rc-html/en-explore.head.html`](mysaloon-v3-qa/seo-rc-html/en-explore.head.html)
+- [`docs/mysaloon-v3-qa/seo-rc-html/ru-explore.head.html`](mysaloon-v3-qa/seo-rc-html/ru-explore.head.html)
 
 ### Hydrated DOM (language)
 
