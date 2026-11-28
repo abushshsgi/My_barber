@@ -3,13 +3,13 @@
   "url": "http://127.0.0.1:3002/guides",
   "formFactor": "mobile",
   "runs": 3,
-  "performance": 52,
+  "performance": 57,
   "accessibility": 100,
   "bestPractices": 96,
   "seo": 100,
-  "lcpMs": 9945.548000000003,
+  "lcpMs": 6687.277599999999,
   "cls": 0.06804374240583232,
-  "fcpMs": 6707.273999999999,
-  "siMs": 6707.273999999999,
-  "tbtMs": 292.0000000000018
+  "fcpMs": 6687.277599999999,
+  "siMs": 6687.277599999999,
+  "tbtMs": 180.50000000000182
 }

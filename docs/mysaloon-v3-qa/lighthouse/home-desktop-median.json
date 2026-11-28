@@ -3,13 +3,13 @@
   "url": "http://127.0.0.1:3002/",
   "formFactor": "desktop",
   "runs": 3,
-  "performance": 54,
+  "performance": 80,
   "accessibility": 100,
   "bestPractices": 96,
   "seo": 100,
-  "lcpMs": 2959.964299999999,
-  "cls": 0.9445224719101124,
-  "fcpMs": 1201.5297,
-  "siMs": 1735.9855237662557,
-  "tbtMs": 15.5
+  "lcpMs": 2735.1872000000017,
+  "cls": 0.04344569288389513,
+  "fcpMs": 1231.3905,
+  "siMs": 1555.4370379647842,
+  "tbtMs": 0
 }

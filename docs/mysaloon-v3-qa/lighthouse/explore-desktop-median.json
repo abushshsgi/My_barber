@@ -3,13 +3,13 @@
   "url": "http://127.0.0.1:3002/explore",
   "formFactor": "desktop",
   "runs": 3,
-  "performance": 78,
+  "performance": 79,
   "accessibility": 100,
   "bestPractices": 96,
   "seo": 100,
-  "lcpMs": 2920.3510000000006,
+  "lcpMs": 3031.060049999998,
   "cls": 0.04344569288389513,
-  "fcpMs": 1207.935,
-  "siMs": 1759.2689759347722,
-  "tbtMs": 2.5000000000002274
+  "fcpMs": 1225.8165,
+  "siMs": 1404.7516874664882,
+  "tbtMs": 0
 }

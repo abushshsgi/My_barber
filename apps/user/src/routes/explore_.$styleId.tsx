@@ -1,7 +1,7 @@
 import { Link, createFileRoute, notFound } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { MapPin, ScanFace } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { trackEvent } from "@/lib/analytics";
 import { resolveFetchBase } from "@/lib/api/base-url";
@@ -10,6 +10,7 @@ import { HairstylePreviewFrame } from "@/components/hairstyles/HairstylePreviewI
 import { MobileStickyActionBar } from "@/components/mobile/MobileStickyActionBar";
 import { PageHeader } from "@/components/PageHeader";
 import { useExplorePersona } from "@/hooks/use-explore-persona";
+import { useIsMdUp } from "@/hooks/use-mobile";
 import { useHairstyle, useHairstyles } from "@/hooks/use-hairstyles";
 import { lengthCategoryPath, rankRelatedHairstyles } from "@/lib/related-hairstyles";
 import { localizedPath } from "@/seo/url";
@@ -143,18 +144,6 @@ function ExploreStyleDesktop({ entry, galleryItems, imageAlt }: StyleProps) {
       </aside>
     </div>
   );
-}
-
-function useIsMdUp() {
-  const [isMdUp, setIsMdUp] = useState(false);
-  useEffect(() => {
-    const mql = window.matchMedia("(min-width: 768px)");
-    const onChange = () => setIsMdUp(mql.matches);
-    mql.addEventListener("change", onChange);
-    setIsMdUp(mql.matches);
-    return () => mql.removeEventListener("change", onChange);
-  }, []);
-  return isMdUp;
 }
 
 function articleLocale(language: string): SeoLocale {

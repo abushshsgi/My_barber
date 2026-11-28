@@ -1,0 +1,15 @@
+{
+  "route": "guides-desktop",
+  "url": "http://127.0.0.1:3002/guides",
+  "formFactor": "desktop",
+  "runs": 3,
+  "performance": 90,
+  "accessibility": 100,
+  "bestPractices": 96,
+  "seo": 100,
+  "lcpMs": 1226.2311,
+  "cls": 0.1245318352059925,
+  "fcpMs": 1226.2311,
+  "siMs": 1226.2311,
+  "tbtMs": 0
+}

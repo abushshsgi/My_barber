@@ -2,14 +2,14 @@
   "route": "scanner-auth",
   "url": "http://127.0.0.1:3002/ai-style/care/ingredient",
   "formFactor": "mobile",
-  "runs": 2,
-  "performance": 68,
+  "runs": 3,
+  "performance": 70,
   "accessibility": 98,
   "bestPractices": 96,
   "seo": 100,
-  "lcpMs": 10410.934149999997,
-  "cls": 0.06804374240583232,
-  "fcpMs": 2407.21295,
-  "siMs": 2407.21295,
-  "tbtMs": 185.2499999999991
+  "lcpMs": 11019.260800000004,
+  "cls": 0,
+  "fcpMs": 2406.4632,
+  "siMs": 3752.359228000113,
+  "tbtMs": 104.50000000000182
 }

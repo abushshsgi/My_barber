@@ -2,14 +2,14 @@
   "route": "detail-textured-crop",
   "url": "http://127.0.0.1:3002/explore/men-textured-crop",
   "formFactor": "mobile",
-  "runs": 2,
-  "performance": 56,
+  "runs": 3,
+  "performance": 57,
   "accessibility": 96,
   "bestPractices": 96,
   "seo": 100,
-  "lcpMs": 13134.828950000003,
+  "lcpMs": 12474.337249999995,
   "cls": 0.06804374240583232,
-  "fcpMs": 6749.7947,
-  "siMs": 6749.7947,
-  "tbtMs": 156
+  "fcpMs": 6735.534900000001,
+  "siMs": 6735.534900000001,
+  "tbtMs": 114.5
 }

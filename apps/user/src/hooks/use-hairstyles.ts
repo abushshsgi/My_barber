@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import type { AudienceFilter } from "@/hooks/use-audience";
 import { useUserAgeGroup } from "@/hooks/use-me";
-import type { ExplorePersonaId } from "@/lib/explore-personas";
+import { DEFAULT_EXPLORE_PERSONA, type ExplorePersonaId } from "@/lib/explore-personas";
 import { fetchHairstyleById, fetchHairstyles } from "@/lib/api/hairstyles";
 import { mapApiHairstyle, type HairstyleEntry } from "@/lib/hairstyles/catalog";
 

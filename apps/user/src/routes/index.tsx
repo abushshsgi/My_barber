@@ -1,16 +1,10 @@
-import { lazy, Suspense } from "react";
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { DesktopPageSplit } from "@/components/desktop/DesktopPageSplit";
+import { HomeDesktopRoot } from "@/components/desktop/home/HomeDesktopRoot";
 import { MysaloonPausedScreen } from "@/components/mobile/MysaloonPausedScreen";
 import { useHomeData } from "@/components/home/useHomeData";
 import { shouldRedirectHomeToMorph } from "@/lib/app-shell";
 import { parseReferralFromLocationSearch, stashReferralCode } from "@/lib/referral-storage";
-
-const HomeDesktopRoot = lazy(() =>
-  import("@/components/desktop/home/HomeDesktopRoot").then((m) => ({
-    default: m.HomeDesktopRoot,
-  })),
-);
 
 export const Route = createFileRoute("/")({
   beforeLoad: () => {
@@ -36,11 +30,7 @@ export const Route = createFileRoute("/")({
 
 function HomeDesktop() {
   const data = useHomeData();
-  return (
-    <Suspense fallback={null}>
-      <HomeDesktopRoot data={data} />
-    </Suspense>
-  );
+  return <HomeDesktopRoot data={data} />;
 }
 
 function Home() {

@@ -7,6 +7,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Link, createRootRouteWithContext, HeadContent, Scripts } from "@tanstack/react-router";
 
 import appCss from "../styles.css?url";
+import { EXPLORE_LCP_BOOT_SCRIPT } from "@/lib/explore-lcp-static";
 import { MORPH_LCP_BOOT_SCRIPT } from "@/lib/try-on-hero-assets";
 import { DeferredClientWidgets } from "@/components/DeferredClientWidgets";
 import spaceGroteskLatin from "@fontsource-variable/space-grotesk/files/space-grotesk-latin-wght-normal.woff2?url";
@@ -181,6 +182,7 @@ function RootShell({ children }: { children: React.ReactNode }) {
       <head>
         <HeadContent />
         <script dangerouslySetInnerHTML={{ __html: MORPH_LCP_BOOT_SCRIPT }} />
+        <script dangerouslySetInnerHTML={{ __html: EXPLORE_LCP_BOOT_SCRIPT }} />
         <script dangerouslySetInnerHTML={{ __html: APPEARANCE_BOOT_SCRIPT }} />
         <script dangerouslySetInnerHTML={{ __html: CLIENT_BOOT_SCRIPT }} />
       </head>

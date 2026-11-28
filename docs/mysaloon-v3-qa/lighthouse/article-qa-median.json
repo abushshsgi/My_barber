@@ -3,13 +3,13 @@
   "url": "http://127.0.0.1:3002/guides/qa-lighthouse-article",
   "formFactor": "mobile",
   "runs": 3,
-  "performance": 53,
+  "performance": 54,
   "accessibility": 100,
   "bestPractices": 96,
   "seo": 100,
-  "lcpMs": 9929.237999999994,
+  "lcpMs": 9849.8528,
   "cls": 0.06804374240583232,
-  "fcpMs": 6700.619,
-  "siMs": 6700.619,
-  "tbtMs": 243.00000000000182
+  "fcpMs": 7115.30245,
+  "siMs": 7115.30245,
+  "tbtMs": 137.99999999999454
 }

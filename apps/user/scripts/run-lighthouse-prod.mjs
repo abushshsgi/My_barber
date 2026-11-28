@@ -19,6 +19,7 @@ const ROUTES = [
   { id: "home", path: "/", formFactor: "mobile" },
   { id: "home-desktop", path: "/", formFactor: "desktop" },
   { id: "guides", path: "/guides", formFactor: "mobile" },
+  { id: "guides-desktop", path: "/guides", formFactor: "desktop" },
   { id: "article-qa", path: "/guides/qa-lighthouse-article", formFactor: "mobile" },
   { id: "explore", path: "/explore", formFactor: "mobile" },
   { id: "explore-desktop", path: "/explore", formFactor: "desktop" },
