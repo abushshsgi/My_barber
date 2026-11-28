@@ -68,4 +68,4 @@ No bundle-split or bootstrap changes on this branch. **Expect lab Explore metric
 
 ## Commit
 
-Record final SHA on this branch after `git push` (owner review gate).
+**Release candidate commit:** `e0b5b309` on `feat/mysaloon-international-seo-release`
