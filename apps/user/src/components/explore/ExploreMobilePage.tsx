@@ -1,6 +1,8 @@
+import { useEffect, useRef } from "react";
 import { Link } from "@tanstack/react-router";
 import { ScanFace, Sparkles } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { explorePerfMarks, logExplorePerfMeasures } from "@/lib/explore-perf-marks";
 import { ExploreStyleGrid } from "@/components/explore/ExploreStyleGrid";
 import { ExplorePageToolbar } from "@/components/explore/ExplorePageToolbar";
 import { PersonaPicker } from "@/components/PersonaPicker";
@@ -34,12 +36,22 @@ export function ExploreMobilePage() {
   const personaList = useExplorePersonaList();
   const readyCount = personaList.personas.length || listReadyExplorePersonas().length;
   const catalogModelCount = listReadyExplorePersonas().length;
+  const heroRef = useRef<HTMLImageElement>(null);
+
+  useEffect(() => {
+    explorePerfMarks.exploreRouteRender();
+    if (heroRef.current) {
+      explorePerfMarks.heroInDom();
+      logExplorePerfMeasures();
+    }
+  }, []);
 
   return (
     <div className={cn("min-w-0 bg-background", MOBILE_STICKY_CONTENT_PADDING_CLASS)}>
       <div className="relative w-full overflow-hidden bg-[#E8E8E8]">
         <div className="relative mx-auto aspect-[3/4] max-h-[min(52dvh,440px)] w-full max-w-md">
           <img
+            ref={heroRef}
             src={EXPLORE_LCP_HERO_SRC}
             alt={t("explorePage.title")}
             width={768}

@@ -1,0 +1,24 @@
+{
+  "method": "Lighthouse 13.x mobile simulate, Nitro lab, explore-run2.json",
+  "buildD_split_bootstrap": {
+    "lcp_ms": 10789,
+    "fcp_ms": 6148,
+    "ttfb_ms": 5,
+    "lcp_subparts_ms": {
+      "timeToFirstByte": 7.9,
+      "resourceLoadDelay": 22.4,
+      "resourceLoadDuration": 18.4,
+      "elementRenderDelay": 426.7
+    },
+    "lcp_subparts_sum_ms": 475,
+    "lcp_pre_resource_gap_ms": 10314,
+    "lcp_element": "img /hairstyles/men/personas/irland/mid-fade.webp (Explore hero)",
+    "interpretation": "Subparts cover only the final image paint; ~96% of LCP is sequential CSR work before the hero is in the DOM."
+  },
+  "buildC_public_shell": {
+    "lcp_ms": 11286,
+    "lcp_pre_resource_gap_ms": 10822
+  },
+  "experimentE_preload_defer_median_lcp_ms": 10910,
+  "experimentE_verdict": "FAILED — within noise; TBT regressed"
+}
