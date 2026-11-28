@@ -163,4 +163,4 @@ Archived **build A** (`3caad448`, ~6.7 s LCP) used a **different lab manifest fa
 - [ ] Do **not** approve performance branches for production  
 - [ ] If LCP ≤2.5 s is mandatory, scope **new project**: public SSR root or static marketing app — not another provider shell
 
-**ADR commit SHA:** (record on push to `feat/mysaloon-split-bootstrap`)
+**ADR commit SHA:** `d09fbac8` on `feat/mysaloon-split-bootstrap`
