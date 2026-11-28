@@ -24,8 +24,8 @@ export function buildAuthReturnPath(
 
 export async function requireAuth(pathname: string, searchStr = "", hash = "") {
   if (typeof window === "undefined") return;
-  rememberEntrySearch(searchStr);
   if (!pathRequiresAuth(pathname)) return;
+  rememberEntrySearch(searchStr);
   if (hasValidUserSession()) return;
   const ok = await bootstrapUserSession();
   if (!ok) {

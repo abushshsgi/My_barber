@@ -1,32 +1,23 @@
-import { lazy, Suspense, useEffect } from "react";
+import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
-import "@fontsource-variable/space-grotesk";
 import "../i18n/config";
 
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClient } from "@tanstack/react-query";
 import { Link, createRootRouteWithContext, HeadContent, Scripts } from "@tanstack/react-router";
 
 import appCss from "../styles.css?url";
 import { EXPLORE_LCP_BOOT_SCRIPT } from "@/lib/explore-lcp-static";
 import { MORPH_LCP_BOOT_SCRIPT } from "@/lib/try-on-hero-assets";
-import { DeferredClientWidgets } from "@/components/DeferredClientWidgets";
 import spaceGroteskLatin from "@fontsource-variable/space-grotesk/files/space-grotesk-latin-wght-normal.woff2?url";
 import { I18nProvider } from "../components/I18nProvider";
-import { LangAwareOutlet } from "../components/LangAwareOutlet";
-import { UserLayout } from "../components/UserLayout";
-import { ClientOnly } from "../components/ClientOnly";
+import { RootAppShellSwitcher } from "@/components/shell/RootAppShellSwitcher";
 import { CLIENT_BOOT_SCRIPT } from "../lib/client-boot-script";
 import { APPEARANCE_BOOT_SCRIPT } from "../lib/morph-appearance";
-const Toaster = lazy(() => import("sonner").then((m) => ({ default: m.Toaster })));
 import { APP_BUILD_ID } from "../lib/app-build-id";
 import { isChunkLoadError, reloadForChunkError } from "../lib/chunk-reload";
 import { requireAuth } from "../lib/require-auth";
-import { AudienceProvider } from "../hooks/use-audience";
-import { CurrencyProvider } from "../hooks/use-currency";
-import { AuthSessionGuard } from "../components/AuthSessionGuard";
-import { OnboardingGuard } from "../components/OnboardingGuard";
+import { pathRequiresAuth } from "@/lib/auth-routes";
 import { MaintenanceBanner } from "../components/MaintenanceBanner";
-import { MorphLcpRouteGuard } from "../components/MorphLcpRouteGuard";
 function NotFoundComponent() {
   const { t } = useTranslation();
   return (
@@ -126,6 +117,7 @@ const sharedRootOptions = {
   }: {
     location: { pathname: string; searchStr: string; hash: string };
   }) => {
+    if (!pathRequiresAuth(location.pathname)) return;
     await requireAuth(location.pathname, location.searchStr, location.hash);
   },
   component: RootComponent,
@@ -195,37 +187,10 @@ function RootShell({ children }: { children: React.ReactNode }) {
   );
 }
 
-function AppShell() {
-  const { queryClient } = Route.useRouteContext();
-
-  return (
-    <QueryClientProvider client={queryClient}>
-      <AudienceProvider>
-        <CurrencyProvider>
-          <AuthSessionGuard>
-            <OnboardingGuard>
-              <UserLayout>
-                <LangAwareOutlet />
-              </UserLayout>
-            </OnboardingGuard>
-          </AuthSessionGuard>
-          <ClientOnly>
-            <MorphLcpRouteGuard />
-            <DeferredClientWidgets />
-            <Suspense fallback={null}>
-              <Toaster position="top-center" />
-            </Suspense>
-          </ClientOnly>
-        </CurrencyProvider>
-      </AudienceProvider>
-    </QueryClientProvider>
-  );
-}
-
 function RootComponent() {
   return (
     <I18nProvider>
-      <AppShell />
+      <RootAppShellSwitcher />
     </I18nProvider>
   );
 }

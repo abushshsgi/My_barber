@@ -1,0 +1,35 @@
+{
+  "environment": {
+    "lighthouse": "v13.6",
+    "formFactor": "mobile",
+    "throttling": "simulate",
+    "api": "http://127.0.0.1:8001",
+    "database": "qa_verify_8001.sqlite3",
+    "note": "Same-host lab; not comparable to live prod 6.6s LCP (TLS/geo/cache differ)."
+  },
+  "buildA_production_sha_3caad448": {
+    "source": "docs/mysaloon-v3-qa/lighthouse/manifest-before-d5759810.json → explore mobile",
+    "median_lcp_ms": 6716,
+    "median_perf": 57,
+    "rebuild_same_session": "blocked — worktree npm/vite resolution; use archived manifest"
+  },
+  "buildB_hybrid_4bee927b": {
+    "source": "docs/mysaloon-v3-qa/lighthouse-hybrid-ssr/manifest.json",
+    "median_lcp_ms": 11424.56,
+    "median_perf": 57,
+    "median_tbt_ms": 127,
+    "rebuild_same_session": "blocked — worktree build; manifest from 2026-11-28 hybrid pass"
+  },
+  "buildC_public_shell_current": {
+    "source": "docs/mysaloon-v3-qa/ab-lighthouse-public-shell/manifest.json",
+    "median_lcp_ms": 11286.09,
+    "median_perf": 57,
+    "median_tbt_ms": 96.5
+  },
+  "verdict_vs_hybrid": {
+    "lcp_ms_delta": -138.47,
+    "tbt_ms_delta": -30.5,
+    "perf_delta": 0,
+    "interpretation": "Removing Nitro explore LCP overlay + public provider split slightly reduced TBT and LCP ms; **no meaningful Performance score gain**. Hybrid shell overlay did **not** improve scored LCP vs prod-era lab baseline — it **regressed** vs pre-overlay explore text LCP in older manifests."
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "label": "public-shell",
+  "base": "http://127.0.0.1:3012",
+  "branch": "feat/mysaloon-public-rendering-performance",
+  "runs": 3,
+  "capturedAt": "2026-11-28T13:35:00.000Z",
+  "routes": [
+    {
+      "id": "explore",
+      "path": "/explore",
+      "median": {
+        "perf": 57,
+        "lcp_ms": 11286.09,
+        "fcp_ms": 6568.42,
+        "cls": 0.068,
+        "tbt_ms": 96.5,
+        "ttfb_ms": 4,
+        "seo": 100,
+        "a11y": 100
+      }
+    }
+  ]
+}

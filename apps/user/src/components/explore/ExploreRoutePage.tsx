@@ -23,13 +23,6 @@ export function ExploreRoutePage({ locale }: { locale?: SeoLocale }) {
     });
   }, [locale]);
 
-  useEffect(() => {
-    document.documentElement.setAttribute("data-explore-lcp", "1");
-    return () => {
-      document.documentElement.removeAttribute("data-explore-lcp");
-    };
-  }, []);
-
   return (
     <DesktopPageSplit
       mobile={<ExploreMobilePage />}
