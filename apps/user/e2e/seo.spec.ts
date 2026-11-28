@@ -20,6 +20,17 @@ test.describe("SEO assets", () => {
     expect(html).toContain("https://mysaloon.uz/morf-ai/try-on");
   });
 
+  test("localized explore URLs return 200 with hreflang", async ({ request }) => {
+    for (const path of ["/explore", "/en/explore", "/ru/explore"] as const) {
+      const res = await request.get(path);
+      expect(res.status(), path).toBe(200);
+      const html = await res.text();
+      expect(html).toContain('rel="canonical"');
+      expect(html).toContain('hreflang="x-default"');
+      expect(html).toContain('id="seo-prerender"');
+    }
+  });
+
   test("wallet is noindex in head when reachable", async ({ request }) => {
     const res = await request.get("/wallet");
     expect(res.status()).toBeLessThan(500);

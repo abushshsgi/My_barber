@@ -48,6 +48,7 @@ import { Route as TopRouteImport } from './routes/top'
 import { Route as VerifyEmailRouteImport } from './routes/verify-email'
 import { Route as WalletRouteImport } from './routes/wallet'
 import { Route as LocaleIndexRouteImport } from './routes/$locale.index'
+import { Route as LocaleExploreRouteImport } from './routes/$locale.explore'
 import { Route as LocaleGuidesRouteImport } from './routes/$locale.guides'
 import { Route as AccountActivityRouteImport } from './routes/account.activity'
 import { Route as AccountHouseholdRouteImport } from './routes/account.household'
@@ -303,6 +304,11 @@ const WalletRoute = WalletRouteImport.update({
 const LocaleIndexRoute = LocaleIndexRouteImport.update({
   id: '/$locale/',
   path: '/$locale/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LocaleExploreRoute = LocaleExploreRouteImport.update({
+  id: '/$locale/explore',
+  path: '/$locale/explore',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LocaleGuidesRoute = LocaleGuidesRouteImport.update({
@@ -658,6 +664,7 @@ export interface FileRoutesByFullPath {
   '/top': typeof TopRoute
   '/verify-email': typeof VerifyEmailRoute
   '/wallet': typeof WalletRoute
+  '/$locale/explore': typeof LocaleExploreRoute
   '/$locale/guides': typeof LocaleGuidesRoute
   '/account/activity': typeof AccountActivityRoute
   '/account/household': typeof AccountHouseholdRoute
@@ -760,6 +767,7 @@ export interface FileRoutesByTo {
   '/top': typeof TopRoute
   '/verify-email': typeof VerifyEmailRoute
   '/wallet': typeof WalletRoute
+  '/$locale/explore': typeof LocaleExploreRoute
   '/$locale/guides': typeof LocaleGuidesRoute
   '/account/activity': typeof AccountActivityRoute
   '/account/household': typeof AccountHouseholdRoute
@@ -862,6 +870,7 @@ export interface FileRoutesById {
   '/top': typeof TopRoute
   '/verify-email': typeof VerifyEmailRoute
   '/wallet': typeof WalletRoute
+  '/$locale/explore': typeof LocaleExploreRoute
   '/$locale/guides': typeof LocaleGuidesRoute
   '/account/activity': typeof AccountActivityRoute
   '/account/household': typeof AccountHouseholdRoute
@@ -966,6 +975,7 @@ export interface FileRouteTypes {
     | '/top'
     | '/verify-email'
     | '/wallet'
+    | '/$locale/explore'
     | '/$locale/guides'
     | '/account/activity'
     | '/account/household'
@@ -1068,6 +1078,7 @@ export interface FileRouteTypes {
     | '/top'
     | '/verify-email'
     | '/wallet'
+    | '/$locale/explore'
     | '/$locale/guides'
     | '/account/activity'
     | '/account/household'
@@ -1169,6 +1180,7 @@ export interface FileRouteTypes {
     | '/top'
     | '/verify-email'
     | '/wallet'
+    | '/$locale/explore'
     | '/$locale/guides'
     | '/account/activity'
     | '/account/household'
@@ -1272,6 +1284,7 @@ export interface RootRouteChildren {
   TopRoute: typeof TopRoute
   VerifyEmailRoute: typeof VerifyEmailRoute
   WalletRoute: typeof WalletRoute
+  LocaleExploreRoute: typeof LocaleExploreRoute
   LocaleGuidesRoute: typeof LocaleGuidesRoute
   AccountActivityRoute: typeof AccountActivityRoute
   AccountHouseholdRoute: typeof AccountHouseholdRoute
@@ -1602,6 +1615,13 @@ declare module '@tanstack/react-router' {
       path: '/$locale'
       fullPath: '/$locale/'
       preLoaderRoute: typeof LocaleIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/$locale/explore': {
+      id: '/$locale/explore'
+      path: '/$locale/explore'
+      fullPath: '/$locale/explore'
+      preLoaderRoute: typeof LocaleExploreRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/$locale/guides': {
@@ -2133,6 +2153,7 @@ const rootRouteChildren: RootRouteChildren = {
   TopRoute: TopRoute,
   VerifyEmailRoute: VerifyEmailRoute,
   WalletRoute: WalletRoute,
+  LocaleExploreRoute: LocaleExploreRoute,
   LocaleGuidesRoute: LocaleGuidesRoute,
   AccountActivityRoute: AccountActivityRoute,
   AccountHouseholdRoute: AccountHouseholdRoute,

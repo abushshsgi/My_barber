@@ -25,6 +25,16 @@ describe("buildRegistryHead", () => {
     expect(alts.length).toBe(4);
     expect(alts.some((l) => l.hrefLang === "x-default")).toBe(true);
   });
+
+  it("emits explore hreflang cluster with locale paths", () => {
+    const uz = buildRegistryHead("explore", "uz");
+    const en = buildRegistryHead("explore", "en");
+    expect(uz.links.some((l) => l.rel === "canonical" && l.href.endsWith("/explore"))).toBe(true);
+    expect(en.links.some((l) => l.rel === "canonical" && l.href.endsWith("/en/explore"))).toBe(true);
+    const alts = buildHreflangAlternates("explore");
+    expect(alts.some((l) => l.href.includes("/ru/explore"))).toBe(true);
+    expect(alts.some((l) => l.hrefLang === "x-default")).toBe(true);
+  });
 });
 
 describe("sitemap", () => {
@@ -38,6 +48,13 @@ describe("sitemap", () => {
     const urls = staticSitemapUrls();
     expect(urls.some((u) => u.loc === `${SITE_ORIGIN}/booking`)).toBe(true);
     expect(urls.some((u) => u.loc.includes("/ru/booking"))).toBe(true);
+  });
+
+  it("static sitemap includes localized explore cluster", () => {
+    const urls = staticSitemapUrls();
+    expect(urls.some((u) => u.loc === `${SITE_ORIGIN}/explore`)).toBe(true);
+    expect(urls.some((u) => u.loc === `${SITE_ORIGIN}/en/explore`)).toBe(true);
+    expect(urls.some((u) => u.loc === `${SITE_ORIGIN}/ru/explore`)).toBe(true);
   });
 
   it("produces valid urlset xml", () => {
