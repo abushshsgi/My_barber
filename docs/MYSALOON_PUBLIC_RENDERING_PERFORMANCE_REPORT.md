@@ -191,4 +191,4 @@ Reviewed `docs/MYSALOON_PRODUCTION_BACKUP_PROCEDURE.md` + `deploy/vps/pg-backup-
 
 **Do not merge or deploy.** Preserve production `3caad448`. Owner may approve follow-up: **public TanStack entry / split root route tree** (framework-supported) before expanding beyond Explore.
 
-**Final commit:** _(set at push)_
+**Final commit:** `daa2d185` on `feat/mysaloon-public-rendering-performance`.
