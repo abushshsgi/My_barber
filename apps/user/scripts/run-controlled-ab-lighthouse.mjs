@@ -59,7 +59,7 @@ for (const routePath of routes) {
         "--quiet",
         "--chrome-flags=--headless=new",
       ],
-      { stdio: "inherit" },
+      { stdio: "inherit", shell: true },
     );
     const audit = JSON.parse(fs.readFileSync(out, "utf8"));
     metrics.push({

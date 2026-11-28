@@ -1,0 +1,51 @@
+{
+  "generatedAt": "2026-11-28T13:35:20.760Z",
+  "indexFile": "index-Cd3ym4d6.js",
+  "indexRawBytes": 111544,
+  "moduleSignals": [
+    {
+      "id": "routeTree.gen",
+      "occurrences": 0
+    },
+    {
+      "id": "routeTree.public",
+      "occurrences": 0
+    },
+    {
+      "id": "vendor-radix",
+      "occurrences": 0
+    },
+    {
+      "id": "vendor-router",
+      "occurrences": 0
+    },
+    {
+      "id": "vendor-query",
+      "occurrences": 0
+    },
+    {
+      "id": "i18next",
+      "occurrences": 0
+    },
+    {
+      "id": "lucide-react",
+      "occurrences": 0
+    },
+    {
+      "id": "framer-motion",
+      "occurrences": 0
+    },
+    {
+      "id": "mediapipe",
+      "occurrences": 0
+    },
+    {
+      "id": "zxing",
+      "occurrences": 0
+    },
+    {
+      "id": "firebase",
+      "occurrences": 0
+    }
+  ]
+}

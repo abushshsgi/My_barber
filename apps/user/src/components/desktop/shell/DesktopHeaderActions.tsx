@@ -1,7 +1,7 @@
 import { Link, useRouterState } from "@tanstack/react-router";
 import { Bell, MessageCircle } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { ProfileAccountDropdown } from "@/components/desktop/profile/ProfileAccountDropdown";
+import { ProfileAccountEntry } from "@/components/desktop/profile/ProfileAccountEntry";
 import { isNavTabActive } from "@/lib/navigation";
 import { cn } from "@/lib/utils";
 
@@ -62,7 +62,7 @@ export function DesktopHeaderActions({ notificationsUnread = 0, chatUnread = 0 }
         <Badge count={chatUnread} />
       </Link>
 
-      <ProfileAccountDropdown notificationsUnread={notificationsUnread} />
+      <ProfileAccountEntry notificationsUnread={notificationsUnread} />
     </div>
   );
 }

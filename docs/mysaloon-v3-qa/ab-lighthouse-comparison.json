@@ -26,6 +26,19 @@
     "median_perf": 57,
     "median_tbt_ms": 96.5
   },
+  "buildD_split_bootstrap": {
+    "source": "docs/mysaloon-v3-qa/ab-lighthouse-split-bootstrap/manifest.json",
+    "median_lcp_ms": 10789.08,
+    "median_perf": 57,
+    "median_tbt_ms": 107,
+    "median_fcp_ms": 6148.04,
+    "vs_buildC_public_shell": {
+      "lcp_ms_delta": -496.5,
+      "lcp_reduction_pct": 4.4,
+      "tbt_ms_delta": 10.5,
+      "initial_js_gzip_reduction_pct": 33.1
+    }
+  },
   "verdict_vs_hybrid": {
     "lcp_ms_delta": -138.47,
     "tbt_ms_delta": -30.5,

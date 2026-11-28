@@ -1,0 +1,10 @@
+{
+  "label": "buildD_split_bootstrap",
+  "generatedAt": "2026-11-28T13:35:20.702Z",
+  "initialJsGzip": 193555,
+  "entryIndexGzip": 39675,
+  "routerAppChunkGzip": 28044,
+  "initialJsGzipDeltaVsPublicShell": -95923,
+  "initialJsGzipReductionPct": 33.1,
+  "entryIndexGzipReductionPct": 70.8
+}

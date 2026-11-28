@@ -1,49 +1,15 @@
-import { QueryClient, QueryCache, MutationCache } from "@tanstack/react-query";
-import { createRouter } from "@tanstack/react-router";
-import { handleAuthFailure } from "@/lib/api/client";
-import { registerQueryClient } from "@/lib/query-client";
-import { routeTree } from "./routeTree.gen";
+import type { AnyRouter } from "@tanstack/react-router";
+import { shouldUsePublicRouterBootstrap } from "@/lib/split-bootstrap";
 
-function isAuthQueryError(error: unknown): boolean {
-  if (!(error instanceof Error)) return false;
-  return /token not valid|given token not valid|not authenticated|authentication credentials were not provided/i.test(
-    error.message,
-  );
-}
-
-function onQueryError(error: unknown) {
-  if (isAuthQueryError(error)) {
-    // Sessiyani tozalaydi. Himoyalangan sahifada login sahifasiga qaytaradi.
-    handleAuthFailure();
+/**
+ * TanStack Start router entry — async bootstrap splits public Explore guests
+ * from the full generated route manifest (see `routeTree.public.ts`).
+ */
+export async function getRouter(): Promise<AnyRouter> {
+  if (shouldUsePublicRouterBootstrap()) {
+    const { createPublicRouter } = await import("./router.public");
+    return createPublicRouter();
   }
+  const { createAppRouter } = await import("./router.app");
+  return createAppRouter();
 }
-
-export const getRouter = () => {
-  const queryClient = new QueryClient({
-    queryCache: new QueryCache({ onError: onQueryError }),
-    mutationCache: new MutationCache({ onError: onQueryError }),
-    defaultOptions: {
-      queries: {
-        staleTime: 30_000,
-        gcTime: 10 * 60_000,
-        refetchOnWindowFocus: false,
-        retry: (failureCount, error) => {
-          if (isAuthQueryError(error)) return false;
-          return failureCount < 1;
-        },
-      },
-    },
-  });
-  registerQueryClient(queryClient);
-
-  const router = createRouter({
-    routeTree,
-    context: { queryClient },
-    scrollRestoration: true,
-    defaultPreload: false,
-    defaultPreloadStaleTime: 60_000,
-    defaultPendingMs: 150,
-  });
-
-  return router;
-};

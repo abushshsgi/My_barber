@@ -1,25 +1,18 @@
 {
-  "generatedAt": "2026-11-28T06:29:12.039Z",
+  "generatedAt": "2026-11-28T13:35:20.702Z",
   "assetDir": "C:\\Users\\PC\\Desktop\\My_barber\\apps\\user\\dist\\client\\assets",
   "entry": {
-    "file": "index-DzAtBDPD.js",
-    "raw": 444738,
-    "gzip": 137309,
-    "rawLabel": "434 kB",
-    "gzipLabel": "134 kB"
+    "file": "index-Cd3ym4d6.js",
+    "raw": 111544,
+    "gzip": 39675,
+    "rawLabel": "109 kB",
+    "gzipLabel": "39 kB"
   },
-  "initialJsBytes": 915858,
-  "initialJsGzip": 291081,
-  "initialCssBytes": 291630,
-  "initialCssGzip": 40946,
+  "initialJsBytes": 582835,
+  "initialJsGzip": 193555,
+  "initialCssBytes": 290718,
+  "initialCssGzip": 40607,
   "largestJs": [
-    {
-      "file": "index-DzAtBDPD.js",
-      "raw": 444738,
-      "gzip": 137309,
-      "rawLabel": "434 kB",
-      "gzipLabel": "134 kB"
-    },
     {
       "file": "vendor-zxing-WUmVVrj1.js",
       "raw": 418047,
@@ -28,11 +21,18 @@
       "gzipLabel": "107 kB"
     },
     {
-      "file": "vendor-radix-DDDZcV2K.js",
+      "file": "vendor-radix-Dv6WKX1_.js",
       "raw": 227108,
-      "gzip": 73090,
+      "gzip": 73092,
       "rawLabel": "222 kB",
       "gzipLabel": "71 kB"
+    },
+    {
+      "file": "explore_.category._categoryId-BWmyDadC.js",
+      "raw": 219616,
+      "gzip": 68992,
+      "rawLabel": "214 kB",
+      "gzipLabel": "67 kB"
     },
     {
       "file": "vendor-mediapipe-B5x-Gq-x.js",
@@ -42,18 +42,25 @@
       "gzipLabel": "40 kB"
     },
     {
-      "file": "vendor-motion-DG1pbnj-.js",
+      "file": "vendor-motion-Df6bQilw.js",
       "raw": 133338,
       "gzip": 44144,
       "rawLabel": "130 kB",
       "gzipLabel": "43 kB"
     },
     {
-      "file": "vendor-router-DD_u-tj0.js",
-      "raw": 123362,
-      "gzip": 42440,
+      "file": "vendor-router-BZvB1sql.js",
+      "raw": 123370,
+      "gzip": 42444,
       "rawLabel": "120 kB",
       "gzipLabel": "41 kB"
+    },
+    {
+      "file": "index-Cd3ym4d6.js",
+      "raw": 111544,
+      "gzip": 39675,
+      "rawLabel": "109 kB",
+      "gzipLabel": "39 kB"
     },
     {
       "file": "ru-CJa4ImXS.js",
@@ -63,16 +70,23 @@
       "gzipLabel": "31 kB"
     },
     {
-      "file": "salon._id-Anc8i1RN.js",
-      "raw": 86931,
-      "gzip": 25925,
+      "file": "router.app-DhQnbflL.js",
+      "raw": 107133,
+      "gzip": 28044,
+      "rawLabel": "105 kB",
+      "gzipLabel": "27 kB"
+    },
+    {
+      "file": "salon._id-zEEM2n4K.js",
+      "raw": 87025,
+      "gzip": 25985,
       "rawLabel": "85 kB",
       "gzipLabel": "25 kB"
     },
     {
-      "file": "ai-style_.care-BM4FwIxh.js",
-      "raw": 78010,
-      "gzip": 21288,
+      "file": "ai-style_.care-CnNl6sCb.js",
+      "raw": 78070,
+      "gzip": 21327,
       "rawLabel": "76 kB",
       "gzipLabel": "21 kB"
     },
@@ -82,20 +96,6 @@
       "gzip": 25890,
       "rawLabel": "71 kB",
       "gzipLabel": "25 kB"
-    },
-    {
-      "file": "ai-style-C7E9UsKK.js",
-      "raw": 62167,
-      "gzip": 17634,
-      "rawLabel": "61 kB",
-      "gzipLabel": "17 kB"
-    },
-    {
-      "file": "wallet-Cf_R4KHO.js",
-      "raw": 57418,
-      "gzip": 14681,
-      "rawLabel": "56 kB",
-      "gzipLabel": "14 kB"
     }
   ],
   "vendorChunks": [
@@ -105,8 +105,8 @@
       "gzipLabel": "107 kB"
     },
     {
-      "file": "vendor-radix-DDDZcV2K.js",
-      "gzip": 73090,
+      "file": "vendor-radix-Dv6WKX1_.js",
+      "gzip": 73092,
       "gzipLabel": "71 kB"
     },
     {
@@ -115,108 +115,123 @@
       "gzipLabel": "40 kB"
     },
     {
-      "file": "vendor-motion-DG1pbnj-.js",
+      "file": "vendor-motion-Df6bQilw.js",
       "gzip": 44144,
       "gzipLabel": "43 kB"
     },
     {
-      "file": "vendor-router-DD_u-tj0.js",
-      "gzip": 42440,
+      "file": "vendor-router-BZvB1sql.js",
+      "gzip": 42444,
       "gzipLabel": "41 kB"
     },
     {
-      "file": "vendor-firebase-CqminEoO.js",
-      "gzip": 15668,
+      "file": "vendor-firebase-DbBWHUVu.js",
+      "gzip": 15667,
       "gzipLabel": "15 kB"
     },
     {
-      "file": "vendor-i18n-CacP5bcD.js",
-      "gzip": 15831,
+      "file": "vendor-i18n-Cny4C9GY.js",
+      "gzip": 15832,
       "gzipLabel": "15 kB"
     },
     {
-      "file": "vendor-lucide-Cn7PDmhM.js",
-      "gzip": 14271,
+      "file": "vendor-lucide-CYJv9f0N.js",
+      "gzip": 14270,
       "gzipLabel": "14 kB"
     },
     {
-      "file": "vendor-query-BqtFTMl4.js",
-      "gzip": 10525,
+      "file": "vendor-query-DqaIVieX.js",
+      "gzip": 10526,
       "gzipLabel": "10 kB"
     },
     {
-      "file": "vendor-google-oauth-B4wpGM3y.js",
-      "gzip": 1111,
+      "file": "vendor-google-oauth-CbhY6uPn.js",
+      "gzip": 1112,
       "gzipLabel": "1 kB"
     }
   ],
   "exploreRouteChunks": [
     {
-      "file": "dev.explore-gen.index-CfON_maH.js",
-      "gzip": 5768,
+      "file": "explore_.category._categoryId-BWmyDadC.js",
+      "gzip": 68992,
+      "gzipLabel": "67 kB"
+    },
+    {
+      "file": "dev.explore-gen.index-NqFbqsbP.js",
+      "gzip": 5825,
       "gzipLabel": "6 kB"
     },
     {
-      "file": "explore_._styleId_.try-BTfg_VV0.js",
-      "gzip": 4299,
+      "file": "explore_._styleId_.try-_aRbl7Ea.js",
+      "gzip": 4366,
       "gzipLabel": "4 kB"
     },
     {
-      "file": "dev.explore-gen.assets-BZSONtXM.js",
-      "gzip": 4842,
+      "file": "dev.explore-gen.assets-5pCUgpXe.js",
+      "gzip": 4897,
       "gzipLabel": "5 kB"
     },
     {
-      "file": "explore-By_mj1Ie.js",
-      "gzip": 3889,
+      "file": "ExploreRoutePage-DbSzDmUE.js",
+      "gzip": 3954,
       "gzipLabel": "4 kB"
     },
     {
-      "file": "dev.explore-gen.girls-DvAlgt_X.js",
-      "gzip": 3918,
+      "file": "dev.explore-gen.girls-DrLub3EZ.js",
+      "gzip": 3977,
       "gzipLabel": "4 kB"
     },
     {
-      "file": "explore_.category._categoryId-tN2Z-gsw.js",
-      "gzip": 3435,
+      "file": "explore_.category._categoryId-BfD-1DAg.js",
+      "gzip": 3464,
       "gzipLabel": "3 kB"
     },
     {
-      "file": "explore_._styleId-DHvP19ms.js",
-      "gzip": 2509,
+      "file": "explore_._styleId-BJuvOOkV.js",
+      "gzip": 2532,
       "gzipLabel": "2 kB"
     },
     {
-      "file": "ExploreStyleGrid-BWJlWvCO.js",
-      "gzip": 1429,
+      "file": "ExploreStyleGrid-CjBAKiQK.js",
+      "gzip": 1436,
       "gzipLabel": "1 kB"
     },
     {
-      "file": "ExploreStyleGallery-B6acr1at.js",
-      "gzip": 1362,
+      "file": "ExploreStyleGallery-Ba-IMjR9.js",
+      "gzip": 1379,
       "gzipLabel": "1 kB"
     },
     {
-      "file": "explore-personas-fjzDglht.js",
+      "file": "explore-personas-YS_H63CB.js",
       "gzip": 1008,
       "gzipLabel": "1 kB"
     },
     {
-      "file": "explore-gen-C9IjtBBv.js",
+      "file": "explore-gen-CZfH5uZ3.js",
       "gzip": 810,
       "gzipLabel": "1 kB"
     },
     {
-      "file": "use-explore-persona-2A9ZMl15.js",
-      "gzip": 251,
+      "file": "_locale.explore-MQ_pukV6.js",
+      "gzip": 445,
       "gzipLabel": "0 kB"
     },
     {
-      "file": "dev.explore-gen-sFGvJ2Zn.js",
-      "gzip": 117,
+      "file": "explore-4ypu9O-E.js",
+      "gzip": 425,
+      "gzipLabel": "0 kB"
+    },
+    {
+      "file": "use-explore-persona-CGU6cg0R.js",
+      "gzip": 257,
+      "gzipLabel": "0 kB"
+    },
+    {
+      "file": "dev.explore-gen-ZHUukR1i.js",
+      "gzip": 121,
       "gzipLabel": "0 kB"
     }
   ],
-  "totalJsRaw": 3224586,
-  "totalCssRaw": 291630
+  "totalJsRaw": 3247931,
+  "totalCssRaw": 290718
 }

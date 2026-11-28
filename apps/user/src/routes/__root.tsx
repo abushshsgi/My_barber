@@ -15,11 +15,19 @@ import { CLIENT_BOOT_SCRIPT } from "../lib/client-boot-script";
 import { APPEARANCE_BOOT_SCRIPT } from "../lib/morph-appearance";
 import { APP_BUILD_ID } from "../lib/app-build-id";
 import { isChunkLoadError, reloadForChunkError } from "../lib/chunk-reload";
+import { isPublicBootstrapActive, promoteToFullAppDocument } from "@/lib/split-bootstrap";
 import { requireAuth } from "../lib/require-auth";
 import { pathRequiresAuth } from "@/lib/auth-routes";
 import { MaintenanceBanner } from "../components/MaintenanceBanner";
 function NotFoundComponent() {
   const { t } = useTranslation();
+
+  useEffect(() => {
+    if (isPublicBootstrapActive()) {
+      promoteToFullAppDocument();
+    }
+  }, []);
+
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-6">
       <div className="max-w-md text-center">
