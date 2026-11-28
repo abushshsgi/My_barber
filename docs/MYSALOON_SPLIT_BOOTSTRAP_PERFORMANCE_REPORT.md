@@ -225,4 +225,4 @@ International SEO fixes from hybrid branch remain **cherry-pickable without** th
 
 **Do not merge or deploy.** Push experimental branch for owner review.
 
-**Final commit:** `c6b5a700` on `feat/mysaloon-split-bootstrap`
+**Final commit:** `4edff00c` on `feat/mysaloon-split-bootstrap` (POC `c6b5a700`)
