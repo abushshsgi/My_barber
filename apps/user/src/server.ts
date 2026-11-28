@@ -3,6 +3,7 @@ import "./lib/error-capture";
 import { maybeProxyApi } from "./lib/api-proxy.server";
 import { consumeLastCapturedError } from "./lib/error-capture";
 import { renderErrorPage } from "./lib/error-page";
+import { injectExploreLcpShell } from "./lib/explore-lcp-shell.server";
 import { injectMorphLcpShell } from "./lib/morph-lcp-shell.server";
 import { injectSeoIntoHtml } from "./lib/seo-html-inject.server";
 import { applyStaticCacheHeaders } from "./lib/static-cache.server";
@@ -56,7 +57,9 @@ export default {
       const { pathname } = new URL(request.url);
       if (request.method === "GET" && response.headers.get("content-type")?.includes("text/html")) {
         response = await injectSeoIntoHtml(response, pathname);
-        const html = injectMorphLcpShell(await response.text(), pathname);
+        let html = await response.text();
+        html = injectExploreLcpShell(html, pathname);
+        html = injectMorphLcpShell(html, pathname);
         const outHeaders = new Headers(response.headers);
         outHeaders.delete("content-length");
         response = new Response(html, {

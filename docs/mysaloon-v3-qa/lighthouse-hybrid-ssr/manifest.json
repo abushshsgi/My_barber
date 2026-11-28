@@ -1,0 +1,24 @@
+{
+  "base": "http://127.0.0.1:3003",
+  "branch": "feat/mysaloon-selective-ssr",
+  "runs": 3,
+  "capturedAt": "2026-11-28T13:10:00.000Z",
+  "compareBaseline": "docs/mysaloon-v3-qa/lighthouse/manifest.json",
+  "compareLiveProd": "docs/mysaloon-v3-qa/lighthouse-live-prod/manifest.json",
+  "routes": [
+    {
+      "id": "explore",
+      "url": "http://127.0.0.1:3003/explore",
+      "formFactor": "mobile",
+      "perf": 57,
+      "a11y": 100,
+      "seo": 100,
+      "lcp_ms": 11424.56,
+      "fcp_ms": 6695.42,
+      "cls": 0.068,
+      "tbt_ms": 127,
+      "ttfb_ms": 6,
+      "note": "Hybrid shell + seo-prerender; root ssr:false unchanged. LCP target ≤2.5s not met — JS boot still dominates scored LCP."
+    }
+  ]
+}

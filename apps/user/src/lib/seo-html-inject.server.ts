@@ -28,6 +28,7 @@ import {
 } from "@/seo/html-utils";
 import { isNoindexPath } from "@/seo/noindex";
 import { getCanonicalUrl, localizedPath, parseLocaleFromPath } from "@/seo/url";
+import { buildExploreCatalogPrerender } from "@/lib/explore-prerender.server";
 import { exploreDocumentTitle } from "@/seo/hairstyles/image-seo";
 
 function toBuiltHead(raw: {
@@ -66,16 +67,19 @@ async function headForPath(
           ]
         : landingJsonLdBlocks(resolved.copy, canonical, serviceName);
 
-    const prerender = buildPrerenderInner(
-      resolved.copy.h1,
-      resolved.copy.intro || resolved.copy.description,
-      [
-        { href: resolved.copy.ctaHref, text: resolved.copy.ctaLabel },
-        ...(resolved.copy.secondaryCta
-          ? [{ href: resolved.copy.secondaryCta.href, text: resolved.copy.secondaryCta.label }]
-          : []),
-      ],
-    );
+    const prerender =
+      resolved.pageId === "explore"
+        ? await buildExploreCatalogPrerender(resolved.locale)
+        : buildPrerenderInner(
+            resolved.copy.h1,
+            resolved.copy.intro || resolved.copy.description,
+            [
+              { href: resolved.copy.ctaHref, text: resolved.copy.ctaLabel },
+              ...(resolved.copy.secondaryCta
+                ? [{ href: resolved.copy.secondaryCta.href, text: resolved.copy.secondaryCta.label }]
+                : []),
+            ],
+          );
     return { head: registryHead, jsonLd, prerender };
   }
 
